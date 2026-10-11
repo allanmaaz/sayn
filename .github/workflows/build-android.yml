@@ -31,16 +31,19 @@ jobs:
       - name: Flutter Doctor
         run: flutter doctor -v
 
-      - name: Ensure Android Platform & Dependencies
+      - name: Make Gradle Wrapper Executable
+        run: |
+          chmod +x apps/android/android/gradlew
+
+      - name: Get Flutter Dependencies
         run: |
           cd apps/android
-          flutter create . --org com.sayn --platforms android
           flutter pub get
 
       - name: Build Release APK
         run: |
           cd apps/android
-          flutter build apk --release --verbose > build.log 2>&1 || (cat build.log | tail -n 150 && exit 1)
+          flutter build apk --release
 
       - name: Copy APK to Root Release
         run: |
