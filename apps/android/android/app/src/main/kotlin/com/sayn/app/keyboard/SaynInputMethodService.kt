@@ -45,13 +45,10 @@ class SaynInputMethodService : InputMethodService() {
     private lateinit var suggestionArea: LinearLayout
     private lateinit var keysContainer: LinearLayout
 
-    // Wispr Voice Live Bar Views
+    // Wispr Voice Live Bar Views (3-piece Wispr pill)
     private lateinit var voiceStatusDot: TextView
-    private lateinit var voiceStatusText: TextView
     private lateinit var voiceTranscriptText: TextView
     private lateinit var btnCorrectAndInsert: TextView
-    private lateinit var btnVoiceRefine: TextView
-    private lateinit var btnVoiceDismiss: TextView
 
     // Suggestion Area Views
     private lateinit var suggestionBadge: TextView
@@ -91,11 +88,24 @@ class SaynInputMethodService : InputMethodService() {
         "shorten" to "Shorten",
         "expand" to "Expand"
     )
+ 
+    companion object {
+        var instance: SaynInputMethodService? = null
+            private set
+    }
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
         val prefs = getSharedPreferences("com.sayn.app.PREFS", Context.MODE_PRIVATE)
         activeMode = prefs.getString("default_mode", "standard") ?: "standard"
+    }
+
+    fun triggerVoiceDictation() {
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            showVoiceLiveBar()
+            startInKeyboardVoice()
+        }
     }
 
     override fun onCreateInputView(): View {
@@ -117,6 +127,22 @@ class SaynInputMethodService : InputMethodService() {
         super.onStartInputView(info, restarting)
         isSensitiveField = SensitiveFieldGuard.isSensitiveField(info)
 
+        // Only show floating assistant when chat/input is open with keyboard!
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && android.provider.Settings.canDrawOverlays(this)) {
+            if (!com.sayn.app.overlay.FloatingBubbleService.isRunning) {
+                val intent = Intent(this, com.sayn.app.overlay.FloatingBubbleService::class.java)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(intent)
+                } else {
+                    startService(intent)
+                }
+            } else {
+                com.sayn.app.overlay.FloatingBubbleService.setKeyboardActive(true)
+            }
+        } else {
+            com.sayn.app.overlay.FloatingBubbleService.setKeyboardActive(true)
+        }
+
         hideVoiceLiveBar()
         hideSuggestionArea()
 
@@ -132,127 +158,142 @@ class SaynInputMethodService : InputMethodService() {
         renderKeys()
     }
 
+    override fun onFinishInputView(finishingInput: Boolean) {
+        super.onFinishInputView(finishingInput)
+        // Hide floating assistant as soon as keyboard closes
+        com.sayn.app.overlay.FloatingBubbleService.setKeyboardActive(false)
+        stopInKeyboardVoice()
+        hideVoiceLiveBar()
+    }
+
+    override fun onWindowHidden() {
+        super.onWindowHidden()
+        // Ensure floating assistant is hidden whenever keyboard window is hidden
+        com.sayn.app.overlay.FloatingBubbleService.setKeyboardActive(false)
+        stopInKeyboardVoice()
+        hideVoiceLiveBar()
+    }
+
     // ─────────────────────────────────────────────────────────────────────────────
-    // 1. Wispr Live Voice Dictation Bar
+    // 1. Wispr Flow 3-Piece Floating Speech Pill ([ ✕ ] [ ••• text ••• ] [ ✓ (purple) ])
     // ─────────────────────────────────────────────────────────────────────────────
 
     private fun buildVoiceLiveBar() {
         voiceLiveBar = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            visibility = View.GONE
-            val bg = GradientDrawable().apply {
-                cornerRadius = dpToPx(10).toFloat()
-                setColor(Color.parseColor("#252528"))
-                setStroke(dpToPx(1.2f), Color.parseColor("#007AFF")) // iOS Blue border
-            }
-            background = bg
-            setPadding(dpToPx(10), dpToPx(8), dpToPx(10), dpToPx(8))
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { bottomMargin = dpToPx(4) }
-        }
-
-        // Top Status Row: Pulsing Dot + Status + Close
-        val statusRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
+            visibility = View.GONE
+            setPadding(dpToPx(8), dpToPx(3), dpToPx(8), dpToPx(5))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dpToPx(52)
+            ).apply { bottomMargin = dpToPx(2) }
+        }
+
+        // 1. Left Circle: Frosted Glass Cancel Button [ ✕ ]
+        val cancelCircle = FrameLayout(this).apply {
+            val bg = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(Color.parseColor("#CCD8D8DE")) // Frosted translucent glass
+                setStroke(dpToPx(1f), Color.parseColor("#44FFFFFF"))
+            }
+            background = bg
+            isClickable = true
+            isFocusable = false
+            layoutParams = LinearLayout.LayoutParams(dpToPx(44), dpToPx(44))
+        }
+
+        val cancelText = TextView(this).apply {
+            text = "✕"
+            textSize = 15f
+            setTextColor(Color.parseColor("#1C1C1E"))
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        }
+        cancelCircle.addView(cancelText)
+        cancelCircle.setOnClickListener {
+            vibrateTap()
+            stopInKeyboardVoice()
+            hideVoiceLiveBar()
+        }
+        voiceLiveBar.addView(cancelCircle)
+
+        // 2. Center Capsule: Translucent Speech Pill with Live Transcription & Dots ( ••• )
+        val centerCapsule = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            val bg = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = dpToPx(23f).toFloat()
+                setColor(Color.parseColor("#A6222226")) // Frosted dark glass
+                setStroke(dpToPx(1f), Color.parseColor("#33FFFFFF"))
+            }
+            background = bg
+            setPadding(dpToPx(14), 0, dpToPx(14), 0)
+            layoutParams = LinearLayout.LayoutParams(0, dpToPx(44), 1f).apply {
+                marginStart = dpToPx(8)
+                marginEnd = dpToPx(8)
+            }
+        }
+
+        voiceTranscriptText = TextView(this).apply {
+            text = "Listening..."
+            textSize = 13.5f
+            setTextColor(Color.WHITE)
+            gravity = Gravity.CENTER_VERTICAL
+            isSingleLine = true
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
         }
 
         voiceStatusDot = TextView(this).apply {
-            text = "●"
-            textSize = 12f
-            setTextColor(Color.parseColor("#FF453A")) // Red recording dot
-            setPadding(0, 0, dpToPx(5), 0)
-        }
-
-        voiceStatusText = TextView(this).apply {
-            text = "Listening... speak now"
-            textSize = 11f
-            setTextColor(Color.parseColor("#5DE4FF"))
+            text = "• • • • •"
+            textSize = 15f
+            setTextColor(Color.parseColor("#7E57C2")) // Elegant Wispr Purple accent
             typeface = Typeface.DEFAULT_BOLD
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-
-        btnVoiceDismiss = TextView(this).apply {
-            text = "✕"
-            textSize = 14f
-            setTextColor(Color.parseColor("#8E8E93"))
-            gravity = Gravity.CENTER
-            setPadding(dpToPx(8), 0, dpToPx(4), 0)
-            setOnClickListener {
-                stopInKeyboardVoice()
-                hideVoiceLiveBar()
-            }
-        }
-
-        statusRow.addView(voiceStatusDot)
-        statusRow.addView(voiceStatusText)
-        statusRow.addView(btnVoiceDismiss)
-        voiceLiveBar.addView(statusRow)
-
-        // Live Real-Time Transcript Text Box
-        voiceTranscriptText = TextView(this).apply {
-            text = "Say anything... Wispr is capturing your speech"
-            textSize = 13.5f
-            setTextColor(Color.parseColor("#E5E5EA"))
-            setPadding(0, dpToPx(5), 0, dpToPx(6))
-            maxLines = 3
-        }
-        voiceLiveBar.addView(voiceTranscriptText)
-
-        // Action Buttons Row: Correct & Insert, Refine & Insert
-        val actionRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
+            setPadding(dpToPx(6), 0, 0, 0)
         }
 
-        // "✓ Correct" Button -> COMMITS IMMEDIATELY to where the user is typing & dismisses!
+        centerCapsule.addView(voiceTranscriptText)
+        centerCapsule.addView(voiceStatusDot)
+        voiceLiveBar.addView(centerCapsule)
+
+        // 3. Right Circle: Vibrant Purple Confirm Button [ ✓ ]
+        val confirmCircle = FrameLayout(this).apply {
+            val bg = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(Color.parseColor("#7E57C2")) // Wispr Purple
+                setStroke(dpToPx(1f), Color.parseColor("#44FFFFFF"))
+            }
+            background = bg
+            isClickable = true
+            isFocusable = false
+            layoutParams = LinearLayout.LayoutParams(dpToPx(44), dpToPx(44))
+        }
+
         btnCorrectAndInsert = TextView(this).apply {
-            text = "✓ Correct"
-            textSize = 12f
+            text = "✓"
+            textSize = 19f
             setTextColor(Color.WHITE)
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
-            background = createIosKeyDrawable(
-                normalColor = Color.parseColor("#007AFF"),
-                pressedColor = Color.parseColor("#0056B3"),
-                shadowColor = Color.parseColor("#004085"),
-                cornerRadiusDp = 7f
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
             )
-            setOnClickListener {
-                vibrateTap()
-                stopInKeyboardVoice()
-                commitSpokenTextToInput()
-            }
-            layoutParams = LinearLayout.LayoutParams(0, dpToPx(34), 1.2f).apply {
-                marginEnd = dpToPx(6)
-            }
         }
-
-        // "✨ Polish (Mode)" Button -> Refines via Cloudflare Worker and immediately inserts!
-        btnVoiceRefine = TextView(this).apply {
-            text = "✨ Polish & Insert"
-            textSize = 11.5f
-            setTextColor(Color.WHITE)
-            gravity = Gravity.CENTER
-            background = createIosKeyDrawable(
-                normalColor = Color.parseColor("#343438"),
-                pressedColor = Color.parseColor("#4A4A4E"),
-                shadowColor = Color.parseColor("#1C1C1E"),
-                cornerRadiusDp = 7f
-            )
-            setOnClickListener {
-                vibrateTap()
-                stopInKeyboardVoice()
-                refineAndCommitSpokenText()
-            }
-            layoutParams = LinearLayout.LayoutParams(0, dpToPx(34), 1.2f)
+        confirmCircle.addView(btnCorrectAndInsert)
+        confirmCircle.setOnClickListener {
+            vibrateTap()
+            stopInKeyboardVoice()
+            commitSpokenTextToInput()
         }
-
-        actionRow.addView(btnCorrectAndInsert)
-        actionRow.addView(btnVoiceRefine)
-        voiceLiveBar.addView(actionRow)
+        voiceLiveBar.addView(confirmCircle)
 
         rootLayout.addView(voiceLiveBar)
     }
@@ -260,10 +301,8 @@ class SaynInputMethodService : InputMethodService() {
     private fun showVoiceLiveBar() {
         voiceLiveBar.visibility = View.VISIBLE
         suggestionArea.visibility = View.GONE
-        voiceStatusDot.setTextColor(Color.parseColor("#FF453A"))
-        voiceStatusText.text = "Listening... speak now"
         voiceTranscriptText.text = "Listening..."
-        btnVoiceRefine.text = "✨ Polish (${activeMode.replaceFirstChar { it.uppercase() }})"
+        voiceStatusDot.setTextColor(Color.parseColor("#7E57C2"))
     }
 
     private fun hideVoiceLiveBar() {
@@ -288,7 +327,7 @@ class SaynInputMethodService : InputMethodService() {
             return
         }
 
-        voiceStatusText.text = "SAYN AI polishing (${activeMode})..."
+        voiceTranscriptText.text = "Polishing (${activeMode})..."
         Toast.makeText(this, "Polishing with AI...", Toast.LENGTH_SHORT).show()
 
         CoroutineScope(Dispatchers.IO).launch {
@@ -688,11 +727,11 @@ class SaynInputMethodService : InputMethodService() {
         speechRecognizer = recognizer
         speechRecognizer?.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
-                voiceStatusText.text = "Listening... speak now"
+                voiceTranscriptText.text = "Listening... speak now"
             }
 
             override fun onBeginningOfSpeech() {
-                voiceStatusText.text = "Hearing speech..."
+                voiceTranscriptText.text = "Hearing speech..."
                 voiceStatusDot.setTextColor(Color.parseColor("#34C759")) // Green while actively detecting voice
             }
 
@@ -701,7 +740,7 @@ class SaynInputMethodService : InputMethodService() {
             override fun onBufferReceived(buffer: ByteArray?) {}
 
             override fun onEndOfSpeech() {
-                voiceStatusText.text = "Processing speech..."
+                voiceTranscriptText.text = "Processing speech..."
                 voiceStatusDot.setTextColor(Color.parseColor("#FF9F0A"))
             }
 
@@ -722,22 +761,22 @@ class SaynInputMethodService : InputMethodService() {
                         startActivity(intent)
                     }
                     5 -> { // ERROR_CLIENT
-                        voiceStatusText.text = "Voice engine initializing. Tap mic to retry."
+                        voiceTranscriptText.text = "Tap mic to retry"
                         Toast.makeText(applicationContext, "Speech engine reconnecting. Tap mic again to speak.", Toast.LENGTH_SHORT).show()
                     }
                     SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> {
                         if (currentSpokenText.isEmpty()) {
-                            voiceStatusText.text = "No speech detected. Tap mic to retry."
+                            voiceTranscriptText.text = "No speech. Tap mic to retry"
                         }
                     }
                     SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> {
-                        voiceStatusText.text = "Network timeout. Check internet connection."
+                        voiceTranscriptText.text = "Network timeout. Check connection."
                     }
                     SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> {
-                        voiceStatusText.text = "Microphone busy. Tap mic to retry."
+                        voiceTranscriptText.text = "Microphone busy. Tap to retry"
                     }
                     else -> {
-                        voiceStatusText.text = "Mic error ($error). Tap mic to retry."
+                        voiceTranscriptText.text = "Mic error ($error). Tap to retry"
                     }
                 }
             }
@@ -751,7 +790,6 @@ class SaynInputMethodService : InputMethodService() {
                 }
                 isListening = false
                 voiceStatusDot.setTextColor(Color.parseColor("#8E8E93"))
-                voiceStatusText.text = "✓ Speech captured. Tap Correct to insert."
             }
 
             override fun onPartialResults(partialResults: Bundle?) {
@@ -1226,8 +1264,8 @@ class SaynInputMethodService : InputMethodService() {
 
     override fun onDestroy() {
         super.onDestroy()
-        speechRecognizer?.destroy()
-        speechRecognizer = null
+        if (instance == this) instance = null
+        destroySpeechRecognizer()
         deleteRunnable?.let { deleteHandler.removeCallbacks(it) }
     }
 
