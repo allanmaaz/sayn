@@ -28,15 +28,19 @@ jobs:
           flutter-version: '3.24.x'
           channel: 'stable'
 
-      - name: Get Dependencies
+      - name: Flutter Doctor
+        run: flutter doctor -v
+
+      - name: Ensure Android Platform & Dependencies
         run: |
           cd apps/android
+          flutter create . --org com.sayn --platforms android
           flutter pub get
 
       - name: Build Release APK
         run: |
           cd apps/android
-          flutter build apk --release
+          flutter build apk --release --verbose
 
       - name: Copy APK to Root Release
         run: |
