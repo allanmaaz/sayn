@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme.dart';
 import '../../services/platform_channels.dart';
+import '../../services/update_service.dart';
 
 class KeyboardSettingsScreen extends StatefulWidget {
   const KeyboardSettingsScreen({super.key});
@@ -377,6 +378,82 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
                             fontSize: 11,
                             color: SaynColors.darkSecondary,
                             height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // In-App Auto-Updates Card
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: SaynColors.darkSurface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0x337E57C2)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.autorenew_rounded, color: Color(0xFFB388FF), size: 20),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'App Updates & Releases',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'SAYN automatically checks for the latest updates. You can also manually check to get the newest features immediately.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: SaynColors.darkSecondary,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: () async {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Checking for updates...'),
+                                duration: Duration(seconds: 1),
+                              ),
+                            );
+                            final info = await UpdateService.checkUpdate();
+                            if (!mounted) return;
+                            if (info != null && info.hasUpdate) {
+                              UpdateService.showUpdateDialog(context, info);
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    info != null
+                                        ? 'You are on the latest version (v${info.currentVersion})'
+                                        : 'Could not connect to update server',
+                                  ),
+                                  backgroundColor: const Color(0xFF34C759),
+                                ),
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.cloud_download_outlined, size: 16, color: Color(0xFFB388FF)),
+                          label: const Text(
+                            'Check for Updates Now',
+                            style: TextStyle(color: Color(0xFFB388FF), fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFF7E57C2)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           ),
                         ),
                       ],

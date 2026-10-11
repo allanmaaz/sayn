@@ -98,4 +98,71 @@ class PlatformChannels {
       await _keyboardChannel.invokeMethod('requestAudioPermission');
     } catch (_) {}
   }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // In-App Auto-Updater Methods
+  // ─────────────────────────────────────────────────────────────────────────
+  static const MethodChannel _updaterChannel =
+      MethodChannel('com.sayn.app/updater');
+
+  static void setUpdaterListener({
+    Function(int progress)? onProgress,
+    Function(String filePath)? onComplete,
+    Function(String error)? onError,
+  }) {
+    _updaterChannel.setMethodCallHandler((call) async {
+      if (call.method == 'onDownloadProgress') {
+        final int progress = (call.arguments['progress'] as num?)?.toInt() ?? 0;
+        onProgress?.call(progress);
+      } else if (call.method == 'onDownloadComplete') {
+        final String filePath = call.arguments['filePath'] ?? '';
+        onComplete?.call(filePath);
+      } else if (call.method == 'onDownloadError') {
+        final String error = call.arguments['error'] ?? 'Download failed';
+        onError?.call(error);
+      }
+    });
+  }
+
+  static Future<String> getAppVersion() async {
+    try {
+      final String version = await _updaterChannel.invokeMethod('getAppVersion') ?? '1.0.3';
+      return version;
+    } catch (_) {
+      return '1.0.3';
+    }
+  }
+
+  static Future<bool> canRequestPackageInstalls() async {
+    try {
+      final bool canInstall = await _updaterChannel.invokeMethod('canRequestPackageInstalls') ?? true;
+      return canInstall;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  static Future<void> openInstallPermissionSettings() async {
+    try {
+      await _updaterChannel.invokeMethod('openInstallPermissionSettings');
+    } catch (_) {}
+  }
+
+  static Future<bool> downloadAndInstallApk(String url) async {
+    try {
+      final bool started = await _updaterChannel.invokeMethod('downloadAndInstallApk', {'url': url}) ?? false;
+      return started;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> installApkFile(String filePath) async {
+    try {
+      final bool success = await _updaterChannel.invokeMethod('installApkFile', {'filePath': filePath}) ?? false;
+      return success;
+    } catch (_) {
+      return false;
+    }
+  }
 }

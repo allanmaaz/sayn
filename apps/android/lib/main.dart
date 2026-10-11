@@ -4,6 +4,8 @@ import 'features/workspace/workspace_screen.dart';
 import 'features/overlay/overlay_settings_screen.dart';
 import 'features/keyboard/keyboard_settings_screen.dart';
 
+import 'services/update_service.dart';
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const SaynApp());
@@ -40,6 +42,23 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     OverlaySettingsScreen(),
     KeyboardSettingsScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAutoUpdate();
+    });
+  }
+
+  Future<void> _checkAutoUpdate() async {
+    try {
+      final info = await UpdateService.checkUpdate();
+      if (info != null && info.hasUpdate && mounted) {
+        UpdateService.showUpdateDialog(context, info);
+      }
+    } catch (_) {}
+  }
 
   @override
   Widget build(BuildContext context) {

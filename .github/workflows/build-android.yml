@@ -60,26 +60,27 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: v1.0.3
-          name: "SAYN Android Release v1.0.3 (Wispr 3-Piece Pill, Floating Squircle & Drag-to-Dismiss)"
+          tag_name: v1.0.4
+          name: "SAYN Android Release v1.0.4 (Built-in In-App Auto-Updater)"
           body: |
-            ### SAYN v1.0.3 — Say it. Refine it. Send it.
+            ### SAYN v1.0.4 — Say it. Refine it. Send it.
             Official release for Android.
             
-            **What's New in v1.0.3:**
+            **What's New in v1.0.4:**
+            * **Built-in In-App Auto-Updater:**
+              - Never manually download from GitHub or browse your Downloads folder again!
+              - SAYN automatically checks for updates on startup against GitHub Releases.
+              - When a new update is released, a modal appears with release notes and a single **"⚡ Download & Install Update"** button.
+              - Downloads with real-time progress indicator and immediately prompts the Android system installer to update in-place with 1 tap.
+              - Manual "Check for Updates Now" button also available in Settings.
             * **Wispr Flow 3-Piece Floating Speech Pill:**
-              - Left: Circular frosted glass button with `✕` to cancel/dismiss dictation.
-              - Center: Translucent frosted capsule displaying real-time streaming speech words + live purple `• • • • •` dots.
-              - Right: Vibrant Wispr purple circular button with `✓`. Tapping `✓` immediately commits the speech into WhatsApp/ChatGPT/any typing box and dismisses the pill.
+              - `[ ✕ ]` frosted circular cancel button.
+              - Translucent speech capsule with live streaming words + animated purple dots `• • • • •`.
+              - `[ ✓ ]` Wispr purple button: commits text instantly into WhatsApp/chat box and dismisses.
             * **Translucent Squircle Floating Assistant:**
-              - Redesigned from a plain circle to a modern translucent squircle (16dp rounded corners, dark frosted glass `#A61E1E22`, subtle frosted border).
-            * **Drag-to-Dismiss Gesture at Bottom Center:**
-              - Dragging the floating assistant towards bottom center brings up a dismiss circle with cross `✕`.
-              - Target scales up and turns active red when near; dropping it dismisses the floating assistant with haptic feedback.
-            * **Auto-Show Only When Keyboard / Chatbot Is Open:**
-              - The floating assistant no longer clutters your screen 24/7. It automatically appears when you open a chat and your keyboard comes up (`onStartInputView`), and vanishes completely the instant you close the keyboard or exit the chat (`onFinishInputView` / `onWindowHidden`).
-              - Tapping the floating squircle while typing immediately launches the Wispr dictation bar.
-            * **Resolved Microphone Error 5:** Full Android 11+ `<queries>` package visibility for Google Speech Services and clean lifecycle teardown.
+              - Frosted glass squircle (`cornerRadius = 16dp`, `#A61E1E22`).
+              - Drag-to-dismiss gesture: dragging towards bottom center cross turns red and dismisses with haptics.
+              - Auto-visibility: ONLY appears when a chatbot/input is open with keyboard, disappears when keyboard closes.
             
             **What's New in v1.0.1:**
             * **Authentic iOS 17 Dark Mode Keyboard:** Redesigned keycaps with raised chiclet styling, drop shadows, staggered row spacing, and crisp 22sp white typography (no dot/ellipsis clipping).
