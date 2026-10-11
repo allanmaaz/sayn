@@ -5,7 +5,7 @@ class SaynApiClient {
   final String baseUrl;
   String? authToken;
 
-  SaynApiClient({this.baseUrl = 'http://10.0.2.2:8787'});
+  SaynApiClient({this.baseUrl = 'https://sayn-api-worker.allanmaazimdad.workers.dev'});
 
   Future<Map<String, dynamic>> refineText({
     required String text,

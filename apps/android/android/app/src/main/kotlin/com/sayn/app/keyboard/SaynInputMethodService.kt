@@ -418,7 +418,7 @@ class SaynInputMethodService : InputMethodService() {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val url = URL("http://10.0.2.2:8787/api/v1/ai/refine")
+                val url = URL("https://sayn-api-worker.allanmaazimdad.workers.dev/api/v1/ai/refine")
                 val conn = (url.openConnection() as HttpURLConnection).apply {
                     requestMethod = "POST"
                     setRequestProperty("Content-Type", "application/json")
