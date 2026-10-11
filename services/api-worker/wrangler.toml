@@ -1,0 +1,17 @@
+name = "sayn-api-worker"
+main = "src/index.ts"
+compatibility_date = "2024-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+ENVIRONMENT = "production"
+DEFAULT_AI_PROVIDER = "gemini" # Options: gemini, openai, groq, workers-ai
+SUPABASE_URL = "https://your-project.supabase.co"
+
+# Optional AI Bindings for Cloudflare Workers AI (enable when deployed to Cloudflare)
+# [ai]
+# binding = "AI"
+
+# Limits
+MAX_CHARACTERS = 8000
+RATE_LIMIT_PER_MINUTE = 30

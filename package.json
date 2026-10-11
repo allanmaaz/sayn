@@ -1,0 +1,24 @@
+{
+  "name": "sayn-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SAYN — Say it. Refine it. Send it. Cross-platform AI communication assistant.",
+  "workspaces": [
+    "packages/shared-types",
+    "services/api-worker",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=apps/web",
+    "build:web": "npm run build --workspace=apps/web",
+    "dev:worker": "npm run dev --workspace=services/api-worker",
+    "build:worker": "npm run build --workspace=services/api-worker",
+    "test:worker": "npm run test --workspace=services/api-worker",
+    "deploy:worker": "npm run deploy --workspace=services/api-worker",
+    "deploy:web": "npm run build:web && npx wrangler pages deploy apps/web/dist --project-name sayn-web",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}

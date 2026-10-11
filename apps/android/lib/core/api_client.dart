@@ -1,0 +1,46 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
+class SaynApiClient {
+  final String baseUrl;
+  String? authToken;
+
+  SaynApiClient({this.baseUrl = 'http://10.0.2.2:8787'});
+
+  Future<Map<String, dynamic>> refineText({
+    required String text,
+    required String mode,
+    String? tone,
+    String? targetLanguage,
+    String? customInstruction,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/ai/refine');
+    final headers = {
+      'Content-Type': 'application/json',
+      if (authToken != null) 'Authorization': 'Bearer $authToken',
+    };
+
+    final body = jsonEncode({
+      'text': text,
+      'mode': mode,
+      if (tone != null) 'tone': tone,
+      if (targetLanguage != null) 'targetLanguage': targetLanguage,
+      if (customInstruction != null) 'customInstruction': customInstruction,
+    });
+
+    final response = await http.post(uri, headers: headers, body: body);
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return jsonDecode(response.body);
+    } else {
+      String msg = 'Refinement failed (${response.statusCode})';
+      try {
+        final errJson = jsonDecode(response.body);
+        if (errJson['error']?['message'] != null) {
+          msg = errJson['error']['message'];
+        }
+      } catch (_) {}
+      throw Exception(msg);
+    }
+  }
+}

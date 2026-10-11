@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Environment variables
+.env
+.env.local
+.env.production
+.env.development
+.dev.vars
+.wrangler/
+
+# Production builds
+dist/
+build/
+.output/
+!*.apk
+
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+wrangler.log
+
+# Flutter / Android
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+**/.gradle/
+**/build/
+**/captures/
+**/local.properties
+android/gradlew
+android/gradlew.bat
+android/**/GeneratedPluginRegistrant.java
+android/**/*.keystore
+android/**/*.jks
+
+# IDE & OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

@@ -1,0 +1,308 @@
+import 'package:flutter/material.dart';
+import '../../core/theme.dart';
+import '../../services/platform_channels.dart';
+
+class KeyboardSettingsScreen extends StatefulWidget {
+  const KeyboardSettingsScreen({super.key});
+
+  @override
+  State<KeyboardSettingsScreen> createState() => _KeyboardSettingsScreenState();
+}
+
+class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
+  bool _isEnabled = false;
+  bool _isLoading = true;
+  String _defaultMode = 'standard';
+  final TextEditingController _sandboxController = TextEditingController();
+
+  final List<Map<String, String>> _modes = const [
+    {'id': 'standard', 'label': 'Standard'},
+    {'id': 'fluent', 'label': 'Fluent'},
+    {'id': 'natural', 'label': 'Natural'},
+    {'id': 'professional', 'label': 'Professional'},
+    {'id': 'casual', 'label': 'Casual'},
+    {'id': 'shorten', 'label': 'Shorten'},
+    {'id': 'expand', 'label': 'Expand'},
+    {'id': 'formal', 'label': 'Formal'},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadState();
+  }
+
+  Future<void> _loadState() async {
+    setState(() => _isLoading = true);
+    final enabled = await PlatformChannels.isKeyboardEnabled();
+    final mode = await PlatformChannels.getDefaultMode();
+    if (mounted) {
+      setState(() {
+        _isEnabled = enabled;
+        _defaultMode = mode;
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _updateDefaultMode(String mode) async {
+    setState(() => _defaultMode = mode);
+    await PlatformChannels.setDefaultMode(mode);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Smart Keyboard (IME)',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        ),
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Overview Card
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: SaynColors.darkSurface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: SaynColors.darkDivider),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'Native Android AI Keyboard',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: SaynColors.darkText,
+                          ),
+                        ),
+                        SizedBox(height: 6),
+                        Text(
+                          'SAYN Smart Keyboard integrates QuillBot-style writing modes directly above your keyboard keys. Type or select a message in WhatsApp, Instagram, or Gmail, tap a mode, and insert the refined result.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: SaynColors.darkSecondary,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Activation Guide Card
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: SaynColors.darkSurface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: SaynColors.darkDivider),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Keyboard Status',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: SaynColors.darkText,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: _isEnabled
+                                    ? SaynColors.darkSuccess.withOpacity(0.15)
+                                    : SaynColors.darkWarning.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                _isEnabled ? 'Enabled' : 'Not Activated',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: _isEnabled
+                                      ? SaynColors.darkSuccess
+                                      : SaynColors.darkWarning,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          '1. Tap "Open Keyboard Settings" below.\n2. Enable "SAYN Smart Keyboard" in On-Screen Keyboards.\n3. Switch to SAYN using the globe/keyboard switcher key.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: SaynColors.darkSecondary,
+                            height: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        ElevatedButton(
+                          onPressed: () async {
+                            await PlatformChannels.openKeyboardSettings();
+                            _loadState();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: SaynColors.darkAccent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text(
+                            'Open Keyboard Settings',
+                            style: TextStyle(fontSize: 12, color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Default Writing Mode Selector
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: SaynColors.darkSurface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: SaynColors.darkDivider),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Default Writing Mode',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: SaynColors.darkText,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _modes.map((m) {
+                            final isSelected = _defaultMode == m['id'];
+                            return ChoiceChip(
+                              label: Text(m['label']!),
+                              selected: isSelected,
+                              selectedColor: SaynColors.darkAccent,
+                              labelStyle: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: isSelected ? Colors.white : SaynColors.darkSecondary,
+                              ),
+                              backgroundColor: SaynColors.darkSurface2,
+                              side: const BorderSide(color: SaynColors.darkDivider),
+                              onSelected: (val) {
+                                if (val) _updateDefaultMode(m['id']!);
+                              },
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Interactive Typing Sandbox
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: SaynColors.darkSurface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: SaynColors.darkDivider),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Interactive Typing Sandbox',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: SaynColors.darkAccent,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Tap the field below to bring up the SAYN Keyboard and test typing, styles, and instant text replacement.',
+                          style: TextStyle(fontSize: 11, color: SaynColors.darkSecondary),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: SaynColors.darkSurface2,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: SaynColors.darkDivider),
+                          ),
+                          child: TextField(
+                            controller: _sandboxController,
+                            maxLines: 3,
+                            style: const TextStyle(fontSize: 13, color: SaynColors.darkText),
+                            decoration: const InputDecoration(
+                              hintText: 'Type here to test SAYN Smart Keyboard...',
+                              hintStyle: TextStyle(fontSize: 13, color: SaynColors.darkMuted),
+                              border: InputBorder.none,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Security & Sensitive Fields Notice
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: SaynColors.darkSurface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: SaynColors.darkDivider),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'Privacy & Sensitive Field Guard',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: SaynColors.darkSuccess,
+                          ),
+                        ),
+                        SizedBox(height: 6),
+                        Text(
+                          '• Zero keystroke logging: your typing is never recorded.\n• Sensitive fields (passwords, PINs, card numbers) automatically hide the AI toolbar.\n• AI refinement is triggered only on explicit user tap.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: SaynColors.darkSecondary,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
+}
