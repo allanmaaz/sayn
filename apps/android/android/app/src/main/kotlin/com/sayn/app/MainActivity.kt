@@ -1,10 +1,15 @@
 package com.sayn.app
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Bundle
 import android.provider.Settings
 import android.view.inputmethod.InputMethodManager
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.sayn.app.overlay.FloatingBubbleService
 import com.sayn.app.overlay.OverlayPermissionHelper
 import io.flutter.embedding.android.FlutterActivity
@@ -15,6 +20,26 @@ class MainActivity : FlutterActivity() {
 
     private val OVERLAY_CHANNEL = "com.sayn.app/overlay"
     private val KEYBOARD_CHANNEL = "com.sayn.app/keyboard"
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        checkAndRequestAudioPermission()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (intent?.getBooleanExtra("request_mic_permission", false) == true) {
+            checkAndRequestAudioPermission()
+        }
+    }
+
+    private fun checkAndRequestAudioPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), 101)
+            }
+        }
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -81,6 +106,14 @@ class MainActivity : FlutterActivity() {
                     "setDefaultMode" -> {
                         val mode = call.argument<String>("mode") ?: "standard"
                         prefs.edit().putString("default_mode", mode).apply()
+                        result.success(true)
+                    }
+                    "checkAudioPermission" -> {
+                        val hasMic = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+                        result.success(hasMic)
+                    }
+                    "requestAudioPermission" -> {
+                        checkAndRequestAudioPermission()
                         result.success(true)
                     }
                     "setCustomInstruction" -> {

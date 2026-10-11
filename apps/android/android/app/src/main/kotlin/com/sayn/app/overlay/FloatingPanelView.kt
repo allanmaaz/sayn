@@ -1,10 +1,12 @@
 package com.sayn.app.overlay
 
+import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
@@ -17,6 +19,7 @@ import android.speech.SpeechRecognizer
 import android.view.Gravity
 import android.view.View
 import android.widget.*
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -308,7 +311,16 @@ class FloatingPanelView(
             override fun onEndOfSpeech() { stopDictation() }
             override fun onError(error: Int) {
                 stopDictation()
-                transcriptText.text = "Microphone error ($error). Tap Dictate to retry."
+                if (error == 9) { // INSUFFICIENT_PERMISSIONS
+                    transcriptText.text = "Microphone permission required. Tap Dictate to allow."
+                    val intent = Intent(context, com.sayn.app.MainActivity::class.java).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        putExtra("request_mic_permission", true)
+                    }
+                    context.startActivity(intent)
+                } else {
+                    transcriptText.text = "Microphone paused ($error). Tap Dictate to retry."
+                }
             }
             override fun onResults(results: Bundle?) {
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
@@ -336,6 +348,16 @@ class FloatingPanelView(
     }
 
     private fun startDictation() {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(context, "Microphone permission required for SAYN", Toast.LENGTH_LONG).show()
+            val intent = Intent(context, com.sayn.app.MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                putExtra("request_mic_permission", true)
+            }
+            context.startActivity(intent)
+            return
+        }
+
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())

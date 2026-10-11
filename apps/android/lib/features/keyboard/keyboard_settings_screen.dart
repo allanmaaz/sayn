@@ -11,6 +11,7 @@ class KeyboardSettingsScreen extends StatefulWidget {
 
 class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
   bool _isEnabled = false;
+  bool _hasMicPermission = false;
   bool _isLoading = true;
   String _defaultMode = 'standard';
   final TextEditingController _sandboxController = TextEditingController();
@@ -36,10 +37,12 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
     setState(() => _isLoading = true);
     final enabled = await PlatformChannels.isKeyboardEnabled();
     final mode = await PlatformChannels.getDefaultMode();
+    final micGranted = await PlatformChannels.checkAudioPermission();
     if (mounted) {
       setState(() {
         _isEnabled = enabled;
         _defaultMode = mode;
+        _hasMicPermission = micGranted;
         _isLoading = false;
       });
     }
@@ -169,6 +172,85 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
                             style: TextStyle(fontSize: 12, color: Colors.white),
                           ),
                         ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Microphone Permission Card
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: SaynColors.darkSurface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: SaynColors.darkDivider),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Microphone (Wispr Flow Voice)',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: SaynColors.darkText,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: _hasMicPermission
+                                    ? SaynColors.darkSuccess.withOpacity(0.15)
+                                    : SaynColors.darkWarning.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                _hasMicPermission ? 'Granted' : 'Permission Needed',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: _hasMicPermission
+                                      ? SaynColors.darkSuccess
+                                      : SaynColors.darkWarning,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Required for in-keyboard speech-to-text dictation. Tap below to grant permission if not already enabled.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: SaynColors.darkSecondary,
+                            height: 1.4,
+                          ),
+                        ),
+                        if (!_hasMicPermission) ...[
+                          const SizedBox(height: 12),
+                          ElevatedButton.icon(
+                            onPressed: () async {
+                              await PlatformChannels.requestAudioPermission();
+                              await Future.delayed(const Duration(milliseconds: 500));
+                              _loadState();
+                            },
+                            icon: const Icon(Icons.mic, size: 16, color: Colors.white),
+                            label: const Text(
+                              'Grant Microphone Access',
+                              style: TextStyle(fontSize: 12, color: Colors.white),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: SaynColors.darkAccent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

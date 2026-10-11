@@ -60,19 +60,20 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: v1.0.0
-          name: "SAYN Android Release v1.0.0"
+          tag_name: v1.0.1
+          name: "SAYN Android Release v1.0.1 (iOS Keyboard & Wispr Flow Voice)"
           body: |
-            ### SAYN — Say it. Refine it. Send it.
+            ### SAYN v1.0.1 — Say it. Refine it. Send it.
             Official release for Android.
             
-            **Features:**
-            * Native Android AI Writing Keyboard (QuillBot style)
-            * System-wide Floating Voice Assistant (Wispr Flow style)
-            * Multimodal Speech-to-Text & AI Refinements powered by Google Gemini
+            **What's New in v1.0.1:**
+            * **Authentic iOS 17 Dark Mode Keyboard:** Redesigned keycaps with raised chiclet styling, drop shadows, staggered row spacing, and crisp 22sp white typography (no dot/ellipsis clipping).
+            * **Wispr Flow Real-Time Voice Dictation:** Tap mic to stream real-time partial speech results directly in the keyboard with immediate **"✓ Correct"** commit directly into the active text box.
+            * **Microphone Permissions Flow:** Added automatic microphone permission handling in MainActivity and Keyboard settings.
+            * **AI Style Modes:** Standard, Fluent, Natural, Professional, Casual, Shorten, Expand.
             
             **Installation:**
-            Download `sayn-release.apk` below and install directly on your Android phone.
+            Download `sayn-release.apk` below and install directly on your Android device.
           files: release/sayn-release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

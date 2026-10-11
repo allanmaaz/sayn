@@ -84,9 +84,18 @@ class PlatformChannels {
     } catch (_) {}
   }
 
-  static Future<void> setCustomInstruction(String instruction) async {
+  static Future<bool> checkAudioPermission() async {
     try {
-      await _keyboardChannel.invokeMethod('setCustomInstruction', {'instruction': instruction});
+      final bool hasMic = await _keyboardChannel.invokeMethod('checkAudioPermission');
+      return hasMic;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<void> requestAudioPermission() async {
+    try {
+      await _keyboardChannel.invokeMethod('requestAudioPermission');
     } catch (_) {}
   }
 }
