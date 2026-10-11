@@ -40,7 +40,7 @@ jobs:
       - name: Build Release APK
         run: |
           cd apps/android
-          flutter build apk --release --verbose
+          flutter build apk --release --verbose > build.log 2>&1 || (cat build.log | tail -n 150 && exit 1)
 
       - name: Copy APK to Root Release
         run: |

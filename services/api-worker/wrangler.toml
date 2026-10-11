@@ -6,7 +6,7 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 ENVIRONMENT = "production"
 DEFAULT_AI_PROVIDER = "gemini" # Options: gemini, openai, groq, workers-ai
-SUPABASE_URL = "https://your-project.supabase.co"
+SUPABASE_URL = "https://utevlgdyqqavvtmokwvo.supabase.co"
 
 # Optional AI Bindings for Cloudflare Workers AI (enable when deployed to Cloudflare)
 # [ai]
