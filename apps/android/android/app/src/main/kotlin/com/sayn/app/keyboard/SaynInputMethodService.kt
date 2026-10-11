@@ -676,79 +676,100 @@ class SaynInputMethodService : InputMethodService() {
             return
         }
 
-        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            Toast.makeText(this, "Speech recognition not available on this device", Toast.LENGTH_SHORT).show()
+        // Tear down any previous recognizer session
+        destroySpeechRecognizer()
+
+        val recognizer = createSpeechRecognizerSafe()
+        if (recognizer == null) {
+            Toast.makeText(this, "Speech recognition unavailable on this device", Toast.LENGTH_SHORT).show()
             return
         }
 
-        if (speechRecognizer == null) {
-            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
-                setRecognitionListener(object : RecognitionListener {
-                    override fun onReadyForSpeech(params: Bundle?) {
-                        voiceStatusText.text = "Listening... speak now"
-                    }
-
-                    override fun onBeginningOfSpeech() {
-                        voiceStatusText.text = "Hearing speech..."
-                        voiceStatusDot.setTextColor(Color.parseColor("#34C759")) // Green while actively detecting voice
-                    }
-
-                    override fun onRmsChanged(rmsdB: Float) {}
-
-                    override fun onBufferReceived(buffer: ByteArray?) {}
-
-                    override fun onEndOfSpeech() {
-                        voiceStatusText.text = "Processing speech..."
-                        voiceStatusDot.setTextColor(Color.parseColor("#FF9F0A"))
-                    }
-
-                    override fun onError(error: Int) {
-                        isListening = false
-                        if (error == 9) { // INSUFFICIENT_PERMISSIONS
-                            Toast.makeText(applicationContext, "Microphone permission needed", Toast.LENGTH_SHORT).show()
-                            val intent = Intent(applicationContext, MainActivity::class.java).apply {
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                putExtra("request_mic_permission", true)
-                            }
-                            startActivity(intent)
-                        } else if (error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
-                            if (currentSpokenText.isEmpty()) {
-                                voiceStatusText.text = "No speech detected. Tap mic to retry."
-                            }
-                        } else {
-                            voiceStatusText.text = "Mic error ($error). Tap mic to retry."
-                        }
-                    }
-
-                    override fun onResults(results: Bundle?) {
-                        val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                        if (!matches.isNullOrEmpty()) {
-                            currentSpokenText = matches[0]
-                            voiceTranscriptText.text = currentSpokenText
-                            voiceTranscriptText.setTextColor(Color.WHITE)
-                        }
-                        isListening = false
-                        voiceStatusDot.setTextColor(Color.parseColor("#8E8E93"))
-                        voiceStatusText.text = "✓ Speech captured. Tap Correct to insert."
-                    }
-
-                    override fun onPartialResults(partialResults: Bundle?) {
-                        val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                        if (!matches.isNullOrEmpty()) {
-                            currentSpokenText = matches[0]
-                            voiceTranscriptText.text = currentSpokenText
-                            voiceTranscriptText.setTextColor(Color.WHITE)
-                        }
-                    }
-
-                    override fun onEvent(eventType: Int, params: Bundle?) {}
-                })
+        speechRecognizer = recognizer
+        speechRecognizer?.setRecognitionListener(object : RecognitionListener {
+            override fun onReadyForSpeech(params: Bundle?) {
+                voiceStatusText.text = "Listening... speak now"
             }
-        }
+
+            override fun onBeginningOfSpeech() {
+                voiceStatusText.text = "Hearing speech..."
+                voiceStatusDot.setTextColor(Color.parseColor("#34C759")) // Green while actively detecting voice
+            }
+
+            override fun onRmsChanged(rmsdB: Float) {}
+
+            override fun onBufferReceived(buffer: ByteArray?) {}
+
+            override fun onEndOfSpeech() {
+                voiceStatusText.text = "Processing speech..."
+                voiceStatusDot.setTextColor(Color.parseColor("#FF9F0A"))
+            }
+
+            override fun onError(error: Int) {
+                isListening = false
+                voiceStatusDot.setTextColor(Color.parseColor("#FF453A"))
+
+                // Clean up immediately so subsequent tap works cleanly
+                destroySpeechRecognizer()
+
+                when (error) {
+                    9 -> { // INSUFFICIENT_PERMISSIONS
+                        Toast.makeText(applicationContext, "Microphone permission needed", Toast.LENGTH_SHORT).show()
+                        val intent = Intent(applicationContext, MainActivity::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                            putExtra("request_mic_permission", true)
+                        }
+                        startActivity(intent)
+                    }
+                    5 -> { // ERROR_CLIENT
+                        voiceStatusText.text = "Voice engine initializing. Tap mic to retry."
+                        Toast.makeText(applicationContext, "Speech engine reconnecting. Tap mic again to speak.", Toast.LENGTH_SHORT).show()
+                    }
+                    SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> {
+                        if (currentSpokenText.isEmpty()) {
+                            voiceStatusText.text = "No speech detected. Tap mic to retry."
+                        }
+                    }
+                    SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> {
+                        voiceStatusText.text = "Network timeout. Check internet connection."
+                    }
+                    SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> {
+                        voiceStatusText.text = "Microphone busy. Tap mic to retry."
+                    }
+                    else -> {
+                        voiceStatusText.text = "Mic error ($error). Tap mic to retry."
+                    }
+                }
+            }
+
+            override fun onResults(results: Bundle?) {
+                val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                if (!matches.isNullOrEmpty()) {
+                    currentSpokenText = matches[0]
+                    voiceTranscriptText.text = currentSpokenText
+                    voiceTranscriptText.setTextColor(Color.WHITE)
+                }
+                isListening = false
+                voiceStatusDot.setTextColor(Color.parseColor("#8E8E93"))
+                voiceStatusText.text = "✓ Speech captured. Tap Correct to insert."
+            }
+
+            override fun onPartialResults(partialResults: Bundle?) {
+                val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                if (!matches.isNullOrEmpty()) {
+                    currentSpokenText = matches[0]
+                    voiceTranscriptText.text = currentSpokenText
+                    voiceTranscriptText.setTextColor(Color.WHITE)
+                }
+            }
+
+            override fun onEvent(eventType: Int, params: Bundle?) {}
+        })
 
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+            putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, applicationContext.packageName)
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
         }
@@ -759,7 +780,52 @@ class SaynInputMethodService : InputMethodService() {
             currentSpokenText = ""
             showVoiceLiveBar()
         } catch (e: Exception) {
+            destroySpeechRecognizer()
             Toast.makeText(this, "Could not start microphone", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun createSpeechRecognizerSafe(): SpeechRecognizer? {
+        return try {
+            // Android 13+ on-device recognizer if available
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                SpeechRecognizer.isOnDeviceRecognitionAvailable(applicationContext)
+            ) {
+                return SpeechRecognizer.createOnDeviceSpeechRecognizer(applicationContext)
+            }
+
+            // Check installed RecognitionService components
+            val pm = packageManager
+            val intent = Intent("android.speech.RecognitionService")
+            val services = pm.queryIntentServices(intent, 0)
+
+            val googleService = services.firstOrNull {
+                it.serviceInfo.packageName.contains("google", ignoreCase = true)
+            }
+            if (googleService != null) {
+                val comp = android.content.ComponentName(
+                    googleService.serviceInfo.packageName,
+                    googleService.serviceInfo.name
+                )
+                return SpeechRecognizer.createSpeechRecognizer(applicationContext, comp)
+            }
+
+            if (services.isNotEmpty()) {
+                val first = services[0]
+                val comp = android.content.ComponentName(
+                    first.serviceInfo.packageName,
+                    first.serviceInfo.name
+                )
+                return SpeechRecognizer.createSpeechRecognizer(applicationContext, comp)
+            }
+
+            SpeechRecognizer.createSpeechRecognizer(applicationContext)
+        } catch (e: Exception) {
+            try {
+                SpeechRecognizer.createSpeechRecognizer(applicationContext)
+            } catch (e2: Exception) {
+                null
+            }
         }
     }
 
@@ -770,6 +836,14 @@ class SaynInputMethodService : InputMethodService() {
             } catch (e: Exception) {}
             isListening = false
         }
+        destroySpeechRecognizer()
+    }
+
+    private fun destroySpeechRecognizer() {
+        try {
+            speechRecognizer?.destroy()
+        } catch (e: Exception) {}
+        speechRecognizer = null
     }
 
     // ─────────────────────────────────────────────────────────────────────────────

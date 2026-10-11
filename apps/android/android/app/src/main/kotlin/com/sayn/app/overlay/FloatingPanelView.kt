@@ -35,7 +35,7 @@ class FloatingPanelView(
 ) : LinearLayout(context) {
 
     private val prefs: SharedPreferences = context.getSharedPreferences("com.sayn.app.PREFS", Context.MODE_PRIVATE)
-    private val speechRecognizer: SpeechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
+    private var speechRecognizer: SpeechRecognizer? = null
 
     // UI Elements
     private val transcriptText: TextView
@@ -257,8 +257,6 @@ class FloatingPanelView(
         bottomRow.addView(copyButton)
         bottomRow.addView(shareButton)
         addView(bottomRow)
-
-        setupSpeechRecognizer()
     }
 
     private fun buildWaveformBars() {
@@ -294,12 +292,38 @@ class FloatingPanelView(
         }
     }
 
-    private fun setupSpeechRecognizer() {
-        speechRecognizer.setRecognitionListener(object : RecognitionListener {
+    private fun toggleDictation() {
+        if (isRecording) {
+            stopDictation()
+        } else {
+            startDictation()
+        }
+    }
+
+    private fun startDictation() {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(context, "Microphone permission required for SAYN", Toast.LENGTH_LONG).show()
+            val intent = Intent(context, com.sayn.app.MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                putExtra("request_mic_permission", true)
+            }
+            context.startActivity(intent)
+            return
+        }
+
+        destroySpeechRecognizer()
+
+        val recognizer = createSpeechRecognizerSafe(context)
+        if (recognizer == null) {
+            Toast.makeText(context, "Speech recognition unavailable on this device", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        speechRecognizer = recognizer
+        speechRecognizer?.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {}
             override fun onBeginningOfSpeech() {}
             override fun onRmsChanged(rmsdB: Float) {
-                // Modulate waveform heights slightly with audio energy
                 val boost = Math.max(8, (rmsdB * 2.5f).toInt())
                 for (i in 0 until waveformContainer.childCount) {
                     val bar = waveformContainer.getChildAt(i)
@@ -314,10 +338,12 @@ class FloatingPanelView(
                 if (error == 9) { // INSUFFICIENT_PERMISSIONS
                     transcriptText.text = "Microphone permission required. Tap Dictate to allow."
                     val intent = Intent(context, com.sayn.app.MainActivity::class.java).apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                         putExtra("request_mic_permission", true)
                     }
                     context.startActivity(intent)
+                } else if (error == 5) {
+                    transcriptText.text = "Speech service reconnecting. Tap Dictate again to speak."
                 } else {
                     transcriptText.text = "Microphone paused ($error). Tap Dictate to retry."
                 }
@@ -337,35 +363,16 @@ class FloatingPanelView(
             }
             override fun onEvent(eventType: Int, params: Bundle?) {}
         })
-    }
-
-    private fun toggleDictation() {
-        if (isRecording) {
-            stopDictation()
-        } else {
-            startDictation()
-        }
-    }
-
-    private fun startDictation() {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            Toast.makeText(context, "Microphone permission required for SAYN", Toast.LENGTH_LONG).show()
-            val intent = Intent(context, com.sayn.app.MainActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                putExtra("request_mic_permission", true)
-            }
-            context.startActivity(intent)
-            return
-        }
 
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+            putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
         }
 
         try {
-            speechRecognizer.startListening(intent)
+            speechRecognizer?.startListening(intent)
             isRecording = true
             recordButton.text = "Stop"
             recordButton.setTextColor(Color.parseColor("#FF453A"))
@@ -374,18 +381,68 @@ class FloatingPanelView(
             secondsElapsed = 0
             startTimer()
         } catch (e: Exception) {
+            destroySpeechRecognizer()
             Toast.makeText(context, "Could not access microphone", Toast.LENGTH_SHORT).show()
         }
     }
 
+    private fun createSpeechRecognizerSafe(ctx: Context): SpeechRecognizer? {
+        val appContext = ctx.applicationContext
+        return try {
+            val pm = appContext.packageManager
+            val intent = Intent("android.speech.RecognitionService")
+            val services = pm.queryIntentServices(intent, 0)
+
+            val googleService = services.firstOrNull {
+                it.serviceInfo.packageName.contains("google", ignoreCase = true)
+            }
+            if (googleService != null) {
+                val comp = android.content.ComponentName(
+                    googleService.serviceInfo.packageName,
+                    googleService.serviceInfo.name
+                )
+                return SpeechRecognizer.createSpeechRecognizer(appContext, comp)
+            }
+
+            if (services.isNotEmpty()) {
+                val first = services[0]
+                val comp = android.content.ComponentName(
+                    first.serviceInfo.packageName,
+                    first.serviceInfo.name
+                )
+                return SpeechRecognizer.createSpeechRecognizer(appContext, comp)
+            }
+
+            SpeechRecognizer.createSpeechRecognizer(appContext)
+        } catch (e: Exception) {
+            try {
+                SpeechRecognizer.createSpeechRecognizer(appContext)
+            } catch (e2: Exception) {
+                null
+            }
+        }
+    }
+
     private fun stopDictation() {
-        speechRecognizer.stopListening()
-        isRecording = false
-        recordButton.text = "Dictate"
-        recordButton.setTextColor(Color.WHITE)
-        waveformContainer.visibility = View.GONE
-        timerText.visibility = View.GONE
-        stopTimer()
+        if (isRecording) {
+            try {
+                speechRecognizer?.stopListening()
+            } catch (e: Exception) {}
+            isRecording = false
+            recordButton.text = "Dictate"
+            recordButton.setTextColor(Color.WHITE)
+            waveformContainer.visibility = View.GONE
+            timerText.visibility = View.GONE
+            stopTimer()
+        }
+        destroySpeechRecognizer()
+    }
+
+    private fun destroySpeechRecognizer() {
+        try {
+            speechRecognizer?.destroy()
+        } catch (e: Exception) {}
+        speechRecognizer = null
     }
 
     private fun startTimer() {

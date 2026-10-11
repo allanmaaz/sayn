@@ -60,11 +60,17 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: v1.0.1
-          name: "SAYN Android Release v1.0.1 (iOS Keyboard & Wispr Flow Voice)"
+          tag_name: v1.0.2
+          name: "SAYN Android Release v1.0.2 (Fixed Mic Error 5 & Speech Recognition)"
           body: |
-            ### SAYN v1.0.1 — Say it. Refine it. Send it.
+            ### SAYN v1.0.2 — Say it. Refine it. Send it.
             Official release for Android.
+            
+            **What's New in v1.0.2:**
+            * **Fixed Microphone Error 5:** Added Android 11+ `<queries>` package visibility for RecognitionService (`com.google.android.googlequicksearchbox`).
+            * **Safe SpeechRecognizer Lifecycle:** Added automatic component discovery, `EXTRA_CALLING_PACKAGE`, and clean session destruction to prevent client state corruption.
+            * **Authentic iOS 17 Dark Mode Keyboard:** Raised chiclet keycaps with drop shadows, indented Row 2, and crisp 22.5sp white typography without text clipping.
+            * **Wispr Flow Direct Commit:** Real-time partial transcription and instant **"✓ Correct"** commit directly into the active typing box.
             
             **What's New in v1.0.1:**
             * **Authentic iOS 17 Dark Mode Keyboard:** Redesigned keycaps with raised chiclet styling, drop shadows, staggered row spacing, and crisp 22sp white typography (no dot/ellipsis clipping).
