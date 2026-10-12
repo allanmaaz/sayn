@@ -89,6 +89,16 @@ class MainActivity : FlutterActivity() {
                     "isOverlayRunning" -> {
                         result.success(FloatingBubbleService.isRunning)
                     }
+                    "checkAccessibilityPermission" -> {
+                        result.success(com.sayn.app.service.SaynAccessibilityService.isConnected)
+                    }
+                    "openAccessibilitySettings" -> {
+                        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        startActivity(intent)
+                        result.success(null)
+                    }
                     else -> result.notImplemented()
                 }
             }

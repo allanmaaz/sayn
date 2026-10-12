@@ -52,6 +52,22 @@ class PlatformChannels {
     }
   }
 
+  static Future<bool> checkAccessibilityPermission() async {
+    try {
+      final bool connected =
+          await _overlayChannel.invokeMethod('checkAccessibilityPermission') ?? false;
+      return connected;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<void> openAccessibilitySettings() async {
+    try {
+      await _overlayChannel.invokeMethod('openAccessibilitySettings');
+    } catch (_) {}
+  }
+
   // Keyboard Methods
   static Future<void> openKeyboardSettings() async {
     try {

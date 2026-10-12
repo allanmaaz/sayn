@@ -11,6 +11,7 @@ class OverlaySettingsScreen extends StatefulWidget {
 
 class _OverlaySettingsScreenState extends State<OverlaySettingsScreen> {
   bool _hasPermission = false;
+  bool _hasAccessibilityPermission = false;
   bool _isRunning = false;
   bool _isLoading = true;
 
@@ -23,10 +24,12 @@ class _OverlaySettingsScreenState extends State<OverlaySettingsScreen> {
   Future<void> _checkStatus() async {
     setState(() => _isLoading = true);
     final hasPerm = await PlatformChannels.checkOverlayPermission();
+    final hasAccess = await PlatformChannels.checkAccessibilityPermission();
     final running = await PlatformChannels.isOverlayRunning();
     if (mounted) {
       setState(() {
         _hasPermission = hasPerm;
+        _hasAccessibilityPermission = hasAccess;
         _isRunning = running;
         _isLoading = false;
       });
@@ -169,6 +172,91 @@ class _OverlaySettingsScreenState extends State<OverlaySettingsScreen> {
                               'Open System Settings',
                               style: TextStyle(
                                   fontSize: 12, color: SaynColors.darkAccent),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Universal Accessibility Card (Wispr Flow style across ALL keyboards)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: SaynColors.darkSurface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0x337E57C2)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: const [
+                                Icon(Icons.all_inclusive_rounded, color: Color(0xFFB388FF), size: 18),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Universal Voice Across Any Keyboard',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: _hasAccessibilityPermission
+                                    ? SaynColors.darkSuccess.withOpacity(0.15)
+                                    : const Color(0x227E57C2),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                _hasAccessibilityPermission ? 'Active' : 'Enable',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: _hasAccessibilityPermission
+                                      ? SaynColors.darkSuccess
+                                      : const Color(0xFFB388FF),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Allows the Wispr voice pill to automatically show whenever you type using Gboard, Samsung Keyboard, or SwiftKey, and types your speech directly into the chat.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: SaynColors.darkSecondary,
+                            height: 1.4,
+                          ),
+                        ),
+                        if (!_hasAccessibilityPermission) ...[
+                          const SizedBox(height: 12),
+                          OutlinedButton(
+                            onPressed: () async {
+                              await PlatformChannels.openAccessibilitySettings();
+                              await Future.delayed(const Duration(milliseconds: 600));
+                              _checkStatus();
+                            },
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Color(0xFF7E57C2)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text(
+                              'Enable in Accessibility Settings',
+                              style: TextStyle(
+                                  fontSize: 12, color: Color(0xFFB388FF)),
                             ),
                           ),
                         ],

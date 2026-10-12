@@ -1,0 +1,4 @@
+.build/
+*.build
+sayn_mac_bin
+.swiftpm/

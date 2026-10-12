@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SAYN</string>
+    <string name="accessibility_service_description">Enables SAYN to display the floating voice assistant and type speech directly into any chat or text field across all keyboards.</string>
+</resources>
