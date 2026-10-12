@@ -64,6 +64,19 @@ class SaynInputMethodService : InputMethodService() {
     private lateinit var btnCopy: TextView
     private lateinit var btnDismiss: TextView
 
+    // Full AI Assistant Panel (Matching Screenshot 2)
+    private lateinit var fullAiPanelContainer: LinearLayout
+    private lateinit var aiPanelModesRow: LinearLayout
+    private lateinit var aiCardTitle: TextView
+    private lateinit var aiCardDiffWord: TextView
+    private lateinit var aiCardDiffBadge: TextView
+    private lateinit var aiCardPreview: TextView
+    private lateinit var btnAiAccept: TextView
+    private lateinit var btnAiDismiss: TextView
+    private lateinit var btnAiBackToKeyboard: FrameLayout
+    private lateinit var aiPagerIndicator: TextView
+    private lateinit var btnAiAcceptAll: TextView
+
     // State Variables
     private var isSensitiveField = false
     private var symbolLayoutMode = 0 // 0 = Letters, 1 = 123, 2 = #+=
@@ -71,7 +84,7 @@ class SaynInputMethodService : InputMethodService() {
     private var isCapsLock = false
     private var lastShiftPressTime = 0L
     private var isRefining = false
-    private var activeMode = "standard"
+    private var activeMode = "grammar"
     private var lastSuggestion = ""
     private var lastOriginalText = ""
 
@@ -84,15 +97,15 @@ class SaynInputMethodService : InputMethodService() {
     private val deleteHandler = Handler(Looper.getMainLooper())
     private var deleteRunnable: Runnable? = null
 
-    // Writing Modes (QuillBot & Wispr Flow style)
+    // Writing Modes (QuillBot, Grammarly & Wispr Flow style)
     private val modes = listOf(
-        "standard" to "Standard",
-        "fluent" to "Fluent",
-        "natural" to "Natural",
+        "grammar" to "Grammar",
+        "rewrite" to "Rewrite",
+        "humanize" to "Humanize",
+        "flow" to "Flow",
         "professional" to "Professional",
         "casual" to "Casual",
-        "shorten" to "Shorten",
-        "expand" to "Expand"
+        "shorten" to "Shorten"
     )
  
     companion object {
@@ -147,6 +160,7 @@ class SaynInputMethodService : InputMethodService() {
         buildVoiceLiveBar()
         buildSuggestionArea()
         buildAiToolbar()
+        buildFullAiPanel()
         buildKeysLayout()
 
         return rootLayout
@@ -175,6 +189,12 @@ class SaynInputMethodService : InputMethodService() {
 
         hideVoiceLiveBar()
         hideSuggestionArea()
+        if (::fullAiPanelContainer.isInitialized) {
+            fullAiPanelContainer.visibility = View.GONE
+        }
+        if (::keysContainer.isInitialized) {
+            keysContainer.visibility = View.VISIBLE
+        }
 
         if (isSensitiveField) {
             aiToolbar.visibility = View.GONE
@@ -194,6 +214,12 @@ class SaynInputMethodService : InputMethodService() {
         com.sayn.app.overlay.FloatingBubbleService.setKeyboardActive(false)
         stopInKeyboardVoice()
         hideVoiceLiveBar()
+        if (::fullAiPanelContainer.isInitialized) {
+            fullAiPanelContainer.visibility = View.GONE
+        }
+        if (::keysContainer.isInitialized) {
+            keysContainer.visibility = View.VISIBLE
+        }
     }
 
     override fun onWindowHidden() {
@@ -549,7 +575,7 @@ class SaynInputMethodService : InputMethodService() {
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // 3. SAYN AI Toolbar & Writing-Style Selector
+    // 3. SAYN AI Toolbar (With Purple Sparkle Button [✨] & Mic [🎤])
     // ─────────────────────────────────────────────────────────────────────────────
 
     private fun buildAiToolbar() {
@@ -561,33 +587,14 @@ class SaynInputMethodService : InputMethodService() {
                 setColor(Color.parseColor("#222225"))
             }
             background = bg
-            setPadding(dpToPx(5), dpToPx(2), dpToPx(5), dpToPx(2))
+            setPadding(dpToPx(6), dpToPx(2), dpToPx(6), dpToPx(2))
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                dpToPx(38)
+                dpToPx(40)
             ).apply { bottomMargin = dpToPx(4) }
         }
 
-        // Voice Dictation Quick Button inside Toolbar
-        val btnVoice = TextView(this).apply {
-            text = "🎤 Voice"
-            textSize = 11f
-            setTextColor(Color.parseColor("#5DE4FF")) // Audio cyan
-            typeface = Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER
-            setPadding(dpToPx(8), 0, dpToPx(8), 0)
-            setOnClickListener {
-                vibrateTap()
-                toggleInKeyboardVoice()
-            }
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                dpToPx(30)
-            )
-        }
-        aiToolbar.addView(btnVoice)
-
-        // Writing-Style Horizontal Pills ScrollView
+        // Left: Writing-Style Horizontal Pills ScrollView
         val pillsScroll = HorizontalScrollView(this).apply {
             isHorizontalScrollBarEnabled = false
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -601,27 +608,27 @@ class SaynInputMethodService : InputMethodService() {
         for ((modeId, label) in modes) {
             val pill = TextView(this).apply {
                 text = label
-                textSize = 11f
+                textSize = 11.5f
                 gravity = Gravity.CENTER
                 val isSelected = modeId == activeMode
-                setTextColor(if (isSelected) Color.WHITE else Color.parseColor("#8E8E93"))
+                setTextColor(if (isSelected) Color.WHITE else Color.parseColor("#9CA3AF"))
                 val pillBg = GradientDrawable().apply {
                     cornerRadius = dpToPx(13).toFloat()
                     setColor(if (isSelected) Color.parseColor("#007AFF") else Color.parseColor("#2C2C2E"))
                 }
                 background = pillBg
-                setPadding(dpToPx(11), 0, dpToPx(11), 0)
+                setPadding(dpToPx(12), 0, dpToPx(12), 0)
                 setOnClickListener {
-                    vibrateTap()
+                    triggerKeyFeedback("SPACE")
                     activeMode = modeId
                     getSharedPreferences("com.sayn.app.PREFS", Context.MODE_PRIVATE)
                         .edit().putString("default_mode", modeId).apply()
                     updateToolbarPills(pillsRow)
-                    triggerRefinement(modeId)
+                    openFullAiPanel(modeId)
                 }
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
-                    dpToPx(27)
+                    dpToPx(28)
                 ).apply {
                     marginStart = dpToPx(2)
                     marginEnd = dpToPx(2)
@@ -632,6 +639,61 @@ class SaynInputMethodService : InputMethodService() {
 
         pillsScroll.addView(pillsRow)
         aiToolbar.addView(pillsScroll)
+
+        // Right 1: The Purple Sparkle Circle Button [ ✨ ] (Screenshot 1)
+        val btnSparkle = FrameLayout(this).apply {
+            val sBg = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(Color.parseColor("#A855F7")) // Vibrant Purple
+            }
+            background = sBg
+            isClickable = true
+            isFocusable = false
+            layoutParams = LinearLayout.LayoutParams(dpToPx(34), dpToPx(34)).apply {
+                marginStart = dpToPx(6)
+            }
+
+            val sIcon = ImageView(this@SaynInputMethodService).apply {
+                setImageResource(R.drawable.ic_sayn_sparkles)
+                setColorFilter(Color.WHITE)
+                layoutParams = FrameLayout.LayoutParams(dpToPx(18), dpToPx(18), Gravity.CENTER)
+            }
+            addView(sIcon)
+
+            setOnClickListener {
+                triggerKeyFeedback("ENTER")
+                openFullAiPanel(activeMode)
+            }
+        }
+        aiToolbar.addView(btnSparkle)
+
+        // Right 2: The Voice Dictation Mic Circle Button [ 🎤 ] (Screenshot 1)
+        val btnVoice = FrameLayout(this).apply {
+            val vBg = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(Color.parseColor("#2C2C2E"))
+                setStroke(dpToPx(1f), Color.parseColor("#44FFFFFF"))
+            }
+            background = vBg
+            isClickable = true
+            isFocusable = false
+            layoutParams = LinearLayout.LayoutParams(dpToPx(34), dpToPx(34)).apply {
+                marginStart = dpToPx(5)
+            }
+
+            val vIcon = ImageView(this@SaynInputMethodService).apply {
+                setImageResource(R.drawable.ic_sayn_mic)
+                setColorFilter(Color.parseColor("#E5E7EB"))
+                layoutParams = FrameLayout.LayoutParams(dpToPx(17), dpToPx(17), Gravity.CENTER)
+            }
+            addView(vIcon)
+
+            setOnClickListener {
+                triggerKeyFeedback("SPACE")
+                toggleInKeyboardVoice()
+            }
+        }
+        aiToolbar.addView(btnVoice)
 
         rootLayout.addView(aiToolbar)
     }
@@ -648,6 +710,389 @@ class SaynInputMethodService : InputMethodService() {
             }
             pill.background = pillBg
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 4. Full AI Assistant Panel (Matching Screenshot 2)
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    private fun buildFullAiPanel() {
+        fullAiPanelContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+            val bg = GradientDrawable().apply {
+                setColor(Color.parseColor("#151A17"))
+                cornerRadius = dpToPx(12).toFloat()
+            }
+            background = bg
+            setPadding(dpToPx(8), dpToPx(6), dpToPx(8), dpToPx(8))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dpToPx(270) // Matches keyboard height perfectly!
+            )
+        }
+
+        // 1. Top Strip: Mode Pills (Grammar, Rewrite, Humanize, Flow, Professional, etc.)
+        val modesScroll = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = dpToPx(8) }
+        }
+
+        aiPanelModesRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+
+        for ((mId, mLabel) in modes) {
+            val pill = TextView(this).apply {
+                text = if (mId == "grammar") "② $mLabel" else mLabel
+                textSize = 12f
+                typeface = Typeface.DEFAULT_BOLD
+                gravity = Gravity.CENTER
+                setPadding(dpToPx(13), 0, dpToPx(13), 0)
+                val isSelected = mId == activeMode
+                setTextColor(if (isSelected) Color.parseColor("#22C55E") else Color.parseColor("#9CA3AF"))
+                val pBg = GradientDrawable().apply {
+                    cornerRadius = dpToPx(15).toFloat()
+                    setColor(if (isSelected) Color.parseColor("#223829") else Color.parseColor("#202522"))
+                    if (isSelected) setStroke(dpToPx(1.2f), Color.parseColor("#22C55E"))
+                }
+                background = pBg
+                setOnClickListener {
+                    triggerKeyFeedback("SPACE")
+                    activeMode = mId
+                    updateAiPanelModesHighlight()
+                    runFullAiRefinement(mId)
+                }
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    dpToPx(30)
+                ).apply {
+                    marginEnd = dpToPx(6)
+                }
+            }
+            aiPanelModesRow.addView(pill)
+        }
+        modesScroll.addView(aiPanelModesRow)
+        fullAiPanelContainer.addView(modesScroll)
+
+        // 2. Center: Suggestion Card (Matching Screenshot 2)
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            val cardBg = GradientDrawable().apply {
+                cornerRadius = dpToPx(14).toFloat()
+                setColor(Color.parseColor("#1D2420"))
+                setStroke(dpToPx(1f), Color.parseColor("#2C3A30"))
+            }
+            background = cardBg
+            setPadding(dpToPx(14), dpToPx(12), dpToPx(14), dpToPx(10))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            )
+        }
+
+        aiCardTitle = TextView(this).apply {
+            text = "• Refinement"
+            textSize = 12f
+            setTextColor(Color.parseColor("#A1A1AA"))
+            setPadding(0, 0, 0, dpToPx(4))
+        }
+        card.addView(aiCardTitle)
+
+        val diffRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dpToPx(2), 0, dpToPx(6))
+        }
+        aiCardDiffWord = TextView(this).apply {
+            text = ""
+            textSize = 17f
+            setTextColor(Color.WHITE)
+            typeface = Typeface.DEFAULT_BOLD
+        }
+        aiCardDiffBadge = TextView(this).apply {
+            text = ""
+            textSize = 15f
+            setTextColor(Color.parseColor("#4ADE80"))
+            typeface = Typeface.DEFAULT_BOLD
+            val badgeBg = GradientDrawable().apply {
+                cornerRadius = dpToPx(4).toFloat()
+                setColor(Color.parseColor("#143521"))
+                setStroke(dpToPx(1f), Color.parseColor("#22C55E"))
+            }
+            background = badgeBg
+            setPadding(dpToPx(5), dpToPx(1), dpToPx(5), dpToPx(1))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { marginStart = dpToPx(4) }
+        }
+        diffRow.addView(aiCardDiffWord)
+        diffRow.addView(aiCardDiffBadge)
+        card.addView(diffRow)
+
+        aiCardPreview = TextView(this).apply {
+            text = "Type text to inspect refinement..."
+            textSize = 13.5f
+            setTextColor(Color.parseColor("#D1D5DB"))
+            maxLines = 3
+            ellipsize = android.text.TextUtils.TruncateAt.END
+        }
+        card.addView(aiCardPreview)
+
+        val cardActionsRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dpToPx(8), 0, 0)
+        }
+
+        btnAiAccept = TextView(this).apply {
+            text = "Accept"
+            textSize = 12.5f
+            setTextColor(Color.parseColor("#F3F4F6"))
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            val aBg = GradientDrawable().apply {
+                cornerRadius = dpToPx(14).toFloat()
+                setColor(Color.parseColor("#2B382F"))
+                setStroke(dpToPx(1f), Color.parseColor("#3B5041"))
+            }
+            background = aBg
+            setPadding(dpToPx(18), 0, dpToPx(18), 0)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                dpToPx(30)
+            )
+            setOnClickListener {
+                triggerKeyFeedback("ENTER")
+                handleAcceptCurrentSuggestion()
+            }
+        }
+
+        btnAiDismiss = TextView(this).apply {
+            text = "Dismiss"
+            textSize = 12.5f
+            setTextColor(Color.parseColor("#9CA3AF"))
+            gravity = Gravity.CENTER
+            setPadding(dpToPx(14), 0, dpToPx(14), 0)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                dpToPx(30)
+            ).apply { marginStart = dpToPx(8) }
+            setOnClickListener {
+                triggerKeyFeedback("DEL")
+                closeFullAiPanel()
+            }
+        }
+
+        cardActionsRow.addView(btnAiAccept)
+        cardActionsRow.addView(btnAiDismiss)
+        card.addView(cardActionsRow)
+
+        fullAiPanelContainer.addView(card)
+
+        // 3. Bottom Navigation Bar: [ ⌨ (Back to Keyboard) ]  • •  [ Accept all ]
+        val bottomBar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dpToPx(8), 0, 0)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dpToPx(44)
+            )
+        }
+
+        // Bottom Left: The Keyboard Button to go back to typing!
+        btnAiBackToKeyboard = FrameLayout(this).apply {
+            val kBg = GradientDrawable().apply {
+                cornerRadius = dpToPx(9).toFloat()
+                setColor(Color.parseColor("#262C27"))
+                setStroke(dpToPx(1f), Color.parseColor("#38423A"))
+            }
+            background = kBg
+            isClickable = true
+            isFocusable = false
+            layoutParams = LinearLayout.LayoutParams(dpToPx(42), dpToPx(38))
+
+            val kIcon = ImageView(this@SaynInputMethodService).apply {
+                setImageResource(R.drawable.ic_sayn_keyboard)
+                setColorFilter(Color.parseColor("#E5E7EB"))
+                layoutParams = FrameLayout.LayoutParams(
+                    dpToPx(20),
+                    dpToPx(20),
+                    Gravity.CENTER
+                )
+            }
+            addView(kIcon)
+
+            setOnClickListener {
+                triggerKeyFeedback("SPACE")
+                closeFullAiPanel()
+            }
+        }
+        bottomBar.addView(btnAiBackToKeyboard)
+
+        // Center: Pagination Dots • •
+        aiPagerIndicator = TextView(this).apply {
+            text = "• •"
+            textSize = 18f
+            setTextColor(Color.parseColor("#9CA3AF"))
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
+        }
+        bottomBar.addView(aiPagerIndicator)
+
+        // Bottom Right: [ Accept all ] Pill Button in vibrant green
+        btnAiAcceptAll = TextView(this).apply {
+            text = "Accept all"
+            textSize = 13.5f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(Color.parseColor("#052E16")) // Deep dark green text on bright green pill
+            gravity = Gravity.CENTER
+            val accBg = GradientDrawable().apply {
+                cornerRadius = dpToPx(19).toFloat()
+                setColor(Color.parseColor("#22C55E")) // Vibrant emerald green
+            }
+            background = accBg
+            setPadding(dpToPx(22), 0, dpToPx(22), 0)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                dpToPx(38)
+            )
+            setOnClickListener {
+                triggerKeyFeedback("ENTER")
+                handleAcceptAllSuggestions()
+            }
+        }
+        bottomBar.addView(btnAiAcceptAll)
+
+        fullAiPanelContainer.addView(bottomBar)
+
+        rootLayout.addView(fullAiPanelContainer)
+    }
+
+    private fun updateAiPanelModesHighlight() {
+        for (i in 0 until aiPanelModesRow.childCount) {
+            val pill = aiPanelModesRow.getChildAt(i) as? TextView ?: continue
+            val (mId, _) = modes.getOrNull(i) ?: continue
+            val isSelected = mId == activeMode
+            pill.setTextColor(if (isSelected) Color.parseColor("#22C55E") else Color.parseColor("#9CA3AF"))
+            val pBg = GradientDrawable().apply {
+                cornerRadius = dpToPx(15).toFloat()
+                setColor(if (isSelected) Color.parseColor("#223829") else Color.parseColor("#202522"))
+                if (isSelected) setStroke(dpToPx(1.2f), Color.parseColor("#22C55E"))
+            }
+            pill.background = pBg
+        }
+    }
+
+    private fun openFullAiPanel(mode: String = activeMode) {
+        val ic = currentInputConnection ?: return
+        val selected = ic.getSelectedText(0)?.toString()
+        val textToTransform = if (!selected.isNullOrBlank()) {
+            selected.trim()
+        } else {
+            (ic.getTextBeforeCursor(400, 0)?.toString() ?: "").trim()
+        }
+
+        lastOriginalText = textToTransform
+        keysContainer.visibility = View.GONE
+        aiToolbar.visibility = View.GONE
+        voiceLiveBar.visibility = View.GONE
+        suggestionArea.visibility = View.GONE
+        fullAiPanelContainer.visibility = View.VISIBLE
+
+        if (textToTransform.isBlank()) {
+            aiCardTitle.text = "• Input Empty"
+            aiCardDiffWord.text = "Type some words first"
+            aiCardDiffBadge.text = ""
+            aiCardPreview.text = "Tap the keyboard button at bottom left [⌨] to type a message, then tap the purple sparkle [✨] to polish it!"
+            return
+        }
+
+        runFullAiRefinement(mode)
+    }
+
+    private fun closeFullAiPanel() {
+        fullAiPanelContainer.visibility = View.GONE
+        keysContainer.visibility = View.VISIBLE
+        aiToolbar.visibility = if (isSensitiveField) View.GONE else View.VISIBLE
+    }
+
+    private fun runFullAiRefinement(mode: String) {
+        if (lastOriginalText.isBlank()) return
+        aiCardTitle.text = "• Refining (${mode.capitalize()})..."
+        aiCardDiffWord.text = "Analyzing..."
+        aiCardDiffBadge.text = ""
+        aiCardPreview.text = "SAYN AI is polishing your text..."
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val refined = requestAiRefinement(lastOriginalText, mode)
+                withContext(Dispatchers.Main) {
+                    lastSuggestion = refined
+                    aiCardTitle.text = when (mode) {
+                        "grammar" -> "• Grammar correction"
+                        "flow" -> "• Flow optimization"
+                        "professional" -> "• Professional polish"
+                        "humanize" -> "• Humanized tone"
+                        else -> "• ${mode.capitalize()} Polish"
+                    }
+                    val diff = extractDiffSnippet(lastOriginalText, refined)
+                    aiCardDiffWord.text = diff.first
+                    aiCardDiffBadge.text = diff.second
+                    aiCardPreview.text = refined
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    aiCardTitle.text = "• Offline Mode"
+                    aiCardDiffWord.text = "Could not reach AI"
+                    aiCardDiffBadge.text = ""
+                    aiCardPreview.text = lastOriginalText
+                }
+            }
+        }
+    }
+
+    private fun extractDiffSnippet(original: String, refined: String): Pair<String, String> {
+        val origWords = original.split(" ")
+        val refWords = refined.split(" ")
+        for (i in 0 until minOf(origWords.size, refWords.size)) {
+            if (origWords[i] != refWords[i]) {
+                return Pair(origWords[i], "[${refWords[i]}]")
+            }
+        }
+        if (refWords.size > origWords.size) {
+            return Pair(origWords.lastOrNull() ?: "", "[+${refWords.takeLast(refWords.size - origWords.size).joinToString(" ")}]")
+        }
+        return Pair("Refined", "✓")
+    }
+
+    private fun handleAcceptCurrentSuggestion() {
+        val ic = currentInputConnection ?: return
+        if (lastSuggestion.isNotEmpty()) {
+            val selected = ic.getSelectedText(0)?.toString()
+            if (!selected.isNullOrBlank()) {
+                ic.commitText(lastSuggestion, 1)
+            } else {
+                val textBefore = ic.getTextBeforeCursor(lastOriginalText.length, 0)?.toString() ?: ""
+                if (textBefore.isNotEmpty()) {
+                    ic.deleteSurroundingText(textBefore.length, 0)
+                }
+                ic.commitText(lastSuggestion, 1)
+            }
+            Toast.makeText(this, "Accepted & replaced!", Toast.LENGTH_SHORT).show()
+        }
+        closeFullAiPanel()
+    }
+
+    private fun handleAcceptAllSuggestions() {
+        handleAcceptCurrentSuggestion()
     }
 
     // ─────────────────────────────────────────────────────────────────────────────

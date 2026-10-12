@@ -60,19 +60,24 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: v1.0.6
-          name: "SAYN Android Release v1.0.6 (Typing Sound, Haptic Vibration Toggles & Vector Mic Icon)"
+          tag_name: v1.0.7
+          name: "SAYN Android Release v1.0.7 (Grammarly/Wispr AI Suggestion Panel & Keyboard Switcher)"
           body: |
-            ### SAYN v1.0.6 — Say it. Refine it. Send it.
+            ### SAYN v1.0.7 — Say it. Refine it. Send it.
             Official release for Android.
             
-            **What's New in v1.0.6:**
+            **What's New in v1.0.7:**
+            * **Purple Sparkle AI Button [ ✨ ] & Full AI Assistant Panel:**
+              - Tap the vibrant purple sparkle button above the keyboard to open the full Grammarly/Wispr writing assistant.
+              - Explore writing modes: **Grammar**, **Rewrite**, **Humanize**, **Flow**, **Professional**, **Casual**, and **Shorten**.
+              - Interactive diff card with highlighted changes, preview sentence, and instant **Accept** or **Dismiss**.
+            * **Bottom-Left Keyboard Button [ ⌨ ] to Return:**
+              - Added a dedicated keyboard icon button on the bottom-left of the AI panel to smoothly switch back to the QWERTY keyboard anytime.
+              - Prominent **[ Accept all ]** green button on bottom right to apply all refinements at once.
             * **Keypress Haptic Vibration & Mechanical Sound Toggles:**
-              - Added dedicated settings card in SAYN app for keypress vibration and click sounds.
-              - Customizable vibration intensity: Subtle, Crisp, Strong.
-              - Toggle mechanical iOS click audio on/off anytime.
+              - Customizable haptics and mechanical click sounds in Keyboard Settings.
             * **Clean Modern Vector Mic & Globe Icons:**
-              - Removed cartoon emoji microphone and globe icons.
+              - Replaced emojis with crisp Material/iOS vector icons.
               - Replaced with crisp, razor-sharp vector icons in keyboard chiclets and floating squircle.
             * **Universal Voice Across ANY Keyboard (Wispr Flow Style):**
               - Works automatically with Gboard, Samsung Keyboard, SwiftKey, or ANY keyboard on your phone!
