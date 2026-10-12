@@ -272,7 +272,7 @@ class SaynInputMethodService : InputMethodService() {
         }
         cancelCircle.addView(cancelText)
         cancelCircle.setOnClickListener {
-            vibrateTap()
+            triggerKeyFeedback("DEL")
             stopInKeyboardVoice()
             hideVoiceLiveBar()
         }
@@ -345,7 +345,7 @@ class SaynInputMethodService : InputMethodService() {
         }
         confirmCircle.addView(btnCorrectAndInsert)
         confirmCircle.setOnClickListener {
-            vibrateTap()
+            triggerKeyFeedback("ENTER")
             stopInKeyboardVoice()
             commitSpokenTextToInput()
         }
@@ -1024,9 +1024,17 @@ class SaynInputMethodService : InputMethodService() {
         aiToolbar.visibility = if (isSensitiveField) View.GONE else View.VISIBLE
     }
 
+    private fun formatModeTitle(mode: String): String {
+        return if (mode.isNotEmpty()) {
+            mode.substring(0, 1).uppercase(Locale.ROOT) + mode.substring(1)
+        } else {
+            mode
+        }
+    }
+
     private fun runFullAiRefinement(mode: String) {
         if (lastOriginalText.isBlank()) return
-        aiCardTitle.text = "• Refining (${mode.capitalize()})..."
+        aiCardTitle.text = "• Refining (${formatModeTitle(mode)})..."
         aiCardDiffWord.text = "Analyzing..."
         aiCardDiffBadge.text = ""
         aiCardPreview.text = "SAYN AI is polishing your text..."
@@ -1041,7 +1049,7 @@ class SaynInputMethodService : InputMethodService() {
                         "flow" -> "• Flow optimization"
                         "professional" -> "• Professional polish"
                         "humanize" -> "• Humanized tone"
-                        else -> "• ${mode.capitalize()} Polish"
+                        else -> "• ${formatModeTitle(mode)} Polish"
                     }
                     val diff = extractDiffSnippet(lastOriginalText, refined)
                     aiCardDiffWord.text = diff.first
@@ -1062,7 +1070,8 @@ class SaynInputMethodService : InputMethodService() {
     private fun extractDiffSnippet(original: String, refined: String): Pair<String, String> {
         val origWords = original.split(" ")
         val refWords = refined.split(" ")
-        for (i in 0 until minOf(origWords.size, refWords.size)) {
+        val limit = Math.min(origWords.size, refWords.size)
+        for (i in 0 until limit) {
             if (origWords[i] != refWords[i]) {
                 return Pair(origWords[i], "[${refWords[i]}]")
             }
@@ -1701,6 +1710,10 @@ class SaynInputMethodService : InputMethodService() {
         } else {
             ic.commitText("\n", 1)
         }
+    }
+
+    private fun vibrateTap() {
+        triggerKeyFeedback("SPACE")
     }
 
     private fun triggerKeyFeedback(key: String) {
