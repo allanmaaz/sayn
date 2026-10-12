@@ -60,13 +60,16 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: v1.0.7
-          name: "SAYN Android Release v1.0.7 (Grammarly/Wispr AI Suggestion Panel & Keyboard Switcher)"
+          tag_name: v1.0.8
+          name: "SAYN Android Release v1.0.8 (Permanent Keystore Signing & In-Place Direct Updates)"
           body: |
-            ### SAYN v1.0.7 — Say it. Refine it. Send it.
+            ### SAYN v1.0.8 — Say it. Refine it. Send it.
             Official release for Android.
             
-            **What's New in v1.0.7:**
+            **What's New in v1.0.8:**
+            * **Permanent Release Keystore Signing (FIXES "App Not Installed"):**
+              - Fixed Android signature mismatch error permanently. Every release is now signed with the exact same permanent release keystore.
+              - In-place updates directly on top of the installed app now work seamlessly without ever needing intermediate versions or uninstalling in the future!
             * **Purple Sparkle AI Button [ ✨ ] & Full AI Assistant Panel:**
               - Tap the vibrant purple sparkle button above the keyboard to open the full Grammarly/Wispr writing assistant.
               - Explore writing modes: **Grammar**, **Rewrite**, **Humanize**, **Flow**, **Professional**, **Casual**, and **Shorten**.

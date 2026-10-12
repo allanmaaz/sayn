@@ -26,11 +26,20 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        release {
+            storeFile file('sayn-release.jks')
+            storePassword 'saynpassword'
+            keyAlias 'sayn'
+            keyPassword 'saynpassword'
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig = signingConfigs.debug
-            minifyEnabled = false
-            shrinkResources = false
+            signingConfig signingConfigs.release
+            minifyEnabled false
+            shrinkResources false
         }
     }
 }
