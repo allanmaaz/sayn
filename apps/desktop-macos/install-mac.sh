@@ -5,7 +5,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR"
 
 echo "⚡ Compiling SAYN macOS Desktop App..."
-swiftc -framework Cocoa -framework SwiftUI -framework Carbon -framework AVFoundation \
+swiftc -framework Cocoa -framework SwiftUI -framework Carbon -framework AVFoundation -framework Speech \
   Sources/SaynMac/*.swift -o /tmp/sayn_mac_bin
 
 APP_DIR="/Applications/SAYN.app/Contents/MacOS"
@@ -27,9 +27,13 @@ cat << 'EOF' > /Applications/SAYN.app/Contents/Info.plist
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.5</string>
+    <string>1.0.8</string>
     <key>LSUIElement</key>
     <true/>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>SAYN uses your microphone for real-time speech dictation and waveform visualization.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>SAYN uses speech recognition to transcribe your voice directly into your active apps.</string>
 </dict>
 </plist>
 EOF

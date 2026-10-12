@@ -71,7 +71,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         currentTranscript = ""
         pillWindow?.centerOnScreen()
         pillWindow?.orderFrontRegardless()
-        waveformEngine.startRecording()
+        waveformEngine.startRecording { [weak self] transcript in
+            self?.currentTranscript = transcript
+        }
     }
     
     private func hidePill() {
