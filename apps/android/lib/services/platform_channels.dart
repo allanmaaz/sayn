@@ -115,6 +115,32 @@ class PlatformChannels {
     } catch (_) {}
   }
 
+  static Future<Map<String, dynamic>> getKeyboardFeedbackSettings() async {
+    try {
+      final res = await _keyboardChannel.invokeMethod('getKeyboardFeedbackSettings');
+      if (res is Map) {
+        return Map<String, dynamic>.from(res);
+      }
+      return {'soundEnabled': true, 'vibrationEnabled': true, 'vibrationIntensity': 'medium'};
+    } catch (_) {
+      return {'soundEnabled': true, 'vibrationEnabled': true, 'vibrationIntensity': 'medium'};
+    }
+  }
+
+  static Future<void> setKeyboardFeedbackSettings({
+    required bool soundEnabled,
+    required bool vibrationEnabled,
+    required String vibrationIntensity,
+  }) async {
+    try {
+      await _keyboardChannel.invokeMethod('setKeyboardFeedbackSettings', {
+        'soundEnabled': soundEnabled,
+        'vibrationEnabled': vibrationEnabled,
+        'vibrationIntensity': vibrationIntensity,
+      });
+    } catch (_) {}
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   // In-App Auto-Updater Methods
   // ─────────────────────────────────────────────────────────────────────────

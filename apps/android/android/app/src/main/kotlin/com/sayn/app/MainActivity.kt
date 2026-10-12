@@ -142,6 +142,28 @@ class MainActivity : FlutterActivity() {
                         prefs.edit().putString("custom_instruction", inst).apply()
                         result.success(true)
                     }
+                    "getKeyboardFeedbackSettings" -> {
+                        val sound = prefs.getBoolean("key_sound_enabled", true)
+                        val vib = prefs.getBoolean("key_vibration_enabled", true)
+                        val intensity = prefs.getString("key_vibration_intensity", "medium") ?: "medium"
+                        result.success(mapOf(
+                            "soundEnabled" to sound,
+                            "vibrationEnabled" to vib,
+                            "vibrationIntensity" to intensity
+                        ))
+                    }
+                    "setKeyboardFeedbackSettings" -> {
+                        val sound = call.argument<Boolean>("soundEnabled") ?: true
+                        val vib = call.argument<Boolean>("vibrationEnabled") ?: true
+                        val intensity = call.argument<String>("vibrationIntensity") ?: "medium"
+                        prefs.edit()
+                            .putBoolean("key_sound_enabled", sound)
+                            .putBoolean("key_vibration_enabled", vib)
+                            .putString("key_vibration_intensity", intensity)
+                            .apply()
+                        com.sayn.app.keyboard.SaynInputMethodService.instance?.reloadFeedbackSettings()
+                        result.success(true)
+                    }
                     else -> result.notImplemented()
                 }
             }

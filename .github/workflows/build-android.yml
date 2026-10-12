@@ -60,13 +60,20 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: v1.0.5
-          name: "SAYN Android Release v1.0.5 (Universal Voice Across ALL Keyboards & Wavy Pill Overlay)"
+          tag_name: v1.0.6
+          name: "SAYN Android Release v1.0.6 (Typing Sound, Haptic Vibration Toggles & Vector Mic Icon)"
           body: |
-            ### SAYN v1.0.5 — Say it. Refine it. Send it.
+            ### SAYN v1.0.6 — Say it. Refine it. Send it.
             Official release for Android.
             
-            **What's New in v1.0.5:**
+            **What's New in v1.0.6:**
+            * **Keypress Haptic Vibration & Mechanical Sound Toggles:**
+              - Added dedicated settings card in SAYN app for keypress vibration and click sounds.
+              - Customizable vibration intensity: Subtle, Crisp, Strong.
+              - Toggle mechanical iOS click audio on/off anytime.
+            * **Clean Modern Vector Mic & Globe Icons:**
+              - Removed cartoon emoji microphone and globe icons.
+              - Replaced with crisp, razor-sharp vector icons in keyboard chiclets and floating squircle.
             * **Universal Voice Across ANY Keyboard (Wispr Flow Style):**
               - Works automatically with Gboard, Samsung Keyboard, SwiftKey, or ANY keyboard on your phone!
               - Powered by `SaynAccessibilityService`: automatically detects when any text field is focused and keyboard opens, and types speech directly into WhatsApp, ChatGPT, Instagram, or any chat box.

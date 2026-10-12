@@ -15,6 +15,9 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
   bool _hasMicPermission = false;
   bool _isLoading = true;
   String _defaultMode = 'standard';
+  bool _keySoundEnabled = true;
+  bool _keyVibrationEnabled = true;
+  String _keyVibrationIntensity = 'medium';
   final TextEditingController _sandboxController = TextEditingController();
 
   final List<Map<String, String>> _modes = const [
@@ -39,14 +42,42 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
     final enabled = await PlatformChannels.isKeyboardEnabled();
     final mode = await PlatformChannels.getDefaultMode();
     final micGranted = await PlatformChannels.checkAudioPermission();
+    final feedback = await PlatformChannels.getKeyboardFeedbackSettings();
+    final sound = feedback['soundEnabled'] as bool? ?? true;
+    final vibration = feedback['vibrationEnabled'] as bool? ?? true;
+    final intensity = feedback['vibrationIntensity'] as String? ?? 'medium';
+
     if (mounted) {
       setState(() {
         _isEnabled = enabled;
         _defaultMode = mode;
         _hasMicPermission = micGranted;
+        _keySoundEnabled = sound;
+        _keyVibrationEnabled = vibration;
+        _keyVibrationIntensity = intensity;
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _updateFeedbackSettings({
+    bool? sound,
+    bool? vibration,
+    String? intensity,
+  }) async {
+    final newSound = sound ?? _keySoundEnabled;
+    final newVib = vibration ?? _keyVibrationEnabled;
+    final newInt = intensity ?? _keyVibrationIntensity;
+    setState(() {
+      _keySoundEnabled = newSound;
+      _keyVibrationEnabled = newVib;
+      _keyVibrationIntensity = newInt;
+    });
+    await PlatformChannels.setKeyboardFeedbackSettings(
+      soundEnabled: newSound,
+      vibrationEnabled: newVib,
+      vibrationIntensity: newInt,
+    );
   }
 
   Future<void> _updateDefaultMode(String mode) async {
@@ -298,6 +329,100 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
                               },
                             );
                           }).toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Typing Feedback (Haptic Vibration & Click Sound)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: SaynColors.darkSurface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: SaynColors.darkDivider),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: const [
+                            Icon(Icons.vibration, size: 18, color: SaynColors.darkAccent),
+                            SizedBox(width: 8),
+                            Text(
+                              'Typing Sound & Haptic Vibration',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: SaynColors.darkText,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text(
+                            'Keypress Vibration',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: SaynColors.darkText),
+                          ),
+                          subtitle: const Text(
+                            'Tactile physical haptic pulse on keypress',
+                            style: TextStyle(fontSize: 11, color: SaynColors.darkSecondary),
+                          ),
+                          value: _keyVibrationEnabled,
+                          activeColor: SaynColors.darkAccent,
+                          onChanged: (val) => _updateFeedbackSettings(vibration: val),
+                        ),
+                        if (_keyVibrationEnabled) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              const Text(
+                                'Vibration Intensity: ',
+                                style: TextStyle(fontSize: 11, color: SaynColors.darkSecondary),
+                              ),
+                              const Spacer(),
+                              ...['subtle', 'medium', 'strong'].map((lvl) {
+                                final isSelected = _keyVibrationIntensity == lvl;
+                                final label = lvl == 'subtle' ? 'Subtle' : (lvl == 'medium' ? 'Crisp' : 'Strong');
+                                return Padding(
+                                  padding: const EdgeInsets.only(left: 6),
+                                  child: ChoiceChip(
+                                    label: Text(label),
+                                    selected: isSelected,
+                                    selectedColor: SaynColors.darkAccent,
+                                    labelStyle: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w500,
+                                      color: isSelected ? Colors.white : SaynColors.darkSecondary,
+                                    ),
+                                    backgroundColor: SaynColors.darkSurface2,
+                                    side: const BorderSide(color: SaynColors.darkDivider),
+                                    onSelected: (val) {
+                                      if (val) _updateFeedbackSettings(intensity: lvl);
+                                    },
+                                  ),
+                                );
+                              }),
+                            ],
+                          ),
+                        ],
+                        const Divider(color: SaynColors.darkDivider, height: 20),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text(
+                            'Keypress Click Sound',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: SaynColors.darkText),
+                          ),
+                          subtitle: const Text(
+                            'Play mechanical iOS click audio on keypress',
+                            style: TextStyle(fontSize: 11, color: SaynColors.darkSecondary),
+                          ),
+                          value: _keySoundEnabled,
+                          activeColor: SaynColors.darkAccent,
+                          onChanged: (val) => _updateFeedbackSettings(sound: val),
                         ),
                       ],
                     ),

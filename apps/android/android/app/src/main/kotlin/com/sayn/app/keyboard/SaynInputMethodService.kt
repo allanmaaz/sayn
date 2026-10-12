@@ -27,6 +27,12 @@ import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.core.content.ContextCompat
+import android.graphics.PorterDuff
+import android.media.AudioManager
+import android.os.Vibrator
+import android.os.VibratorManager
+import android.os.VibrationEffect
+import com.sayn.app.R
 import com.sayn.app.MainActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -94,11 +100,34 @@ class SaynInputMethodService : InputMethodService() {
             private set
     }
 
+    // Typing sound and haptic feedback settings
+    private var isSoundEnabled = true
+    private var isVibrationEnabled = true
+    private var vibrationIntensity = "medium"
+
+    private val audioManager by lazy { getSystemService(Context.AUDIO_SERVICE) as? AudioManager }
+    private val vibrator by lazy {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+            vibratorManager?.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         instance = this
+        reloadFeedbackSettings()
+    }
+
+    fun reloadFeedbackSettings() {
         val prefs = getSharedPreferences("com.sayn.app.PREFS", Context.MODE_PRIVATE)
         activeMode = prefs.getString("default_mode", "standard") ?: "standard"
+        isSoundEnabled = prefs.getBoolean("key_sound_enabled", true)
+        isVibrationEnabled = prefs.getBoolean("key_vibration_enabled", true)
+        vibrationIntensity = prefs.getString("key_vibration_intensity", "medium") ?: "medium"
     }
 
     fun triggerVoiceDictation() {
@@ -125,6 +154,7 @@ class SaynInputMethodService : InputMethodService() {
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        reloadFeedbackSettings()
         isSensitiveField = SensitiveFieldGuard.isSensitiveField(info)
 
         // Only show floating assistant when chat/input is open with keyboard!
@@ -1034,6 +1064,21 @@ class SaynInputMethodService : InputMethodService() {
                 setTextColor(Color.WHITE)
             }
 
+            // Authentic vector icons replacing emojis
+            if (key == "MIC") {
+                text = ""
+                val micDrawable = ContextCompat.getDrawable(this@SaynInputMethodService, R.drawable.ic_sayn_mic)?.mutate()
+                micDrawable?.setBounds(0, 0, dpToPx(19), dpToPx(19))
+                micDrawable?.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
+                setCompoundDrawables(null, micDrawable, null, null)
+            } else if (key == "GLOBE") {
+                text = ""
+                val globeDrawable = ContextCompat.getDrawable(this@SaynInputMethodService, R.drawable.ic_sayn_globe)?.mutate()
+                globeDrawable?.setBounds(0, 0, dpToPx(18), dpToPx(18))
+                globeDrawable?.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
+                setCompoundDrawables(null, globeDrawable, null, null)
+            }
+
             // Authentic iOS Keycap Chiclet Backgrounds
             val bg = when {
                 key == "ENTER" -> {
@@ -1075,7 +1120,7 @@ class SaynInputMethodService : InputMethodService() {
                 setupDeleteRepeat(this)
             } else {
                 setOnClickListener {
-                    vibrateTap()
+                    triggerKeyFeedback(key)
                     handleKeyAction(key)
                 }
             }
@@ -1093,8 +1138,8 @@ class SaynInputMethodService : InputMethodService() {
         return when (key) {
             "SHIFT" -> if (isCapsLock || isShifted) "▲" else "⇧"
             "DEL" -> "⌫"
-            "GLOBE" -> "🌐"
-            "MIC" -> "🎤"
+            "GLOBE" -> ""
+            "MIC" -> ""
             "SPACE" -> "space"
             "ENTER" -> {
                 val currentInfo = currentInputEditorInfo
@@ -1180,7 +1225,7 @@ class SaynInputMethodService : InputMethodService() {
         view.setOnTouchListener { v, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    vibrateTap()
+                    triggerKeyFeedback("DEL")
                     handleKeyAction("DEL")
                     deleteRunnable = object : Runnable {
                         override fun run() {
@@ -1213,10 +1258,40 @@ class SaynInputMethodService : InputMethodService() {
         }
     }
 
-    private fun vibrateTap() {
-        try {
-            rootLayout.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-        } catch (e: Exception) {}
+    private fun triggerKeyFeedback(key: String) {
+        // 1. Audio Click Sound
+        if (isSoundEnabled) {
+            val fx = when (key) {
+                "DEL" -> AudioManager.FX_KEYPRESS_DELETE
+                "SPACE" -> AudioManager.FX_KEYPRESS_SPACEBAR
+                "ENTER" -> AudioManager.FX_KEYPRESS_RETURN
+                else -> AudioManager.FX_KEYPRESS_STANDARD
+            }
+            try {
+                audioManager?.playSoundEffect(fx, 0.65f)
+            } catch (e: Exception) {}
+        }
+
+        // 2. Physical Vibration Pulse
+        if (isVibrationEnabled) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val (duration, amplitude) = when (vibrationIntensity) {
+                        "subtle" -> Pair(12L, 50)
+                        "strong" -> Pair(35L, 210)
+                        else -> Pair(20L, 120) // medium
+                    }
+                    vibrator?.vibrate(VibrationEffect.createOneShot(duration, amplitude))
+                } else {
+                    @Suppress("DEPRECATION")
+                    vibrator?.vibrate(20L)
+                }
+            } catch (e: Exception) {
+                try {
+                    rootLayout.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                } catch (ex: Exception) {}
+            }
+        }
     }
 
     /**

@@ -33,6 +33,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.sayn.app.MainActivity
+import com.sayn.app.R
 import com.sayn.app.service.SaynAccessibilityService
 import java.util.Locale
 
@@ -117,7 +118,7 @@ class FloatingBubbleService : Service() {
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("SAYN Voice Assistant")
             .setContentText("Universal Wispr Voice ready across all keyboards.")
-            .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+            .setSmallIcon(R.drawable.ic_sayn_mic)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
 
@@ -211,9 +212,9 @@ class FloatingBubbleService : Service() {
             layoutParams = FrameLayout.LayoutParams(dpToPx(50), dpToPx(50))
 
             val micIcon = ImageView(this@FloatingBubbleService).apply {
-                setImageResource(android.R.drawable.ic_btn_speak_now)
+                setImageResource(R.drawable.ic_sayn_mic)
                 setColorFilter(Color.parseColor("#5DE4FF")) // Voice cyan
-                layoutParams = FrameLayout.LayoutParams(dpToPx(25), dpToPx(25), Gravity.CENTER)
+                layoutParams = FrameLayout.LayoutParams(dpToPx(24), dpToPx(24), Gravity.CENTER)
             }
             addView(micIcon)
         }
