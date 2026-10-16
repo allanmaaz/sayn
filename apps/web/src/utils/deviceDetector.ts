@@ -86,10 +86,10 @@ export function detectDevice(): DeviceInfo {
       arch: isAppleSilicon ? 'arm64' : 'universal',
       archName: isAppleSilicon ? 'Apple Silicon (M1/M2/M3/M4)' : 'Universal (Apple Silicon & Intel)',
       isMobile: false,
-      recommendedFileName: 'SAYN-macOS-Installer.dmg',
-      recommendedDownloadUrl: `${GITHUB_RELEASE_BASE}/SAYN-macOS-Installer.dmg`,
+      recommendedFileName: 'San-macOS-Installer.dmg',
+      recommendedDownloadUrl: `${GITHUB_RELEASE_BASE}/San-macOS-Installer.dmg`,
       badgeLabel: 'macOS DMG',
-      instructions: 'Open the DMG and drag SAYN to your Applications folder. Global Hotkey: Press Fn key or ⌥ Space.',
+      instructions: 'Open the DMG and drag San to your Applications folder. Global Hotkey: Press Fn key or ⌥ Space.',
     };
   }
 
@@ -109,7 +109,7 @@ export function detectDevice(): DeviceInfo {
         ? `${GITHUB_RELEASE_BASE}/SAYN-Setup-1.1.0-x64.exe`
         : `${GITHUB_RELEASE_BASE}/SAYN-Setup-1.1.0-ia32.exe`,
       badgeLabel: is64Bit ? 'Windows 64-bit' : 'Windows 32-bit',
-      instructions: 'Run the setup installer. Press Alt + Space anywhere on Windows to trigger the Wispr voice pill.',
+      instructions: 'Run the setup installer. Press Alt + Space anywhere on Windows to trigger the San voice pill.',
     };
   }
 
@@ -134,8 +134,8 @@ function getFallbackDeviceInfo(): DeviceInfo {
     arch: 'universal',
     archName: 'Universal',
     isMobile: false,
-    recommendedFileName: 'SAYN-macOS-Installer.dmg',
-    recommendedDownloadUrl: `${GITHUB_RELEASE_BASE}/SAYN-macOS-Installer.dmg`,
+    recommendedFileName: 'San-macOS-Installer.dmg',
+    recommendedDownloadUrl: `${GITHUB_RELEASE_BASE}/San-macOS-Installer.dmg`,
     badgeLabel: 'Free Download',
     instructions: 'Choose the appropriate installer for your operating system below.',
   };
@@ -144,10 +144,10 @@ function getFallbackDeviceInfo(): DeviceInfo {
 export const ALL_DOWNLOAD_OPTIONS = [
   {
     category: 'macOS',
-    title: 'macOS Universal 2 Installer',
+    title: 'San for macOS Universal 2 Installer',
     arch: 'Apple Silicon (M1/M2/M3/M4) + Intel',
-    fileName: 'SAYN-macOS-Installer.dmg',
-    url: `${GITHUB_RELEASE_BASE}/SAYN-macOS-Installer.dmg`,
+    fileName: 'San-macOS-Installer.dmg',
+    url: `${GITHUB_RELEASE_BASE}/San-macOS-Installer.dmg`,
     tag: 'Recommended for Mac',
     format: '.dmg',
     size: '898 KB',

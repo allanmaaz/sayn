@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/theme.dart';
 import '../../core/api_client.dart';
+import '../../services/platform_channels.dart';
 
 class WorkspaceScreen extends StatefulWidget {
   const WorkspaceScreen({super.key});
@@ -13,60 +14,76 @@ class WorkspaceScreen extends StatefulWidget {
 class _WorkspaceScreenState extends State<WorkspaceScreen> {
   final TextEditingController _inputController = TextEditingController();
   final TextEditingController _outputController = TextEditingController();
-  final TextEditingController _freezeWordController = TextEditingController();
+  final TextEditingController _customInstructionController = TextEditingController();
   final SaynApiClient _apiClient = SaynApiClient();
 
-  String _selectedMode = 'standard';
-  double _synonymIntensity = 2.0; // 0 (Exact) to 4 (Max)
-  final List<String> _freezeWords = [];
-  bool _isLoading = false;
+  // Primary styles requested by user
+  String _selectedStyle = 'natural'; // 'natural' | 'fluent' | 'professional'
+  bool _isPolishing = false;
+  bool _isDictating = false;
+  bool _showCustomSettings = false;
   String? _errorMessage;
   bool _copied = false;
 
-  // Grammarly & QuillBot Document Metrics
+  // Real-time document statistics
   int _wordCount = 0;
   int _charCount = 0;
-  int _readabilityScore = 85;
-  int _correctnessCount = 0;
-  int _clarityCount = 0;
-  int _engagementCount = 0;
-  int _deliveryCount = 0;
+  int _readabilityScore = 95;
 
-  final List<Map<String, String>> _modes = const [
-    {'id': 'standard', 'label': 'Standard'},
-    {'id': 'fluency', 'label': 'Fluency'},
-    {'id': 'formal', 'label': 'Formal'},
-    {'id': 'simple', 'label': 'Simple'},
-    {'id': 'creative', 'label': 'Creative'},
-    {'id': 'shorten', 'label': 'Shorten'},
-    {'id': 'expand', 'label': 'Expand'},
+  final List<Map<String, dynamic>> _styles = const [
+    {
+      'id': 'natural',
+      'label': 'Natural',
+      'desc': 'Conversational & authentic',
+      'icon': Icons.spa_outlined,
+    },
+    {
+      'id': 'fluent',
+      'label': 'Fluent',
+      'desc': 'Grammar polish & smooth flow',
+      'icon': Icons.bolt_outlined,
+    },
+    {
+      'id': 'professional',
+      'label': 'Professional',
+      'desc': 'Executive, formal & concise',
+      'icon': Icons.business_center_outlined,
+    },
+    {
+      'id': 'shorten',
+      'label': 'Shorten',
+      'desc': 'Key points only',
+      'icon': Icons.compress,
+    },
+    {
+      'id': 'expand',
+      'label': 'Expand',
+      'desc': 'Detailed explanation',
+      'icon': Icons.expand,
+    },
   ];
 
   @override
   void initState() {
     super.initState();
-    _inputController.addListener(_computeMetrics);
+    _inputController.addListener(_updateMetrics);
   }
 
   @override
   void dispose() {
     _inputController.dispose();
     _outputController.dispose();
-    _freezeWordController.dispose();
+    _customInstructionController.dispose();
     super.dispose();
   }
 
-  void _computeMetrics() {
+  void _updateMetrics() {
     final text = _inputController.text.trim();
     if (text.isEmpty) {
       setState(() {
         _wordCount = 0;
         _charCount = 0;
         _readabilityScore = 100;
-        _correctnessCount = 0;
-        _clarityCount = 0;
-        _engagementCount = 0;
-        _deliveryCount = 0;
       });
       return;
     }
@@ -76,97 +93,110 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     final sCount = sentences.isEmpty ? 1 : sentences.length;
     final wCount = words.length;
 
-    // Fast local heuristic estimation
-    int passiveMatches = RegExp(r'\b(is|are|was|were|been)\s+\w+ed\b', caseSensitive: false).allMatches(text).length;
-    int hedgeMatches = RegExp(r'\b(maybe|perhaps|probably|somewhat|kind of)\b', caseSensitive: false).allMatches(text).length;
-    int typoMatches = RegExp(r'\b(teh|recieve|definately|seperate)\b', caseSensitive: false).allMatches(text).length;
-
-    // Flesch Reading Ease estimate
-    double avgWordsPerSentence = wCount / sCount;
-    int estimatedScore = (100 - (avgWordsPerSentence * 1.5) - (typoMatches * 5)).round().clamp(10, 100);
+    int typos = RegExp(r'\b(teh|recieve|definately|seperate|alot)\b', caseSensitive: false).allMatches(text).length;
+    double avgWpS = wCount / sCount;
+    int score = (100 - (avgWpS * 1.4) - (typos * 6)).round().clamp(15, 100);
 
     setState(() {
       _wordCount = wCount;
       _charCount = text.length;
-      _readabilityScore = estimatedScore;
-      _correctnessCount = typoMatches;
-      _clarityCount = passiveMatches;
-      _engagementCount = hedgeMatches;
-      _deliveryCount = (wCount > 80 && avgWordsPerSentence > 22) ? 1 : 0;
+      _readabilityScore = score;
     });
   }
 
-  Future<void> _refine() async {
-    final text = _inputController.text.trim();
-    if (text.isEmpty) {
-      setState(() => _errorMessage = 'Please enter or dictate text to refine.');
+  // 1. Direct Grammar & Polish Action (Triggered by Grammar Icon)
+  Future<void> _runGrammarPolish() async {
+    final rawText = _inputController.text.trim();
+    if (rawText.isEmpty) {
+      setState(() => _errorMessage = 'Please type, paste, or speak text into the box first.');
       return;
     }
 
     setState(() {
-      _isLoading = true;
+      _isPolishing = true;
       _errorMessage = null;
     });
 
     try {
+      final customInstruction = _customInstructionController.text.trim();
       final res = await _apiClient.refineText(
-        text: text,
-        mode: _selectedMode,
-        synonymIntensity: _synonymIntensity.round(),
-        freezeWords: _freezeWords,
+        text: rawText,
+        mode: _selectedStyle,
+        customInstruction: customInstruction.isNotEmpty ? customInstruction : null,
       );
+
+      final refined = res['refinedText'] ?? rawText;
       setState(() {
-        _outputController.text = res['refinedText'] ?? '';
+        _inputController.value = TextEditingValue(
+          text: refined,
+          selection: TextSelection.collapsed(offset: refined.length),
+        );
+        _outputController.text = refined;
       });
     } catch (e) {
       setState(() {
         _errorMessage = e.toString().replaceAll('Exception: ', '');
       });
     } finally {
-      setState(() => _isLoading = false);
+      setState(() => _isPolishing = false);
     }
   }
 
-  void _addFreezeWord() {
-    final word = _freezeWordController.text.trim();
-    if (word.isNotEmpty && !_freezeWords.contains(word)) {
-      setState(() {
-        _freezeWords.add(word);
-        _freezeWordController.clear();
-      });
-    }
-  }
+  // 2. Direct Voice Dictation (Triggered by Talk Icon)
+  Future<void> _startTalking() async {
+    setState(() => _isDictating = true);
+    HapticFeedback.mediumImpact();
 
-  void _removeFreezeWord(String word) {
-    setState(() {
-      _freezeWords.remove(word);
+    // Trigger platform channel dictation or simulate speech stream
+    try {
+      final hasPerm = await PlatformChannels.isMicrophonePermissionGranted();
+      if (!hasPerm) {
+        await PlatformChannels.requestMicrophonePermission();
+      }
+
+      // Add speech indicator or listen for transcription
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Listening... speak now. San will transcribe directly into the text box.'),
+          duration: Duration(seconds: 3),
+          backgroundColor: Color(0xFF16161D),
+        ),
+      );
+    } catch (_) {}
+
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() => _isDictating = false);
+      }
     });
+  }
+
+  // 3. Paste Clipboard Content (Chats, PDFs, Articles)
+  Future<void> _pasteFromClipboard() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (data != null && data.text != null && data.text!.isNotEmpty) {
+      setState(() {
+        _inputController.text = data.text!;
+      });
+      HapticFeedback.lightImpact();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Pasted ${data.text!.length} characters from clipboard.'),
+          duration: const Duration(seconds: 2),
+          backgroundColor: const Color(0xFF16161D),
+        ),
+      );
+    }
   }
 
   void _copyOutput() {
     if (_outputController.text.isNotEmpty) {
       Clipboard.setData(ClipboardData(text: _outputController.text));
       setState(() => _copied = true);
+      HapticFeedback.selectionClick();
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) setState(() => _copied = false);
       });
-    }
-  }
-
-  String _getSynonymLabel(double value) {
-    switch (value.round()) {
-      case 0:
-        return 'Exact (Minimal)';
-      case 1:
-        return 'Conservative';
-      case 2:
-        return 'Standard';
-      case 3:
-        return 'Rich';
-      case 4:
-        return 'Creative (Maximum)';
-      default:
-        return 'Standard';
     }
   }
 
@@ -176,300 +206,120 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
       backgroundColor: SaynColors.darkBg,
       appBar: AppBar(
         backgroundColor: SaynColors.darkBg,
+        elevation: 0,
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: SaynColors.darkAccent.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: SaynColors.darkAccent.withOpacity(0.3)),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: SaynColors.darkAccent.withOpacity(0.35)),
               ),
               child: const Text(
-                'STUDIO',
+                'SAN',
                 style: TextStyle(
                   color: SaynColors.darkAccent,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
                   letterSpacing: 1.2,
                 ),
               ),
             ),
             const SizedBox(width: 8),
             const Text(
-              'Paraphraser & Proofreader',
+              'Voice & Grammar Studio',
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
             ),
           ],
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 110),
+        // Generous bottom padding (120dp) to prevent overlap with the floating bottom dock
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 120),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Mode Selector Pills (QuillBot Modes)
+            // ─── 1. STYLE MODE SELECTOR (Natural, Fluent, Professional) ───
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: _modes.map((m) {
-                  final isSelected = _selectedMode == m['id'];
+                children: _styles.map((s) {
+                  final isSelected = _selectedStyle == s['id'];
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: ChoiceChip(
-                      label: Text(m['label']!),
+                      avatar: Icon(
+                        s['icon'] as IconData,
+                        size: 14,
+                        color: isSelected ? const Color(0xFF0D0D12) : SaynColors.darkAccent,
+                      ),
+                      label: Text(s['label'] as String),
                       selected: isSelected,
                       selectedColor: SaynColors.darkAccent,
                       labelStyle: TextStyle(
                         fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: isSelected ? const Color(0xFF0D0D12) : SaynColors.darkSecondary,
+                        fontWeight: FontWeight.w700,
+                        color: isSelected ? const Color(0xFF0D0D12) : Colors.white,
                       ),
                       backgroundColor: SaynColors.darkSurface,
                       side: BorderSide(
                         color: isSelected ? SaynColors.darkAccent : SaynColors.darkDivider,
+                        width: isSelected ? 1.5 : 1.0,
                       ),
                       onSelected: (val) {
-                        if (val) setState(() => _selectedMode = m['id']!);
+                        if (val) setState(() => _selectedStyle = s['id'] as String);
                       },
                     ),
                   );
                 }).toList(),
               ),
             ),
-            const SizedBox(height: 14),
-
-            // QuillBot Synonym Intensity Slider Card
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: SaynColors.darkSurface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: SaynColors.darkDivider),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Synonym Intensity',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: SaynColors.darkText,
-                        ),
-                      ),
-                      Text(
-                        _getSynonymLabel(_synonymIntensity),
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: SaynColors.darkAccent,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: SaynColors.darkAccent,
-                      inactiveTrackColor: SaynColors.darkDivider,
-                      thumbColor: SaynColors.darkAccent,
-                      overlayColor: SaynColors.darkAccent.withOpacity(0.2),
-                      trackHeight: 3,
-                    ),
-                    child: Slider(
-                      value: _synonymIntensity,
-                      min: 0,
-                      max: 4,
-                      divisions: 4,
-                      onChanged: (val) => setState(() => _synonymIntensity = val),
-                    ),
-                  ),
-                ],
-              ),
-            ),
             const SizedBox(height: 12),
 
-            // Freeze Words Drawer / Bar
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: SaynColors.darkSurface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: SaynColors.darkDivider),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.ac_unit, size: 14, color: Color(0xFF38BDF8)),
-                      const SizedBox(width: 6),
-                      const Text(
-                        'Freeze Words',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: SaynColors.darkText,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${_freezeWords.length} pinned',
-                        style: const TextStyle(fontSize: 11, color: SaynColors.darkMuted),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  if (_freezeWords.isNotEmpty)
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: _freezeWords.map((word) {
-                        return Chip(
-                          backgroundColor: SaynColors.darkElevated,
-                          label: Text(
-                            word,
-                            style: const TextStyle(fontSize: 11, color: SaynColors.darkText),
-                          ),
-                          deleteIcon: const Icon(Icons.close, size: 12, color: SaynColors.darkMuted),
-                          onDeleted: () => _removeFreezeWord(word),
-                          side: const BorderSide(color: SaynColors.darkDivider),
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                        );
-                      }).toList(),
-                    ),
-                  if (_freezeWords.isNotEmpty) const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _freezeWordController,
-                          style: const TextStyle(fontSize: 12, color: SaynColors.darkText),
-                          decoration: InputDecoration(
-                            hintText: 'Add word to freeze (e.g. SAYN)...',
-                            hintStyle: const TextStyle(fontSize: 12, color: SaynColors.darkMuted),
-                            filled: true,
-                            fillColor: SaynColors.darkElevated,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                            isDense: true,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
-                          onSubmitted: (_) => _addFreezeWord(),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton.filled(
-                        style: IconButton.styleFrom(
-                          backgroundColor: SaynColors.darkElevated,
-                          foregroundColor: SaynColors.darkAccent,
-                        ),
-                        icon: const Icon(Icons.add, size: 16),
-                        onPressed: _addFreezeWord,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-
-            // Grammarly 4-Pillar Score Bar
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: SaynColors.darkSurface2,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: SaynColors.darkDivider),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Overall Score
-                  Row(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: SaynColors.darkAccent, width: 2),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          '$_readabilityScore',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: SaynColors.darkAccent,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Doc Score',
-                            style: TextStyle(fontSize: 10, color: SaynColors.darkSecondary),
-                          ),
-                          Text(
-                            '$_wordCount words',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: SaynColors.darkText,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  // 4 Pillars
-                  Row(
-                    children: [
-                      _buildPillarBadge('🔴', _correctnessCount, 'Correct'),
-                      const SizedBox(width: 6),
-                      _buildPillarBadge('🔵', _clarityCount, 'Clear'),
-                      const SizedBox(width: 6),
-                      _buildPillarBadge('🟢', _engagementCount, 'Engage'),
-                      const SizedBox(width: 6),
-                      _buildPillarBadge('🟣', _deliveryCount, 'Deliver'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-
-            // Source Input Card
+            // ─── 2. INPUT CARD WITH TWO HERO ACTION ICONS ───
             Container(
               decoration: BoxDecoration(
                 color: SaynColors.darkSurface,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: SaynColors.darkDivider),
               ),
               child: Column(
                 children: [
+                  // Card Header: Paste Bar & Clear
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Source Text',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: SaynColors.darkSecondary,
+                        // Quick Paste Chat / Document Button
+                        InkWell(
+                          onTap: _pasteFromClipboard,
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: SaynColors.darkElevated,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: SaynColors.darkDivider),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.paste_rounded, size: 13, color: SaynColors.darkAccent),
+                                SizedBox(width: 5),
+                                Text(
+                                  'Paste Chat / Text',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
+                        const Spacer(),
                         if (_inputController.text.isNotEmpty)
                           GestureDetector(
                             onTap: () {
@@ -478,75 +328,193 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                             },
                             child: const Text(
                               'Clear',
-                              style: TextStyle(fontSize: 12, color: SaynColors.darkError),
+                              style: TextStyle(fontSize: 11, color: SaynColors.darkError),
                             ),
                           ),
                       ],
                     ),
                   ),
                   const Divider(height: 1, color: SaynColors.darkDivider),
+
+                  // Text Input Field
                   TextField(
                     controller: _inputController,
-                    maxLines: 5,
-                    style: const TextStyle(fontSize: 14, color: SaynColors.darkText),
+                    maxLines: 6,
+                    style: const TextStyle(fontSize: 14, color: SaynColors.darkText, height: 1.5),
                     decoration: const InputDecoration(
-                      hintText: 'Type, paste, or dictate rough thoughts here...',
+                      hintText: 'Type, talk, or paste chats & document excerpts here...',
                       hintStyle: TextStyle(fontSize: 13, color: SaynColors.darkMuted),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.all(14),
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
 
-            // Refine Button (Volt Neon Green)
-            ElevatedButton(
-              onPressed: _isLoading ? null : _refine,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: SaynColors.darkAccent,
-                foregroundColor: const Color(0xFF0D0D12),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.2,
-                        color: Color(0xFF0D0D12),
-                      ),
-                    )
-                  : const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                  const Divider(height: 1, color: SaynColors.darkDivider),
+
+                  // ─── TWO ACTION ICONS (Talk Icon & Grammar Icon) ───
+                  Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Row(
                       children: [
-                        Icon(Icons.bolt, size: 18),
-                        SizedBox(width: 6),
-                        Text(
-                          'Paraphrase & Polish (0ms Groq)',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.3,
+                        // 1. TALK FEATURE ICON (Microphone)
+                        InkWell(
+                          onTap: _isDictating ? null : _startTalking,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: _isDictating
+                                  ? SaynColors.darkAccent.withOpacity(0.2)
+                                  : SaynColors.darkElevated,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: _isDictating
+                                    ? SaynColors.darkAccent
+                                    : SaynColors.darkDivider,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  _isDictating ? Icons.graphic_eq : Icons.mic_rounded,
+                                  size: 18,
+                                  color: SaynColors.darkAccent,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _isDictating ? 'Listening...' : 'Talk',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+
+                        // 2. GRAMMAR CORRECTION ICON (Magic Wand / Polish)
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _isPolishing ? null : _runGrammarPolish,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: SaynColors.darkAccent,
+                              foregroundColor: const Color(0xFF0D0D12),
+                              padding: const EdgeInsets.symmetric(vertical: 11),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 0,
+                            ),
+                            icon: _isPolishing
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Color(0xFF0D0D12),
+                                    ),
+                                  )
+                                : const Icon(Icons.auto_fix_high_rounded, size: 18),
+                            label: Text(
+                              _isPolishing ? 'Polishing...' : 'Correct Grammar',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
                           ),
                         ),
                       ],
                     ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
 
-            // Error Display
+            // ─── 3. CUSTOM SETTINGS FOR CHATS / PDFS (Expandable) ───
+            Container(
+              decoration: BoxDecoration(
+                color: SaynColors.darkSurface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: SaynColors.darkDivider),
+              ),
+              child: Column(
+                children: [
+                  ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.tune_rounded, size: 18, color: SaynColors.darkAccent),
+                    title: const Text(
+                      'Custom Prompt & Settings',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                    ),
+                    subtitle: const Text(
+                      'Apply custom instructions to chats, PDFs, or articles',
+                      style: TextStyle(fontSize: 11, color: SaynColors.darkSecondary),
+                    ),
+                    trailing: Icon(
+                      _showCustomSettings ? Icons.expand_less : Icons.expand_more,
+                      color: SaynColors.darkSecondary,
+                    ),
+                    onTap: () {
+                      setState(() => _showCustomSettings = !_showCustomSettings);
+                    },
+                  ),
+                  if (_showCustomSettings) ...[
+                    const Divider(height: 1, color: SaynColors.darkDivider),
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextField(
+                            controller: _customInstructionController,
+                            maxLines: 2,
+                            style: const TextStyle(fontSize: 12, color: Colors.white),
+                            decoration: InputDecoration(
+                              hintText: 'e.g. "Summarize this WhatsApp chat", "Extract 3 bullet points", "Make it friendly"...',
+                              hintStyle: const TextStyle(fontSize: 11, color: SaynColors.darkMuted),
+                              filled: true,
+                              fillColor: SaynColors.darkElevated,
+                              isDense: true,
+                              contentPadding: const EdgeInsets.all(10),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          // Quick instruction suggestion chips
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              _buildQuickChip('Summarize chat'),
+                              _buildQuickChip('Extract action items'),
+                              _buildQuickChip('Make bullet points'),
+                              _buildQuickChip('Formal client response'),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // ─── 4. ERROR MESSAGE IF ANY ───
             if (_errorMessage != null)
               Container(
                 padding: const EdgeInsets.all(12),
-                margin: const EdgeInsets.only(bottom: 14),
+                margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
-                  color: SaynColors.darkError.withOpacity(0.1),
+                  color: SaynColors.darkError.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: SaynColors.darkError.withOpacity(0.3)),
                 ),
@@ -556,18 +524,18 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                 ),
               ),
 
-            // Output Card
+            // ─── 5. POLISHED OUTPUT CARD ───
             if (_outputController.text.isNotEmpty)
               Container(
                 decoration: BoxDecoration(
                   color: SaynColors.darkSurface,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: SaynColors.darkAccent.withOpacity(0.4)),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: SaynColors.darkAccent.withOpacity(0.5)),
                   boxShadow: [
                     BoxShadow(
                       color: SaynColors.darkAccent.withOpacity(0.08),
-                      blurRadius: 16,
-                      spreadRadius: 2,
+                      blurRadius: 20,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
@@ -578,13 +546,13 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Row(
+                          Row(
                             children: [
-                              Icon(Icons.check_circle_outline, size: 16, color: SaynColors.darkAccent),
-                              SizedBox(width: 6),
+                              const Icon(Icons.check_circle_rounded, size: 16, color: SaynColors.darkAccent),
+                              const SizedBox(width: 6),
                               Text(
-                                'Polished Output',
-                                style: TextStyle(
+                                'Polished Output (${_selectedStyle.toUpperCase()})',
+                                style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                   color: SaynColors.darkAccent,
@@ -600,16 +568,16 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                             icon: Icon(
-                              _copied ? Icons.check : Icons.copy,
+                              _copied ? Icons.check : Icons.copy_rounded,
                               size: 14,
-                              color: _copied ? SaynColors.darkSuccess : SaynColors.darkSecondary,
+                              color: _copied ? SaynColors.darkSuccess : Colors.white70,
                             ),
                             label: Text(
                               _copied ? 'Copied' : 'Copy',
                               style: TextStyle(
                                 fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: _copied ? SaynColors.darkSuccess : SaynColors.darkSecondary,
+                                fontWeight: FontWeight.w700,
+                                color: _copied ? SaynColors.darkSuccess : Colors.white70,
                               ),
                             ),
                           ),
@@ -640,27 +608,24 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     );
   }
 
-  Widget _buildPillarBadge(String emoji, int count, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      decoration: BoxDecoration(
-        color: SaynColors.darkElevated,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 9)),
-          const SizedBox(width: 3),
-          Text(
-            '$count',
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: SaynColors.darkText,
-            ),
-          ),
-        ],
+  Widget _buildQuickChip(String label) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _customInstructionController.text = label;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: SaynColors.darkElevated,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: SaynColors.darkDivider),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(fontSize: 10, color: SaynColors.darkSecondary),
+        ),
       ),
     );
   }

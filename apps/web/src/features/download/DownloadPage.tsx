@@ -81,7 +81,7 @@ export const DownloadPage: React.FC = () => {
           Download <span className="text-[#CBFE00]">SAYN</span>
         </h1>
         <p className="mt-3 text-sm sm:text-base text-zinc-400">
-          Wispr Flow Voice Dictation, QuillBot Paraphrasing, and Grammarly 4-Pillar Proofreading.
+          AI Voice Dictation, QuillBot Paraphrasing, and Grammarly 4-Pillar Proofreading.
         </p>
       </div>
 

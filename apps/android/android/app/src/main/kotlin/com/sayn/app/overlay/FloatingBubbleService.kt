@@ -123,7 +123,7 @@ class FloatingBubbleService : Service() {
 
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("SAYN Voice Assistant")
-            .setContentText("Universal Wispr Voice ready across all keyboards.")
+            .setContentText("Universal Voice Assistant ready across all keyboards.")
             .setSmallIcon(R.drawable.ic_sayn_mic)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()

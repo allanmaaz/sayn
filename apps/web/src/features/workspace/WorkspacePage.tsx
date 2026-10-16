@@ -268,7 +268,7 @@ export const WorkspacePage: React.FC = () => {
               SAYN AI Studio
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-sayn-dark-accent/15 text-sayn-dark-accent border border-sayn-dark-accent/30">
-              QuillBot + Grammarly + Wispr
+              QuillBot + Grammarly + Voice AI
             </span>
           </div>
           <p className="text-xs text-sayn-dark-secondary mt-1">

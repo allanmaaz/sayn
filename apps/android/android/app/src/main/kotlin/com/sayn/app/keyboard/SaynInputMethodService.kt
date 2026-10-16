@@ -1171,7 +1171,7 @@ class SaynInputMethodService : InputMethodService() {
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // 5. In-Keyboard Speech Recognizer (Wispr Flow)
+    // 5. In-Keyboard Speech Recognizer (San Voice Flow)
     // ─────────────────────────────────────────────────────────────────────────────
 
     private fun toggleInKeyboardVoice() {

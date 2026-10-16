@@ -1,9 +1,9 @@
 import AppKit
 import SwiftUI
 
-final class WisprPillWindow: NSPanel {
+final class SanPillWindow: NSPanel {
     init(contentView: NSView) {
-        // Generous canvas (340x100) so SwiftUI shadows feather out naturally with ZERO clipping
+        // Canvas (340x100) so SwiftUI specular glows and shadows feather out naturally with zero clipping
         super.init(
             contentRect: NSRect(x: 0, y: 0, width: 340, height: 100),
             styleMask: [.borderless, .nonactivatingPanel],
@@ -16,12 +16,10 @@ final class WisprPillWindow: NSPanel {
         self.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         self.backgroundColor = .clear
         self.isOpaque = false
-        // Disable OS window shadow so macOS does not draw an ugly rectangular bounding box
         self.hasShadow = false
         self.contentView = contentView
         self.alphaValue = 0.0
         
-        // Ensure it starts completely hidden
         self.orderOut(nil)
         centerOnScreen()
     }
@@ -48,7 +46,7 @@ final class WisprPillWindow: NSPanel {
     
     func hideAnimated(completion: (() -> Void)? = nil) {
         NSAnimationContext.runAnimationGroup({ ctx in
-            ctx.duration = 0.14
+            ctx.duration = 0.12
             ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
             self.animator().alphaValue = 0.0
         }, completionHandler: {
@@ -58,7 +56,7 @@ final class WisprPillWindow: NSPanel {
     }
 }
 
-struct WisprPillView: View {
+struct SanPillView: View {
     @ObservedObject var waveformEngine: AudioWaveformEngine
     @Binding var transcriptText: String
     var onCancel: () -> Void
@@ -67,20 +65,19 @@ struct WisprPillView: View {
     @State private var isHoveredClose: Bool = false
     @State private var dotPulse: Bool = false
     
-    // Volt neon green matching SAYN brand identity
+    // Volt neon green matching brand identity
     private let neonGreen = Color(hex: "CBFE00")
     
     var body: some View {
         ZStack {
             // Pill Capsule
             HStack(spacing: 12) {
-                // 1. SAYN App Icon Badge
-                SaynLogoBadge()
+                // 1. San App Icon Badge
+                SanLogoBadge()
                 
-                // 2. Center Content: Soundwave during speaking OR "SAYN Polishing..."
+                // 2. Center Content: Soundwave during speaking OR "San Polishing..."
                 if waveformEngine.isProcessing {
                     HStack(spacing: 8) {
-                        // High-res neon pulsating dot
                         ZStack {
                             Circle()
                                 .fill(neonGreen.opacity(dotPulse ? 0.35 : 0.15))
@@ -96,14 +93,14 @@ struct WisprPillView: View {
                             }
                         }
                         
-                        Text("SAYN Polishing...")
+                        Text("San Polishing...")
                             .font(.system(size: 13, weight: .semibold, design: .rounded))
                             .foregroundColor(neonGreen)
                             .tracking(0.2)
                     }
                     .transition(.opacity)
                 } else {
-                    // Audio Equalizer Waveform Bars (in neon volt green) - Clean, silent, zero text while speaking!
+                    // Audio Equalizer Waveform Bars (in neon volt green)
                     HStack(spacing: 3) {
                         ForEach(0..<8, id: \.self) { index in
                             RoundedRectangle(cornerRadius: 1.5)
@@ -118,7 +115,7 @@ struct WisprPillView: View {
                 
                 Spacer(minLength: 4)
                 
-                // 3. Apple-style Minimal Dismiss Button [ ✕ ]
+                // 3. Minimal Dismiss Button [ ✕ ]
                 Button(action: onCancel) {
                     ZStack {
                         Circle()
@@ -140,11 +137,9 @@ struct WisprPillView: View {
             .padding(.vertical, 8)
             .frame(width: 272, height: 50)
             .background(
-                // Liquid Obsidian Dark Glass Capsule
                 RoundedRectangle(cornerRadius: 25, style: .continuous)
                     .fill(Color(hex: "0D0D12").opacity(0.96))
                     .overlay(
-                        // Top Specular Rim Light
                         RoundedRectangle(cornerRadius: 25, style: .continuous)
                             .stroke(
                                 LinearGradient(
@@ -159,7 +154,6 @@ struct WisprPillView: View {
                                 lineWidth: 1
                             )
                     )
-                    // Unclipped feather-soft drop shadows
                     .shadow(color: Color.black.opacity(0.65), radius: 18, x: 0, y: 8)
                     .shadow(color: neonGreen.opacity(0.12), radius: 8, x: 0, y: 2)
             )
@@ -169,8 +163,8 @@ struct WisprPillView: View {
     }
 }
 
-// SAYN Logo Badge Component
-struct SaynLogoBadge: View {
+// San Logo Badge Component
+struct SanLogoBadge: View {
     var body: some View {
         if let image = loadLogoImage() {
             Image(nsImage: image)
@@ -201,6 +195,7 @@ struct SaynLogoBadge: View {
     private func loadLogoImage() -> NSImage? {
         let possiblePaths = [
             Bundle.main.path(forResource: "logo", ofType: "png"),
+            "/Applications/San.app/Contents/Resources/logo.png",
             "/Applications/SAYN.app/Contents/Resources/logo.png",
             "/Users/apple/Desktop/SAYN/apps/desktop-macos/Resources/logo.png"
         ]

@@ -52,8 +52,8 @@ object SaynCloudVoiceClient {
             }
 
             val systemPrompt = """
-                You are Wispr Flow speech dictation polisher ($toneInstruction).
-                Clean this dictated text for direct in-app typing:
+                You are San, an intelligent speech and grammar polisher ($toneInstruction).
+                Clean this text for direct in-app typing:
                 1. Remove all speech fillers (um, uh, you know, basically, literally, actually, sort of).
                 2. Fix spoken self-corrections (e.g. 'at 2 no wait 3' -> 'at 3').
                 3. Capitalize the first letter and format numbers/currencies properly.
@@ -95,11 +95,11 @@ object SaynCloudVoiceClient {
             // Network fallback
         }
 
-        // 2. Failsafe deterministic local Wispr cleanup (0ms)
-        return@withContext applyLocalWisprCleanup(cleanInput)
+        // 2. Failsafe deterministic local cleanup (0ms)
+        return@withContext applyLocalCleanup(cleanInput)
     }
 
-    private fun applyLocalWisprCleanup(text: String): String {
+    private fun applyLocalCleanup(text: String): String {
         var result = text
         val fillers = listOf(
             "(?i)\\b(um+|uh+|er+|ah+|basically|you know|literally|so basically)\\b,?\\s*"

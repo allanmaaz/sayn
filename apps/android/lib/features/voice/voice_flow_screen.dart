@@ -96,7 +96,7 @@ class _VoiceFlowScreenState extends State<VoiceFlowScreen>
         });
       }
     } catch (_) {
-      // Offline fallback: deterministic local Wispr cleanup
+      // Offline fallback: deterministic local cleanup
       stopwatch.stop();
       if (mounted) {
         setState(() {
@@ -223,7 +223,7 @@ class _VoiceFlowScreenState extends State<VoiceFlowScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'WISPR FLOW ENGINE',
+                        'SAN VOICE ENGINE',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w800,

@@ -4,7 +4,7 @@ import Carbon
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
-    private var pillWindow: WisprPillWindow?
+    private var pillWindow: SanPillWindow?
     private let waveformEngine = AudioWaveformEngine()
     private var currentTranscript = ""
     
@@ -37,49 +37,47 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 resized.isTemplate = false
                 button.image = resized
             } else {
-                button.title = "S"
+                button.title = "San"
             }
-            button.toolTip = "SAYN — Wispr Flow Voice Assistant (Fn key or ⌥ Space)"
+            button.toolTip = "San — Voice Dictation & AI Polish (Fn key or ⌥ Space)"
         }
         
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Toggle Voice Pill (Fn or ⌥ Space)", action: #selector(togglePill), keyEquivalent: " "))
+        menu.addItem(NSMenuItem(title: "Toggle San (Fn or ⌥ Space)", action: #selector(togglePill), keyEquivalent: " "))
         menu.addItem(NSMenuItem.separator())
         
-        // Engine Selection Submenu
-        let engineSubmenu = NSMenu()
-        for engine in TranscriptionEngine.allCases {
-            let item = NSMenuItem(title: engine.displayName, action: #selector(selectEngine(_:)), keyEquivalent: "")
-            item.representedObject = engine.rawValue
-            if engine == waveformEngine.activeEngine {
+        // Tone / Style Submenu (Natural, Fluent, Professional)
+        let styleSubmenu = NSMenu()
+        let styles = [
+            ("natural", "Natural (Authentic & Conversational)"),
+            ("fluent", "Fluent (Polished Grammar & Flow)"),
+            ("professional", "Professional (Executive & Formal)")
+        ]
+        
+        for (id, label) in styles {
+            let item = NSMenuItem(title: label, action: #selector(selectStyle(_:)), keyEquivalent: "")
+            item.representedObject = id
+            if id == waveformEngine.activeStyle {
                 item.state = .on
             }
-            engineSubmenu.addItem(item)
+            styleSubmenu.addItem(item)
         }
-        let engineMenuItem = NSMenuItem(title: "Speech Engine Mode", action: nil, keyEquivalent: "")
-        engineMenuItem.submenu = engineSubmenu
-        menu.addItem(engineMenuItem)
         
-        menu.addItem(NSMenuItem(title: "⚡ Configure Groq Key (Wispr Turbo)...", action: #selector(configureGroqKey), keyEquivalent: "k"))
+        let styleMenuItem = NSMenuItem(title: "Tone & Style Mode", action: nil, keyEquivalent: "")
+        styleMenuItem.submenu = styleSubmenu
+        menu.addItem(styleMenuItem)
+        
+        menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "🔑 Enable Auto-Paste (Accessibility)...", action: #selector(openAccessibilitySettings), keyEquivalent: ""))
         menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "Quit SAYN", action: #selector(quitApp), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: "Quit San", action: #selector(quitApp), keyEquivalent: "q"))
         statusItem.menu = menu
     }
     
-    @objc func selectEngine(_ sender: NSMenuItem) {
-        if let raw = sender.representedObject as? String,
-           let engine = TranscriptionEngine(rawValue: raw) {
-            waveformEngine.activeEngine = engine
+    @objc func selectStyle(_ sender: NSMenuItem) {
+        if let styleId = sender.representedObject as? String {
+            waveformEngine.activeStyle = styleId
             setupStatusItem()
-        }
-    }
-    
-    @objc func configureGroqKey() {
-        GroqService.shared.promptForApiKey { saved in
-            if saved {
-                print("Groq API key updated successfully.")
-            }
         }
     }
     
@@ -89,6 +87,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     private func fallbackLogoPath() -> String? {
         let paths = [
+            "/Applications/San.app/Contents/Resources/logo.png",
             "/Applications/SAYN.app/Contents/Resources/logo.png",
             "/Users/apple/Desktop/SAYN/apps/desktop-macos/Resources/logo.png"
         ]
@@ -96,7 +95,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     private func setupPillWindow() {
-        let pillView = WisprPillView(
+        let pillView = SanPillView(
             waveformEngine: waveformEngine,
             transcriptText: Binding(
                 get: { self.currentTranscript },
@@ -111,7 +110,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         
         let hostingView = NSHostingView(rootView: pillView)
-        pillWindow = WisprPillWindow(contentView: hostingView)
+        pillWindow = SanPillWindow(contentView: hostingView)
     }
     
     private func setupGlobalShortcut() {
@@ -162,27 +161,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             
             if isPressed {
                 self.fnPressTimestamp = Date()
-                if self.pillWindow?.isVisible == true && self.pillWindow?.alphaValue ?? 0 > 0.5 {
+                if self.pillWindow?.isVisible == true && (self.pillWindow?.alphaValue ?? 0) > 0.5 {
                     self.fnWasAlreadyOpen = true
                 } else {
                     self.fnWasAlreadyOpen = false
                     self.showPill()
                 }
             } else {
-                // Fn key released
                 guard let pressTime = self.fnPressTimestamp else { return }
                 let duration = Date().timeIntervalSince(pressTime)
                 self.fnPressTimestamp = nil
                 
                 if self.fnWasAlreadyOpen {
-                    // Quick tap while already open -> commit and close
+                    // Tap while already open -> commit and auto-paste
                     self.commitPill(text: self.currentTranscript)
                     self.fnWasAlreadyOpen = false
                 } else if duration > 0.35 {
-                    // Push-to-Talk mode: user held Fn while speaking and let go!
+                    // Push-to-Talk mode: held Fn while speaking -> commit and auto-paste
                     self.commitPill(text: self.currentTranscript)
                 }
-                // If quick tap (< 0.35s) while closed: it opened on key down, stays open for dictation!
             }
         }
     }
@@ -196,7 +193,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     private func showPill() {
-        // Record the exact application that had focus when the user triggered dictation
+        // Record the application that had focus before triggering San
         let front = NSWorkspace.shared.frontmostApplication
         if front?.bundleIdentifier != Bundle.main.bundleIdentifier {
             targetApp = front
@@ -216,17 +213,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     private func commitPill(text: String) {
-        let appToPasteInto = targetApp
+        let appToPasteInto = targetApp ?? NSWorkspace.shared.frontmostApplication
         
         waveformEngine.stopRecording(activeAppBundleId: appToPasteInto?.bundleIdentifier) { [weak self] finalText in
-            // Immediately dismiss the floating pill smoothly
-            self?.pillWindow?.hideAnimated()
+            // Immediately dismiss floating pill window
+            self?.pillWindow?.orderOut(nil)
             
             let chosen = finalText.isEmpty ? text : finalText
             let trimmed = chosen.trimmingCharacters(in: .whitespacesAndNewlines)
             
             if !trimmed.isEmpty {
-                // Automatically re-activate the target app and paste into the text box
+                // Automatically re-activate the target app and paste into the text box / chatbot
                 TextPaster.paste(text: trimmed, targetApp: appToPasteInto)
             }
             self?.currentTranscript = ""

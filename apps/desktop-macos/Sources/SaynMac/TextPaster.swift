@@ -22,18 +22,21 @@ final class TextPaster {
         let cleanText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanText.isEmpty else { return }
         
-        // 1. Always copy text to system pasteboard
+        // 1. Copy polished text directly to system clipboard
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(cleanText, forType: .string)
         
-        // 2. Reactivate the target application where the user had the cursor
-        if let app = targetApp {
-            app.activate()
+        // 2. Identify the app to restore focus to
+        let appToActivate = targetApp ?? NSWorkspace.shared.frontmostApplication
+        
+        // 3. Force activate target application ignoring background daemon
+        if let app = appToActivate {
+            app.activate(options: [.activateIgnoringOtherApps])
         }
         
-        // 3. Tier 1: Try Direct Accessibility Insertion (Instant, zero clipboard race)
-        if let app = targetApp {
+        // 4. Tier 1: Direct Accessibility In-Field Insertion
+        if let app = appToActivate {
             let appRef = AXUIElementCreateApplication(app.processIdentifier)
             var focusedElement: CFTypeRef?
             let copyResult = AXUIElementCopyAttributeValue(appRef, kAXFocusedUIElementAttribute as CFString, &focusedElement)
@@ -47,13 +50,12 @@ final class TextPaster {
             }
         }
         
-        // 4. Tier 2: Synthesize Cmd+V with proper focus delay (140ms for Electron/Web/Native)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
+        // 5. Tier 2: Synthesize Cmd+V keystroke into the active chat window
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
             let src = CGEventSource(stateID: .combinedSessionState)
             let vKeyCode: CGKeyCode = 0x09 // 'v'
             let cmdKeyCode: CGKeyCode = 0x37 // Left Command
             
-            // Post explicit sequence: Cmd down -> V down -> V up -> Cmd up
             if let cmdDown = CGEvent(keyboardEventSource: src, virtualKey: cmdKeyCode, keyDown: true),
                let vDown = CGEvent(keyboardEventSource: src, virtualKey: vKeyCode, keyDown: true),
                let vUp = CGEvent(keyboardEventSource: src, virtualKey: vKeyCode, keyDown: false),
@@ -64,15 +66,15 @@ final class TextPaster {
                 vUp.flags = .maskCommand
                 cmdUp.flags = []
                 
-                // If target app is known, deliver directly to its process event queue
-                if let pid = targetApp?.processIdentifier {
+                // Deliver directly to the active application's PID
+                if let pid = appToActivate?.processIdentifier {
                     cmdDown.postToPid(pid)
                     vDown.postToPid(pid)
                     vUp.postToPid(pid)
                     cmdUp.postToPid(pid)
                 }
                 
-                // Also broadcast to HID event tap as standard fallback
+                // Broadcast to HID event tap so web chat boxes and electron apps receive it
                 cmdDown.post(tap: .cghidEventTap)
                 vDown.post(tap: .cghidEventTap)
                 vUp.post(tap: .cghidEventTap)

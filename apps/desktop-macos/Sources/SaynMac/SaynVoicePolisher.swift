@@ -1,6 +1,6 @@
 import Foundation
 
-/// Fast, deterministic speech-to-text polisher matching Wispr Flow behavior.
+/// Fast, deterministic speech-to-text polisher for San voice flow.
 /// Removes disfluencies, self-corrections, spoken punctuation, and formats numbers/dates/tones in 0ms.
 final class SaynVoicePolisher {
     static let shared = SaynVoicePolisher()

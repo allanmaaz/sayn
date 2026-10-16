@@ -4,23 +4,23 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR"
 
-echo "⚡ Compiling Universal 2 Binary (Apple Silicon + Intel)..."
+echo "⚡ Compiling San Universal 2 Binary (Apple Silicon + Intel)..."
 swiftc -O -target arm64-apple-macos11.0 -framework Cocoa -framework SwiftUI -framework Carbon -framework AVFoundation -framework Speech \
-  Sources/SaynMac/*.swift -o /tmp/sayn_mac_arm64
+  Sources/SaynMac/*.swift -o /tmp/san_mac_arm64
 
 swiftc -O -target x86_64-apple-macos11.0 -framework Cocoa -framework SwiftUI -framework Carbon -framework AVFoundation -framework Speech \
-  Sources/SaynMac/*.swift -o /tmp/sayn_mac_x86_64
+  Sources/SaynMac/*.swift -o /tmp/san_mac_x86_64
 
-lipo -create -output /tmp/sayn_mac_universal /tmp/sayn_mac_arm64 /tmp/sayn_mac_x86_64
-file /tmp/sayn_mac_universal
+lipo -create -output /tmp/san_mac_universal /tmp/san_mac_arm64 /tmp/san_mac_x86_64
+file /tmp/san_mac_universal
 
-APP_DIR="/Applications/SAYN.app/Contents/MacOS"
-RES_DIR="/Applications/SAYN.app/Contents/Resources"
+APP_DIR="/Applications/San.app/Contents/MacOS"
+RES_DIR="/Applications/San.app/Contents/Resources"
 mkdir -p "$APP_DIR"
 mkdir -p "$RES_DIR"
 
-cp /tmp/sayn_mac_universal "$APP_DIR/SAYN"
-chmod +x "$APP_DIR/SAYN"
+cp /tmp/san_mac_universal "$APP_DIR/San"
+chmod +x "$APP_DIR/San"
 
 # Copy Icon and Logo resources
 if [ -f "Resources/AppIcon.icns" ]; then
@@ -30,49 +30,49 @@ if [ -f "Resources/logo.png" ]; then
     cp Resources/logo.png "$RES_DIR/logo.png"
 fi
 
-cat << 'EOF' > /Applications/SAYN.app/Contents/Info.plist
+cat << 'EOF' > /Applications/San.app/Contents/Info.plist
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
     <key>CFBundleExecutable</key>
-    <string>SAYN</string>
+    <string>San</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
-    <string>com.sayn.desktop</string>
+    <string>com.san.desktop</string>
     <key>CFBundleName</key>
-    <string>SAYN</string>
+    <string>San</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.1.0</string>
+    <string>1.2.0</string>
     <key>LSUIElement</key>
     <true/>
     <key>NSMicrophoneUsageDescription</key>
-    <string>SAYN uses your microphone for real-time speech dictation and waveform visualization.</string>
+    <string>San uses your microphone for high-speed voice dictation and AI polishing.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
-    <string>SAYN uses speech recognition to transcribe your voice directly into your active apps.</string>
+    <string>San uses speech recognition to transcribe your voice directly into your active apps.</string>
 </dict>
 </plist>
 EOF
 
-# Properly code sign the application bundle so macOS TCC respects Accessibility permissions
-echo "🔒 Code-signing /Applications/SAYN.app..."
-codesign --force --deep --sign - --identifier "com.sayn.desktop" /Applications/SAYN.app
+echo "🔒 Code-signing /Applications/San.app..."
+codesign --force --deep --sign - --identifier "com.san.desktop" /Applications/San.app
 
-# Force LaunchServices to refresh Spotlight / Finder app icon
-touch /Applications/SAYN.app
-/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister -f /Applications/SAYN.app 2>/dev/null || true
+touch /Applications/San.app
+/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister -f /Applications/San.app 2>/dev/null || true
 
 # Kill any existing running instance
+pkill -f "/Applications/San.app/Contents/MacOS/San" 2>/dev/null || true
 pkill -f "/Applications/SAYN.app/Contents/MacOS/SAYN" 2>/dev/null || true
 sleep 0.5
 
 # Launch the newly compiled app
-open /Applications/SAYN.app
+open /Applications/San.app
 
-echo "✅ SAYN.app successfully compiled, branded, and installed in /Applications/SAYN.app!"
-echo "🚀 Launched SAYN background assistant!"
-echo "👉 Global Hotkey: Press Fn key (or Option + Space) to trigger the Wispr Flow pill!"
-
+echo "=========================================================="
+echo "✅ San.app successfully compiled, branded, and installed in /Applications/San.app!"
+echo "🚀 Launched San background voice assistant!"
+echo "👉 Global Hotkey: Press Fn key (or Option + Space) to trigger San dictation with auto-paste!"
+echo "=========================================================="

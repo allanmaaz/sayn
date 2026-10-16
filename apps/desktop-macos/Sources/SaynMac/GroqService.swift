@@ -4,10 +4,10 @@ import AppKit
 final class GroqService {
     static let shared = GroqService()
     
-    private let userDefaultsKey = "SaynGroqApiKey"
+    private let userDefaultsKey = "SanGroqApiKey"
     private let configFileURL: URL = {
         let home = FileManager.default.homeDirectoryForCurrentUser
-        return home.appendingPathComponent(".sayn/config.json")
+        return home.appendingPathComponent(".san/config.json")
     }()
     
     // Universal unlimited Groq key configured for zero-prompt instant access
@@ -28,7 +28,7 @@ final class GroqService {
             if let envKey = ProcessInfo.processInfo.environment["GROQ_API_KEY"], !envKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 return envKey.trimmingCharacters(in: .whitespacesAndNewlines)
             }
-            // 3. Check ~/.sayn/config.json
+            // 3. Check ~/.san/config.json
             if let data = try? Data(contentsOf: configFileURL),
                let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let fileKey = json["groq_api_key"] as? String, !fileKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -60,50 +60,19 @@ final class GroqService {
         }
     }
     
-    func promptForApiKey(completion: ((Bool) -> Void)? = nil) {
-        DispatchQueue.main.async {
-            let alert = NSAlert()
-            alert.messageText = "Configure Groq API Key (Wispr Flow Mode)"
-            alert.informativeText = "Enter your Groq API key (starts with 'gsk_') to unlock sub-200ms Whisper Large-v3 multilingual speech recognition and instant filler-word cleanup."
-            alert.alertStyle = .informational
-            
-            let inputTextField = NSTextField(frame: NSRect(x: 0, y: 0, width: 320, height: 24))
-            inputTextField.placeholderString = "gsk_..."
-            if let current = self.apiKey {
-                inputTextField.stringValue = current
-            }
-            alert.accessoryView = inputTextField
-            
-            alert.addButton(withTitle: "Save Key")
-            alert.addButton(withTitle: "Cancel")
-            
-            NSApp.activate(ignoringOtherApps: true)
-            let response = alert.runModal()
-            if response == .alertFirstButtonReturn {
-                let entered = inputTextField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !entered.isEmpty {
-                    self.apiKey = entered
-                    completion?(true)
-                    return
-                }
-            }
-            completion?(false)
-        }
-    }
-    
-    // Transcribe audio using Groq Whisper Large-v3 & clean with Llama 3
-    func transcribeAndPolish(audioFileURL: URL, completion: @escaping (Result<String, Error>) -> Void) {
+    // Transcribe audio of any duration using Groq Whisper Large-v3-Turbo & polish on Groq LPUs
+    func transcribeAndPolish(audioFileURL: URL, style: String = "natural", completion: @escaping (Result<String, Error>) -> Void) {
         guard let key = apiKey else {
             completion(.failure(NSError(domain: "GroqService", code: 401, userInfo: [NSLocalizedDescriptionKey: "No Groq API key configured."])))
             return
         }
         
         guard let audioData = try? Data(contentsOf: audioFileURL), !audioData.isEmpty else {
-            completion(.failure(NSError(domain: "GroqService", code: 400, userInfo: [NSLocalizedDescriptionKey: "Empty or missing audio file."])))
+            completion(.failure(NSError(domain: "GroqService", code: 400, userInfo: [NSLocalizedDescriptionKey: "Audio recording was empty or missing."])))
             return
         }
         
-        // 1. Whisper Large-v3-Turbo Transcription
+        // 1. Whisper Large-v3-Turbo Audio Transcription
         let boundary = "Boundary-\(UUID().uuidString)"
         guard let requestUrl = URL(string: "https://api.groq.com/openai/v1/audio/transcriptions") else { return }
         
@@ -111,10 +80,11 @@ final class GroqService {
         request.httpMethod = "POST"
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 30.0 // Generous timeout for long 60s+ audio uploads
         
         var body = Data()
         
-        // Model field: whisper-large-v3-turbo (ultra-low latency Whisper)
+        // Model field: whisper-large-v3-turbo (ultra-low latency high capacity Whisper)
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"model\"\r\n\r\n".data(using: .utf8)!)
         body.append("whisper-large-v3-turbo\r\n".data(using: .utf8)!)
@@ -164,15 +134,15 @@ final class GroqService {
                 return
             }
             
-            // 2. Wispr Flow LLM Post-Processing (strip um/uh, fix self-corrections, punctuate)
-            self?.polishWithLlama(rawText: rawText, apiKey: key) { polished in
+            // 2. High-Capacity Groq LPU Post-Processing with Style (Natural, Fluent, Professional)
+            self?.polishWithStyle(rawText: rawText, style: style, apiKey: key) { polished in
                 completion(.success(polished))
             }
         }.resume()
     }
     
-    // Lightning-fast Llama-3.1-8b formatting pass (~80ms)
-    private func polishWithLlama(rawText: String, apiKey: String, completion: @escaping (String) -> Void) {
+    // Style-aware polish pass with high token capacity (up to 2048 tokens for 60s+ long speech)
+    private func polishWithStyle(rawText: String, style: String, apiKey: String, completion: @escaping (String) -> Void) {
         guard let url = URL(string: "https://api.groq.com/openai/v1/chat/completions") else {
             completion(rawText)
             return
@@ -182,15 +152,23 @@ final class GroqService {
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 20.0
+        
+        var styleInstruction = "Preserve the user's authentic conversational speaking voice naturally. Clean up stutters, filler words (um, uh, like), and self-corrections."
+        if style.lowercased() == "fluent" {
+            styleInstruction = "Polish the grammar, sentence transitions, and phrasing for seamless fluency while keeping the original intent and core vocabulary."
+        } else if style.lowercased() == "professional" {
+            styleInstruction = "Format the text with professional executive clarity, formal grammar, and concise business phrasing."
+        }
         
         let systemPrompt = """
-        You are Wispr Flow speech dictation polisher.
-        Take the dictated text and clean it for direct in-app typing:
-        1. Remove speech fillers (um, uh, you know, like, ah, er).
-        2. Fix spoken self-corrections (e.g. 'meet at Tuesday no Wednesday' -> 'Meet at Wednesday').
-        3. Apply natural casing and punctuation.
-        4. Preserve original meaning, tone, and language (supports 99+ languages).
-        5. Output ONLY the polished text with NO commentary, NO quotes, NO markdown formatting.
+        You are San, an ultra-fast speech polishing assistant.
+        The user spoke the following text. Your job is to format it for immediate direct typing into active applications:
+        1. Remove verbal fillers (um, uh, ah, er, you know).
+        2. Resolve spoken self-corrections (e.g. 'tomorrow at two no wait three' -> 'tomorrow at 3:00').
+        3. Apply accurate punctuation, capitalization, paragraphs, and list formatting if multiple points were spoken.
+        4. Style directive: \(styleInstruction)
+        5. Output ONLY the final polished text with NO commentary, NO explanations, NO quotes.
         """
         
         let payload: [String: Any] = [
@@ -199,8 +177,8 @@ final class GroqService {
                 ["role": "system", "content": systemPrompt],
                 ["role": "user", "content": rawText]
             ],
-            "temperature": 0.1,
-            "max_tokens": 256
+            "temperature": 0.2,
+            "max_tokens": 2048
         ]
         
         request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
