@@ -192,24 +192,46 @@ export const LandingPage: React.FC = () => {
       ? 1.15
       : 0.85;
 
-  // Viewport scroll-driven laser progress
+  // Reversible Pinned Scrollytelling Tracks (Ch.02 Laser Prism, Ch.03 LPU Constellation, Ch.04 Incinerator)
   const prismTrackRef = React.useRef<HTMLElement | null>(null);
   const [scrollLaserProg, setScrollLaserProg] = useState(0);
 
+  const lpuTrackRef = React.useRef<HTMLElement | null>(null);
+  const [lpuProg, setLpuProg] = useState(0);
+
+  const privacyTrackRef = React.useRef<HTMLElement | null>(null);
+  const [privacyProg, setPrivacyProg] = useState(0);
+
   React.useEffect(() => {
+    const calcTrackProgress = (trackEl: HTMLElement | null, pinTop: number) => {
+      if (!trackEl) return 0;
+      const rect = trackEl.getBoundingClientRect();
+      const stickyChild = trackEl.firstElementChild as HTMLElement | null;
+      const cardHeight = stickyChild ? stickyChild.offsetHeight : window.innerHeight * 0.7;
+      const totalStickyTravel = Math.max(100, (rect.height - cardHeight) * 0.88);
+      return Math.min(1, Math.max(0, (pinTop - rect.top) / totalStickyTravel));
+    };
+
     const onScroll = () => {
-      if (!prismTrackRef.current) return;
-      const rect = prismTrackRef.current.getBoundingClientRect();
-      const windowHeight = window.innerHeight;
-      const start = windowHeight * 0.85;
-      const end = windowHeight * 0.20;
-      const progress = Math.min(1, Math.max(0, (start - rect.top) / (start - end)));
-      setScrollLaserProg(progress);
+      const pinTop = window.innerWidth >= 640 ? 96 : 80;
+
+      // Chapter 02: Neural Laser Prism (180vh track)
+      setScrollLaserProg(calcTrackProgress(prismTrackRef.current, pinTop));
+
+      // Chapter 03: Groq LPU Constellation (180vh track)
+      setLpuProg(calcTrackProgress(lpuTrackRef.current, pinTop));
+
+      // Chapter 04: Zero Cloud Retention (170vh track)
+      setPrivacyProg(calcTrackProgress(privacyTrackRef.current, pinTop));
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
     onScroll();
-    return () => window.removeEventListener('scroll', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
   }, []);
 
   const prismProg = manualLaserProg !== null ? manualLaserProg : scrollLaserProg;
@@ -333,7 +355,7 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div
-      className={`flex-1 flex flex-col relative overflow-hidden transition-colors duration-300 ${
+      className={`flex-1 flex flex-col relative overflow-x-clip transition-colors duration-300 ${
         isLight ? 'bg-[#FAF7F2] text-[#2D0A12]' : 'bg-[#100205] text-[#F6EFE8]'
       }`}
     >
@@ -934,9 +956,10 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* CHAPTER 02: THE NEURAL LASER PRISM (Disfluency Shredder) */}
+      {/* CHAPTER 02: THE NEURAL LASER PRISM (Sticky Reversible Scrollytelling Track) */}
       {/* ========================================================================= */}
-      <section id="laser-prism" ref={prismTrackRef} className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 my-12 sm:my-16 relative z-10">
+      <section id="laser-prism" ref={prismTrackRef} className="relative h-[180vh] max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 my-8 z-10">
+        <div className="sticky top-20 sm:top-24 h-auto">
           <div
             className={`rounded-3xl sm:rounded-[38px] p-6 sm:p-12 border shadow-2xl relative overflow-hidden transition-all ${
             isLight
@@ -1125,16 +1148,18 @@ export const LandingPage: React.FC = () => {
             </div>
           </div>
         </div>
+        </div>
       </section>
 
 
 
       {/* ========================================================================= */}
-      {/* CHAPTER 03: THE GROQ LPU CONSTELLATION (Orbital Reactor Hub) */}
+      {/* CHAPTER 03: THE GROQ LPU CONSTELLATION (Sticky Reversible Scrollytelling Track) */}
       {/* ========================================================================= */}
-      <section id="lpu-constellation" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 my-16 relative z-10">
-        <div
-          className={`rounded-3xl sm:rounded-[38px] p-8 sm:p-14 text-center border shadow-2xl relative overflow-hidden transition-all ${
+      <section id="lpu-constellation" ref={lpuTrackRef} className="relative h-[180vh] max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 my-8 z-10">
+        <div className="sticky top-20 sm:top-24 h-auto">
+          <div
+            className={`rounded-3xl sm:rounded-[38px] p-8 sm:p-14 text-center border shadow-2xl relative overflow-hidden transition-all ${
             isLight
               ? 'bg-gradient-to-b from-[#FFFDF9] via-[#FAF4EB] to-[#F5EFE6] border-[#E2D9CD] shadow-[0_20px_50px_rgba(111,16,37,0.08)]'
               : 'bg-gradient-to-b from-[#1C060B] via-[#140508] to-[#100205] border-[#4A1522] shadow-[0_30px_80px_rgba(0,0,0,0.85)]'
@@ -1187,23 +1212,29 @@ export const LandingPage: React.FC = () => {
               </div>
             </div>
 
-            {/* 6 Circuit Nodes in Orbit */}
+            {/* 6 Circuit Nodes in Orbit (Smoothly Rotating & Igniting on Scroll) */}
             {[
-              { label: 'NODE 01 — GROQ WHISPER', angle: 0 },
-              { label: 'NODE 02 — LOCAL SQLITE WAL', angle: 60 },
-              { label: 'NODE 03 — DISFLUENCY PRISM', angle: 120 },
-              { label: 'NODE 04 — 100% FREE FOREVER', angle: 180 },
-              { label: 'NODE 05 — CURSOR INJECTION', angle: 240 },
-              { label: 'NODE 06 — EPHEMERAL BUFFER', angle: 300 },
+              { label: 'NODE 01 — GROQ WHISPER', angle: 0, threshold: 0.15 },
+              { label: 'NODE 02 — LOCAL SQLITE WAL', angle: 60, threshold: 0.30 },
+              { label: 'NODE 03 — DISFLUENCY PRISM', angle: 120, threshold: 0.45 },
+              { label: 'NODE 04 — 100% FREE FOREVER', angle: 180, threshold: 0.60 },
+              { label: 'NODE 05 — CURSOR INJECTION', angle: 240, threshold: 0.75 },
+              { label: 'NODE 06 — EPHEMERAL BUFFER', angle: 300, threshold: 0.90 },
             ].map((node, i) => {
-              const rad = (node.angle * Math.PI) / 180;
+              const currentAngle = node.angle + (lpuProg * 60);
+              const rad = (currentAngle * Math.PI) / 180;
               const radius = 135;
               const x = Math.cos(rad) * radius;
               const y = Math.sin(rad) * radius;
+              const isIgnited = lpuProg >= node.threshold;
               return (
                 <div
                   key={i}
-                  className="absolute px-2.5 py-1 rounded-full text-[9px] font-mono font-bold bg-[#1C060B]/90 border border-[#C83E5B]/50 text-[#F5EBDD] shadow-md transition-transform hover:scale-110 whitespace-nowrap hidden sm:block"
+                  className={`absolute px-2.5 py-1 rounded-full text-[9px] font-mono font-bold shadow-md transition-all duration-200 whitespace-nowrap hidden sm:block ${
+                    isIgnited
+                      ? 'bg-[#6F1025] border border-[#FF4D73] text-white shadow-[0_0_16px_rgba(200,62,91,0.8)] scale-105'
+                      : 'bg-[#1C060B]/90 border border-[#3D1520] text-[#A89F91]'
+                  }`}
                   style={{
                     transform: `translate(${x}px, ${y}px)`,
                   }}
@@ -1278,6 +1309,7 @@ export const LandingPage: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
         </div>
       </section>
 
@@ -1884,10 +1916,11 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* CHAPTER 04: THE EPHEMERAL INCINERATOR VAULT (Zero Audio Retention) */}
+      {/* CHAPTER 04: THE EPHEMERAL INCINERATOR VAULT (Sticky Reversible Scrollytelling Track) */}
       {/* ========================================================================= */}
-      <section id="privacy" className="py-24 border-t border-[#3D1520] bg-[#14080D]/80 relative overflow-hidden">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+      <section id="privacy" ref={privacyTrackRef} className="relative h-[170vh] border-t border-[#3D1520] bg-[#14080D]/80 z-10 my-8">
+        <div className="sticky top-20 sm:top-24 h-auto">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <div className="reveal-on-scroll scroll-reveal">
             <span className="text-xs font-bold uppercase tracking-widest text-[#C83E5B] mb-2 block font-mono">
               CH.04 — ZERO CLOUD RETENTION
@@ -1919,26 +1952,26 @@ export const LandingPage: React.FC = () => {
                   <span>LIVE MEMORY SHREDDER GAUGE</span>
                 </span>
                 <span className="text-[10px] font-mono text-emerald-400 font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
-                  RAM FLUSH: 100% COMPLETE (0.00 KB LEAK)
+                  RAM FLUSH: {Math.round(privacyProg * 100)}% COMPLETE (0.00 KB LEAK)
                 </span>
               </div>
 
-              {/* Progress bar stream */}
+              {/* Progress bar stream linked to scroll */}
               <div className="relative w-full h-3 rounded-full bg-[#100205] overflow-hidden border border-[#3D1520]">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-[#C83E5B] to-transparent animate-pulse"
-                  style={{ width: '100%' }}
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-[#C83E5B] to-emerald-400 transition-all duration-150"
+                  style={{ width: `${Math.round(25 + privacyProg * 75)}%` }}
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-2 mt-4 text-center font-mono text-[10px] text-[#A89F91]">
-                <div className="p-2 rounded bg-black/30 border border-[#3D1520]">
+                <div className={`p-2 rounded border transition-colors ${privacyProg < 0.33 ? 'bg-[#6F1025]/40 border-[#C83E5B] text-[#F5EBDD] font-bold' : 'bg-black/30 border-[#3D1520]'}`}>
                   1. MIC CAPTURE (PCM 48kHz)
                 </div>
-                <div className="p-2 rounded bg-black/30 border border-[#3D1520]">
+                <div className={`p-2 rounded border transition-colors ${privacyProg >= 0.33 && privacyProg < 0.75 ? 'bg-[#6F1025]/40 border-[#C83E5B] text-[#F5EBDD] font-bold' : 'bg-black/30 border-[#3D1520]'}`}>
                   2. GROQ LPU INFERENCE
                 </div>
-                <div className="p-2 rounded bg-[#6F1025]/30 border border-[#C83E5B]/40 text-[#F5EBDD] font-bold">
+                <div className={`p-2 rounded border transition-colors ${privacyProg >= 0.75 ? 'bg-[#6F1025]/40 border-[#C83E5B] text-[#F5EBDD] font-bold shadow-[0_0_12px_rgba(200,62,91,0.5)]' : 'bg-[#6F1025]/20 border-[#C83E5B]/40 text-[#F5EBDD]'}`}>
                   3. MEMORY INCINERATED 🔥
                 </div>
               </div>
@@ -1970,6 +2003,7 @@ export const LandingPage: React.FC = () => {
               <p className="text-[#D6C7B2] leading-relaxed">Password and secure credentials are excluded from external AI processing.</p>
             </div>
           </div>
+        </div>
         </div>
       </section>
 

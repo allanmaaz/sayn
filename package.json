@@ -9,10 +9,10 @@
     "apps/web"
   ],
   "scripts": {
-    "build": "npm run build --workspace=apps/web && mkdir -p dist && cp -r apps/web/dist/* dist/",
+    "build": "npm run build --workspace=packages/shared-types && npm run build --workspace=apps/web && mkdir -p dist && cp -r apps/web/dist/* dist/",
     "dev": "npm run dev --workspace=apps/web",
     "dev:web": "npm run dev --workspace=apps/web",
-    "build:web": "npm run build --workspace=apps/web",
+    "build:web": "npm run build --workspace=packages/shared-types && npm run build --workspace=apps/web",
     "dev:worker": "npm run dev --workspace=services/api-worker",
     "build:worker": "npm run build --workspace=services/api-worker",
     "test:worker": "npm run test --workspace=services/api-worker",
