@@ -47,16 +47,16 @@ jobs:
           cd apps/desktop-windows
           npm install
 
-      - name: Build Windows Executables (NSIS & Portable)
+      - name: Build Windows Executables (64-bit & 32-bit NSIS & Portable)
         shell: bash
         run: |
           cd apps/desktop-windows
-          npx electron-builder --win nsis portable --x64
+          npx electron-builder --win nsis portable --x64 --ia32
 
       - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: sayn-windows-x64
+          name: sayn-windows-binaries
           path: release/windows/*.exe
 
       - name: Attach Windows Exe to Release

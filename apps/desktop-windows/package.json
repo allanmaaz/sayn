@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "build:win": "electron-builder --win nsis --x64",
+    "build:win": "electron-builder --win nsis portable --x64 --ia32",
     "pack": "electron-builder --dir"
   },
   "build": {
@@ -17,15 +17,28 @@
       "output": "../../release/windows"
     },
     "win": {
-      "target": ["nsis", "portable"],
-      "icon": "resources/icon.ico"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64", "ia32"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64", "ia32"]
+        }
+      ],
+      "icon": "resources/icon.png"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "SAYN"
+      "shortcutName": "SAYN",
+      "artifactName": "SAYN-Setup-${version}-${arch}.${ext}"
+    },
+    "portable": {
+      "artifactName": "SAYN-Portable-${version}-${arch}.${ext}"
     },
     "files": [
       "src/**/*",

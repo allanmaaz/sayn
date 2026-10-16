@@ -16,10 +16,16 @@ mkdir -p "$RELEASE_DIR"
 rm -rf "$DMG_STAGE"
 mkdir -p "$DMG_STAGE"
 
-# 1. Compile fresh SAYN.app if not already up to date
-echo "🔨 Compiling binary..."
-swiftc -O -framework Cocoa -framework SwiftUI -framework Carbon -framework AVFoundation -framework Speech \
-  "$DIR"/Sources/SaynMac/*.swift -o /tmp/sayn_mac_bin
+# 1. Compile Universal 2 binary (Apple Silicon arm64 + Intel x86_64)
+echo "🔨 Compiling Universal macOS Binary (Apple Silicon + Intel)..."
+swiftc -O -target arm64-apple-macos11.0 -framework Cocoa -framework SwiftUI -framework Carbon -framework AVFoundation -framework Speech \
+  "$DIR"/Sources/SaynMac/*.swift -o /tmp/sayn_mac_arm64
+
+swiftc -O -target x86_64-apple-macos11.0 -framework Cocoa -framework SwiftUI -framework Carbon -framework AVFoundation -framework Speech \
+  "$DIR"/Sources/SaynMac/*.swift -o /tmp/sayn_mac_x86_64
+
+lipo -create -output /tmp/sayn_mac_universal /tmp/sayn_mac_arm64 /tmp/sayn_mac_x86_64
+file /tmp/sayn_mac_universal
 
 APP_BUNDLE="$DMG_STAGE/SAYN.app"
 APP_DIR="$APP_BUNDLE/Contents/MacOS"
@@ -27,7 +33,7 @@ RES_DIR="$APP_BUNDLE/Contents/Resources"
 mkdir -p "$APP_DIR"
 mkdir -p "$RES_DIR"
 
-cp /tmp/sayn_mac_bin "$APP_DIR/SAYN"
+cp /tmp/sayn_mac_universal "$APP_DIR/SAYN"
 chmod +x "$APP_DIR/SAYN"
 
 if [ -f "$DIR/Resources/AppIcon.icns" ]; then
