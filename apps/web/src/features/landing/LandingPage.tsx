@@ -16,7 +16,6 @@ import {
   Sparkles,
   Square,
   Play,
-  Columns2,
   Globe,
   Sliders,
   Maximize2,
@@ -170,7 +169,7 @@ export const LandingPage: React.FC = () => {
 
   // Interactive Hero Studio States
   const [activeStudioMode, setActiveStudioMode] = useState<StudioModeKey>('ai-writer');
-  const [comparisonView, setComparisonView] = useState<'refined' | 'original' | 'split'>('refined');
+  const [comparisonView, setComparisonView] = useState<'refined' | 'original'>('refined');
   const [isListening, setIsListening] = useState(true);
   const [audioSeconds, setAudioSeconds] = useState(4);
   const [barHeights, setBarHeights] = useState([20, 45, 80, 100, 65, 90, 40, 75, 30]);
@@ -794,9 +793,9 @@ export const LandingPage: React.FC = () => {
                       </button>
                     </div>
 
-                    {/* Right Refined Output Card with Original, Refined & Split Toggles */}
+                    {/* Right Refined Output Card with Original & Refined Toggles */}
                     <div className="col-span-5 rounded-xl bg-[#1C0B12] border border-[#3D1520] p-3 flex flex-col justify-between text-left">
-                      {/* Segmented Original / Refined / Split Switcher */}
+                      {/* Segmented Original / Refined Switcher */}
                       <div className="flex items-center justify-end space-x-1 mb-2">
                         <button
                           onClick={() => setComparisonView('original')}
@@ -818,44 +817,11 @@ export const LandingPage: React.FC = () => {
                         >
                           Refined
                         </button>
-                        <button
-                          onClick={() => setComparisonView('split')}
-                          className={`px-1.5 py-0.5 rounded text-[9.5px] transition-colors flex items-center space-x-0.5 ${
-                            comparisonView === 'split'
-                              ? 'bg-[#F5EBDD] text-[#100709] font-bold shadow-xs'
-                              : 'text-[#A89F91] hover:text-[#F5EBDD]'
-                          }`}
-                        >
-                          <Columns2 className="w-2.5 h-2.5" />
-                          <span>Split</span>
-                        </button>
                       </div>
 
                       {/* Output Display Based on Selected View */}
                       <div className="flex-1 flex flex-col justify-center min-h-[95px] mb-2">
-                        {comparisonView === 'split' ? (
-                          <div className="space-y-1.5">
-                            <div className="rounded bg-[#14080D] border border-[#3D1520]/80 p-1.5 text-left">
-                              <div className="flex items-center justify-between text-[8px] text-[#D9385A] font-mono mb-0.5 font-bold">
-                                <span>RAW ({currentModeConfig.rawWords}w)</span>
-                              </div>
-                              <p className="text-[9.5px] text-[#B59CA2] leading-tight line-clamp-2">
-                                {currentModeConfig.rawHighlightedHtml}
-                              </p>
-                            </div>
-                            <div className="rounded bg-[#240A12] border border-[#6F1025] p-1.5 text-left">
-                              <div className="flex items-center justify-between text-[8px] text-[#22C55E] font-mono mb-0.5 font-bold">
-                                <span>REFINED ({currentModeConfig.refinedWords}w)</span>
-                                <span className="text-[#F5EBDD] bg-[#6F1025] px-1 py-0.2 rounded font-sans text-[7.5px]">
-                                  {currentModeConfig.metricBadge}
-                                </span>
-                              </div>
-                              <p className="text-[10px] text-[#F5EBDD] font-medium leading-tight line-clamp-2">
-                                "{currentModeConfig.refinedText}"
-                              </p>
-                            </div>
-                          </div>
-                        ) : comparisonView === 'original' ? (
+                        {comparisonView === 'original' ? (
                           <div className="space-y-1">
                             <div className="flex items-center justify-between text-[9px] font-mono text-[#D9385A]">
                               <span>RAW SPOKEN STREAM</span>
