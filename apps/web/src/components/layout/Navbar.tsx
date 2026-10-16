@@ -56,211 +56,236 @@ export const Navbar: React.FC = () => {
 
   return (
     <>
-      <header className={`sticky top-0 z-40 transition-all duration-300 ${
-        scrollY > 20
-          ? 'backdrop-blur-2xl bg-[#100709]/95 border-b border-[#A83249]/40 shadow-[0_4px_30px_rgba(111,16,37,0.25)]'
-          : 'backdrop-blur-xl bg-[#100709]/90 border-b border-[#3D1520]/60'
-      }`}>
-        {/* Dynamic Hairline Scroll Progress Bar */}
+      {/* Top Floating Glass Capsule Bar */}
+      <header className="fixed top-3 sm:top-5 left-0 right-0 z-50 flex justify-center px-3 sm:px-6 pointer-events-none transition-all duration-300">
         <div
-          className="absolute bottom-0 left-0 h-[2.5px] bg-gradient-to-r from-[#6F1025] via-[#A83249] to-[#F5EBDD] transition-all duration-75 ease-out shadow-[0_0_12px_rgba(168,50,73,0.9)] z-50 pointer-events-none"
-          style={{ width: `${scrollProgress}%` }}
-        />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
-        {/* Brand Logo & Wordmark */}
-        <Link to="/" className="flex items-center space-x-3 group">
-          <img src={saynLogo} alt="SAYN Logo" className="w-9 h-9 rounded-xl shadow-md transition-transform group-hover:scale-105" />
-          <div className="flex flex-col">
-            <span className="font-bold text-xl tracking-wider text-[#F5EBDD]">
-              SAYN
-            </span>
+          className={`pointer-events-auto relative max-w-5xl w-full rounded-full transition-all duration-300 ${
+            scrollY > 20
+              ? 'backdrop-blur-2xl bg-[#14080D]/90 border border-[#A83249]/50 shadow-[0_12px_40px_rgba(16,7,9,0.85),0_0_25px_rgba(111,16,37,0.3)] py-2 sm:py-2.5 px-4 sm:px-6'
+              : 'backdrop-blur-xl bg-[#180B0F]/80 border border-[#A83249]/35 shadow-[0_8px_32px_rgba(16,7,9,0.7),0_0_16px_rgba(111,16,37,0.18)] py-2.5 sm:py-3 px-5 sm:px-7'
+          }`}
+        >
+          {/* Top Specular Edge Highlight */}
+          <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-[#F5EBDD]/25 to-transparent pointer-events-none rounded-t-full" />
+
+          {/* Dynamic Hairline Scroll Progress Bar along Capsule Bottom */}
+          <div className="absolute bottom-0 inset-x-0 h-[2px] overflow-hidden rounded-b-full pointer-events-none">
+            <div
+              className="h-full bg-gradient-to-r from-[#6F1025] via-[#A83249] to-[#F5EBDD] transition-all duration-75 ease-out shadow-[0_0_8px_rgba(168,50,73,0.9)]"
+              style={{ width: `${scrollProgress}%` }}
+            />
           </div>
-        </Link>
 
-        {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center space-x-8">
-          {user ? (
-            navLinks.map((link) => {
-              const Icon = link.icon;
-              const isActive = location.pathname === link.path;
-              return (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  className={`flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                    isActive
-                      ? 'bg-[#6F1025] text-[#F5EBDD] font-semibold shadow-sm'
-                      : 'text-[#D6C7B2] hover:text-[#F5EBDD]'
-                  }`}
-                >
-                  {Icon && <Icon className="w-4 h-4" />}
-                  <span>{link.label}</span>
-                </Link>
-              );
-            })
-          ) : (
-            <div className="flex items-center space-x-8">
-              {navLinks.map((link) => (
-                <a
-                  key={link.label}
-                  href={link.path}
-                  className="text-sm font-medium text-[#D6C7B2] hover:text-[#F5EBDD] transition-colors"
-                >
-                  {link.label}
-                </a>
-              ))}
-            </div>
-          )}
-        </nav>
+          <div className="flex items-center justify-between">
+            {/* Brand Logo & Wordmark */}
+            <Link to="/" className="flex items-center space-x-2.5 group">
+              <img
+                src={saynLogo}
+                alt="SAYN Logo"
+                className="w-8 h-8 rounded-lg shadow-sm transition-transform group-hover:scale-105"
+              />
+              <span className="font-bold text-lg tracking-wider text-[#F5EBDD]">
+                SAYN
+              </span>
+            </Link>
 
-        {/* Right Action Buttons */}
-        <div className="hidden md:flex items-center space-x-4">
-          {/* Quick Download App Pill */}
-          <button
-            onClick={() => setIsDownloadOpen(true)}
-            className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-[#F5EBDD] bg-[#6F1025]/40 border border-[#A83249]/50 hover:bg-[#6F1025] active:scale-95 transition-all"
-          >
-            <Download className="w-3.5 h-3.5 stroke-[2]" />
-            <span>Download</span>
-          </button>
+            {/* Desktop Navigation Links */}
+            <nav className="hidden md:flex items-center space-x-1 sm:space-x-2">
+              {user ? (
+                navLinks.map((link) => {
+                  const Icon = link.icon;
+                  const isActive = location.pathname === link.path;
+                  return (
+                    <Link
+                      key={link.path}
+                      to={link.path}
+                      className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all ${
+                        isActive
+                          ? 'bg-[#6F1025] text-[#F5EBDD] font-semibold shadow-sm'
+                          : 'text-[#D6C7B2] hover:text-[#F5EBDD] hover:bg-[#6F1025]/20'
+                      }`}
+                    >
+                      {Icon && <Icon className="w-3.5 h-3.5" />}
+                      <span>{link.label}</span>
+                    </Link>
+                  );
+                })
+              ) : (
+                <div className="flex items-center space-x-1">
+                  {navLinks.map((link) => (
+                    <a
+                      key={link.label}
+                      href={link.path}
+                      className="px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-medium text-[#D6C7B2] hover:text-[#F5EBDD] hover:bg-[#6F1025]/20 transition-all"
+                    >
+                      {link.label}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </nav>
 
-          {/* Theme Toggle Button */}
-          <button
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-            className="p-2 rounded-full text-[#D6C7B2] hover:text-[#F5EBDD] hover:bg-[#240F16] transition-colors"
-          >
-            {actualTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
-
-          {user ? (
-            <div className="flex items-center space-x-2">
-              <Link
-                to="/settings"
-                className="flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm text-[#F5EBDD] bg-[#240F16] border border-[#3D1520] hover:border-[#A83249] transition-colors"
-              >
-                <UserIcon className="w-3.5 h-3.5 text-[#A83249]" />
-                <span className="truncate max-w-[120px]">{user.displayName || user.email}</span>
-              </Link>
+            {/* Right Action Buttons */}
+            <div className="hidden md:flex items-center space-x-3">
+              {/* Quick Download App Pill */}
               <button
-                onClick={() => signOut()}
-                aria-label="Sign out"
-                className="p-2 rounded-full text-[#D6C7B2] hover:text-[#FF453A] hover:bg-[#240F16] transition-colors"
-                title="Sign out"
+                onClick={() => setIsDownloadOpen(true)}
+                className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-[#F5EBDD] bg-[#6F1025]/35 border border-[#A83249]/50 hover:bg-[#6F1025] active:scale-95 transition-all"
               >
-                <LogOut className="w-4 h-4" />
+                <Download className="w-3.5 h-3.5 stroke-[2]" />
+                <span>Download</span>
               </button>
-            </div>
-          ) : (
-            <div className="flex items-center space-x-4">
-              <Link
-                to="/login"
-                className="text-sm font-medium text-[#D6C7B2] hover:text-[#F5EBDD] transition-colors px-2 py-1.5"
-              >
-                Sign In
-              </Link>
-              {/* Official Warm Cream Pill Button matching mockup */}
-              <Link
-                to="/signup"
-                className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-full text-sm font-bold text-[#100709] bg-[#F5EBDD] hover:bg-[#FAF4EB] active:scale-95 transition-all shadow-[0_4px_16px_rgba(245,235,221,0.2)]"
-              >
-                <span>Get Started Free</span>
-                <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
-              </Link>
-            </div>
-          )}
-        </div>
 
-        {/* Mobile Hamburger Button */}
-        <div className="flex md:hidden items-center space-x-2">
-          <button
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-            className="p-2 rounded-full text-[#D6C7B2]"
-          >
-            {actualTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
-            className="p-2 rounded-full text-[#F5EBDD]"
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-        </div>
-      </div>
+              {/* Theme Toggle Button */}
+              <button
+                onClick={toggleTheme}
+                aria-label="Toggle theme"
+                className="p-1.5 rounded-full text-[#D6C7B2] hover:text-[#F5EBDD] hover:bg-[#240F16] transition-colors"
+              >
+                {actualTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
 
-      {/* Mobile Drawer */}
-      {mobileMenuOpen && (
-        <div className="md:hidden border-b border-[#3D1520] bg-[#180B0F] px-4 pt-3 pb-5 space-y-2">
-          {user ? (
-            <>
-              {navLinks.map((link) => {
-                const Icon = link.icon;
-                const isActive = location.pathname === link.path;
-                return (
+              {user ? (
+                <div className="flex items-center space-x-2">
                   <Link
-                    key={link.path}
-                    to={link.path}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium ${
-                      isActive
-                        ? 'bg-[#6F1025] text-[#F5EBDD]'
-                        : 'text-[#D6C7B2] hover:text-[#F5EBDD]'
-                    }`}
+                    to="/settings"
+                    className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm text-[#F5EBDD] bg-[#240F16] border border-[#3D1520] hover:border-[#A83249] transition-colors"
                   >
-                    {Icon && <Icon className="w-4 h-4" />}
-                    <span>{link.label}</span>
+                    <UserIcon className="w-3.5 h-3.5 text-[#A83249]" />
+                    <span className="truncate max-w-[100px]">{user.displayName || user.email}</span>
                   </Link>
-                );
-              })}
-              <div className="pt-2 border-t border-[#3D1520]">
-                <button
-                  onClick={() => {
-                    signOut();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="flex items-center space-x-3 w-full px-3 py-2 text-sm text-[#FF453A]"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span>Sign Out</span>
-                </button>
-              </div>
-            </>
-          ) : (
-            <div className="space-y-3 pt-2">
-              <Link
-                to="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-xl text-sm text-[#F5EBDD] font-medium"
-              >
-                Sign In
-              </Link>
-              <Link
-                to="/signup"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block text-center px-4 py-3 rounded-full text-sm font-bold text-[#100709] bg-[#F5EBDD]"
-              >
-                Get Started Free →
-              </Link>
+                  <button
+                    onClick={() => signOut()}
+                    aria-label="Sign out"
+                    className="p-1.5 rounded-full text-[#D6C7B2] hover:text-[#FF453A] hover:bg-[#240F16] transition-colors"
+                    title="Sign out"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2.5">
+                  <Link
+                    to="/login"
+                    className="text-xs sm:text-sm font-medium text-[#D6C7B2] hover:text-[#F5EBDD] transition-colors px-2.5 py-1"
+                  >
+                    Sign In
+                  </Link>
+                  {/* Official Warm Cream Pill Button matching mockup */}
+                  <Link
+                    to="/signup"
+                    className="inline-flex items-center space-x-1.5 px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold text-[#100709] bg-[#F5EBDD] hover:bg-[#FAF4EB] active:scale-95 transition-all shadow-[0_2px_14px_rgba(245,235,221,0.25)]"
+                  >
+                    <span>Get Started</span>
+                    <ArrowRight className="w-3 h-3 stroke-[2.5]" />
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile Hamburger Button */}
+            <div className="flex md:hidden items-center space-x-1">
               <button
-                onClick={() => {
-                  setIsDownloadOpen(true);
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-full text-sm font-semibold text-[#F5EBDD] bg-[#6F1025]"
+                onClick={toggleTheme}
+                aria-label="Toggle theme"
+                className="p-1.5 rounded-full text-[#D6C7B2]"
               >
-                <Download className="w-4 h-4" />
-                <span>Download App</span>
+                {actualTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label="Toggle menu"
+                className="p-1.5 rounded-full text-[#F5EBDD]"
+              >
+                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile Drawer (Floating Glass Card Under Capsule) */}
+          {mobileMenuOpen && (
+            <div className="md:hidden absolute top-[calc(100%+8px)] left-0 right-0 rounded-2xl backdrop-blur-2xl bg-[#14080D]/95 border border-[#A83249]/40 shadow-[0_16px_50px_rgba(16,7,9,0.9)] p-4 space-y-2 pointer-events-auto animate-in fade-in zoom-in-95 duration-150">
+              {user ? (
+                <>
+                  {navLinks.map((link) => {
+                    const Icon = link.icon;
+                    const isActive = location.pathname === link.path;
+                    return (
+                      <Link
+                        key={link.path}
+                        to={link.path}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`flex items-center space-x-3 px-3 py-2 rounded-xl text-sm font-medium ${
+                          isActive
+                            ? 'bg-[#6F1025] text-[#F5EBDD]'
+                            : 'text-[#D6C7B2] hover:text-[#F5EBDD]'
+                        }`}
+                      >
+                        {Icon && <Icon className="w-4 h-4" />}
+                        <span>{link.label}</span>
+                      </Link>
+                    );
+                  })}
+                  <div className="pt-2 border-t border-[#3D1520]">
+                    <button
+                      onClick={() => {
+                        signOut();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="flex items-center space-x-3 w-full px-3 py-2 text-sm text-[#FF453A]"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-2 pt-1">
+                  {navLinks.map((link) => (
+                    <a
+                      key={link.label}
+                      href={link.path}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block px-3 py-2 rounded-xl text-sm text-[#D6C7B2] hover:text-[#F5EBDD] font-medium"
+                    >
+                      {link.label}
+                    </a>
+                  ))}
+                  <div className="pt-2 border-t border-[#3D1520]/60 space-y-2">
+                    <Link
+                      to="/login"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block px-3 py-2 rounded-xl text-sm text-[#F5EBDD] font-medium"
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      to="/signup"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block text-center px-4 py-2.5 rounded-full text-sm font-bold text-[#100709] bg-[#F5EBDD]"
+                    >
+                      Get Started Free →
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setIsDownloadOpen(true);
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-full text-sm font-semibold text-[#F5EBDD] bg-[#6F1025]"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>Download App</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
-      )}
 
-      {/* Smart Device Detection Download Modal */}
-      <DownloadModal isOpen={isDownloadOpen} onClose={() => setIsDownloadOpen(false)} />
-    </header>
+        {/* Smart Device Detection Download Modal */}
+        <DownloadModal isOpen={isDownloadOpen} onClose={() => setIsDownloadOpen(false)} />
+      </header>
 
     {/* Floating Scroll-to-Top Button with Smooth Blur & Glow */}
     {scrollY > 400 && (
