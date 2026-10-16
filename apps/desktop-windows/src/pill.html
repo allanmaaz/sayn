@@ -23,17 +23,74 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 6px 12px;
-      background: rgba(13, 13, 18, 0.88);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 6px 14px;
+      background: rgba(16, 7, 9, 0.94);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1.2px solid rgba(168, 50, 73, 0.5);
       border-radius: 9999px;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), 0 0 16px rgba(203, 254, 0, 0.12);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 24px rgba(111, 16, 37, 0.4);
     }
+    .brand-mark {
+      width: 24px;
+      height: 24px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, #8F1835, #6F1025);
+      border: 1px solid rgba(245, 235, 221, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5px;
+      flex-shrink: 0;
+    }
+    .brand-bar {
+      width: 2px;
+      border-radius: 1px;
+      background: #F5EBDD;
+    }
+    .brand-bar:nth-child(1) { height: 9px; }
+    .brand-bar:nth-child(2) { height: 14px; }
+    .brand-bar:nth-child(3) { height: 10px; }
+
+    .mode-chips {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      -webkit-app-region: no-drag;
+    }
+    .mode-chip {
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+      color: #D6C7B2;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .mode-chip:hover {
+      color: #F5EBDD;
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .mode-chip.active {
+      font-weight: 700;
+      color: #F5EBDD;
+      background: #6F1025;
+      border-color: #A83249;
+      box-shadow: 0 0 10px rgba(111, 16, 37, 0.6);
+    }
+
+    .divider {
+      width: 1px;
+      height: 18px;
+      background: rgba(168, 50, 73, 0.35);
+      flex-shrink: 0;
+    }
+
     .btn-circle {
-      width: 32px;
-      height: 32px;
+      width: 26px;
+      height: 26px;
       border-radius: 50%;
       border: none;
       display: flex;
@@ -42,31 +99,31 @@
       cursor: pointer;
       -webkit-app-region: no-drag;
       transition: all 0.15s ease;
+      flex-shrink: 0;
     }
     .btn-cancel {
-      background: rgba(255, 255, 255, 0.08);
-      color: #94A3B8;
+      background: rgba(255, 255, 255, 0.07);
+      color: #D6C7B2;
     }
     .btn-cancel:hover {
-      background: rgba(239, 68, 68, 0.2);
+      background: rgba(239, 68, 68, 0.25);
       color: #EF4444;
     }
     .btn-commit {
-      background: #CBFE00;
-      color: #0D0D12;
-      box-shadow: 0 0 12px rgba(203, 254, 0, 0.35);
+      background: #6F1025;
+      color: #F5EBDD;
+      border: 1px solid #A83249;
+      box-shadow: 0 0 12px rgba(111, 16, 37, 0.5);
     }
     .btn-commit:hover {
       transform: scale(1.08);
-      background: #D9FF33;
+      background: #8F1835;
     }
     .wave-center {
       display: flex;
       align-items: center;
       gap: 3px;
-      padding: 0 8px;
-      min-width: 160px;
-      max-width: 220px;
+      padding: 0 4px;
     }
     .wave-bars {
       display: flex;
@@ -77,8 +134,11 @@
     .wave-bar {
       width: 2.5px;
       border-radius: 2px;
-      background: #CBFE00;
+      background: #A83249;
       animation: pulse 1s infinite ease-in-out;
+    }
+    .wave-bar:nth-child(2n) {
+      background: #F5EBDD;
     }
     .wave-bar:nth-child(1) { height: 6px; animation-delay: 0.1s; }
     .wave-bar:nth-child(2) { height: 12px; animation-delay: 0.3s; }
@@ -92,23 +152,35 @@
       50% { transform: scaleY(1.2); opacity: 1; }
     }
 
-    .transcript-text {
+    .status-text {
       font-size: 11px;
-      color: #E2E8F0;
+      color: #F5EBDD;
       white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-left: 6px;
-      font-weight: 500;
+      font-weight: 600;
+      margin-left: 4px;
     }
   </style>
 </head>
 <body>
   <div class="pill-container">
-    <button class="btn-circle btn-cancel" id="btn-cancel" title="Cancel (Esc)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-    </button>
-    
+    <!-- Brand Icon -->
+    <div class="brand-mark">
+      <div class="brand-bar"></div>
+      <div class="brand-bar"></div>
+      <div class="brand-bar"></div>
+    </div>
+
+    <!-- Mode Chips: Dictate | Prompt | Translate | Code -->
+    <div class="mode-chips">
+      <button class="mode-chip active" data-mode="dictate">Dictate</button>
+      <button class="mode-chip" data-mode="prompt">Prompt</button>
+      <button class="mode-chip" data-mode="translate">Translate</button>
+      <button class="mode-chip" data-mode="code">Code</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Equalizer / Status -->
     <div class="wave-center">
       <div class="wave-bars">
         <div class="wave-bar"></div>
@@ -118,31 +190,69 @@
         <div class="wave-bar"></div>
         <div class="wave-bar"></div>
       </div>
-      <div class="transcript-text" id="status-text">Listening...</div>
+      <div class="status-text" id="status-text">Listening...</div>
     </div>
 
+    <!-- Actions -->
+    <button class="btn-circle btn-cancel" id="btn-cancel" title="Cancel (Esc)">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+
     <button class="btn-circle btn-commit" id="btn-commit" title="Commit & Auto-Paste">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
     </button>
   </div>
 
   <script>
     const { ipcRenderer } = require('electron');
-    let currentTranscript = '';
+    let currentMode = 'dictate';
+    const modes = ['dictate', 'prompt', 'translate', 'code'];
+
+    const modeChips = document.querySelectorAll('.mode-chip');
+    modeChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        setMode(chip.dataset.mode);
+      });
+    });
+
+    function setMode(mode) {
+      currentMode = mode;
+      modeChips.forEach(chip => {
+        if (chip.dataset.mode === mode) {
+          chip.classList.add('active');
+        } else {
+          chip.classList.remove('active');
+        }
+      });
+      ipcRenderer.send('mode-changed', currentMode);
+      updateStatusLabel();
+    }
+
+    function updateStatusLabel() {
+      const titles = {
+        dictate: 'Listening...',
+        prompt: 'Prompt Mode...',
+        translate: 'Translating...',
+        code: 'Code Mode...'
+      };
+      document.getElementById('status-text').innerText = titles[currentMode] || 'Listening...';
+    }
 
     document.getElementById('btn-cancel').onclick = () => {
       ipcRenderer.send('pill-close');
     };
 
     document.getElementById('btn-commit').onclick = () => {
-      const textToPaste = currentTranscript || 'Refined output with SAYN.';
-      ipcRenderer.send('pill-paste', textToPaste);
+      ipcRenderer.send('pill-commit', { mode: currentMode });
     };
 
-    // Listen for start listening events
     ipcRenderer.on('start-listening', () => {
-      document.getElementById('status-text').innerText = 'Listening...';
-      currentTranscript = '';
+      updateStatusLabel();
+    });
+
+    ipcRenderer.on('cycle-mode', () => {
+      const nextIdx = (modes.indexOf(currentMode) + 1) % modes.length;
+      setMode(modes[nextIdx]);
     });
   </script>
 </body>

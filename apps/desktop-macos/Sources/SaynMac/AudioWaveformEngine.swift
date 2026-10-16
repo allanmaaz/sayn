@@ -17,6 +17,15 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
     @Published var audioLevels: [Float] = [0.1, 0.2, 0.4, 0.6, 0.5, 0.3, 0.2, 0.1]
     @Published var isRecording: Bool = false
     @Published var isProcessing: Bool = false
+    @Published var currentMode: SanExecutionMode = .dictate
+    
+    var selectedContextText: String? = nil
+    
+    override init() {
+        super.init()
+        let savedRaw = UserDefaults.standard.string(forKey: "SanCurrentMode") ?? "dictate"
+        self.currentMode = SanExecutionMode(rawValue: savedRaw) ?? .dictate
+    }
     
     var activeStyle: String {
         get {
@@ -24,6 +33,21 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
         }
         set {
             UserDefaults.standard.set(newValue, forKey: "SanActiveStyle")
+        }
+    }
+    
+    func setMode(_ mode: SanExecutionMode) {
+        self.currentMode = mode
+        UserDefaults.standard.set(mode.rawValue, forKey: "SanCurrentMode")
+    }
+    
+    func cycleNextMode() {
+        let all = SanExecutionMode.allCases
+        if let idx = all.firstIndex(of: currentMode) {
+            let next = all[(idx + 1) % all.count]
+            setMode(next)
+        } else {
+            setMode(.dictate)
         }
     }
     
@@ -35,7 +59,7 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
         
         try? FileManager.default.removeItem(at: tempAudioURL)
         
-        // 1. Configure rock-solid 16kHz 16-bit Mono WAV recording (Lightweight, handles 60s+ effortlessly)
+        // 1. Configure rock-solid 16kHz 16-bit Mono WAV recording
         let recordSettings: [String: Any] = [
             AVFormatIDKey: Int(kAudioFormatLinearPCM),
             AVSampleRateKey: 16000.0,
@@ -61,7 +85,6 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
             guard let self = self, self.isRecording, let recorder = self.audioRecorder else { return }
             recorder.updateMeters()
             let power = recorder.averagePower(forChannel: 0) // range: -160 dB to 0 dB
-            // Map -50dB...0dB into 0.08...1.0
             let linear = max(0.0, (power + 50.0) / 50.0)
             let normalized = min(max(Float(linear), 0.08), 1.0)
             
@@ -132,18 +155,28 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
             self.isProcessing = true
         }
         
-        // 3. High-Capacity Groq Whisper Turbo & LPU Polish (handles 60s, 2m, 5m without failing)
+        // 3. High-Capacity Groq Whisper Turbo & LPU Polish with Mode & Vocabulary Biasing
         let styleToUse = activeStyle
-        GroqService.shared.transcribeAndPolish(audioFileURL: tempAudioURL, style: styleToUse) { [weak self] result in
+        let modeToUse = currentMode
+        let contextToUse = selectedContextText
+        
+        GroqService.shared.transcribeAndPolish(
+            audioFileURL: tempAudioURL,
+            mode: modeToUse,
+            style: styleToUse,
+            contextText: contextToUse,
+            activeAppBundleId: activeAppBundleId
+        ) { [weak self] result in
             DispatchQueue.main.async {
                 self?.isProcessing = false
+                self?.selectedContextText = nil // reset after execution
+                
                 switch result {
                 case .success(let text):
                     let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !trimmed.isEmpty {
                         completion(trimmed)
                     } else {
-                        // Fallback to local regex polish of partial apple transcript
                         let fallback = SaynVoicePolisher.shared.polishLocally(self?.lastAppleTranscript ?? "", appBundleId: activeAppBundleId)
                         completion(fallback)
                     }

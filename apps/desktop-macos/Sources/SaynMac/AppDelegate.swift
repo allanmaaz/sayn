@@ -37,16 +37,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 resized.isTemplate = false
                 button.image = resized
             } else {
-                button.title = "San"
+                button.title = "SAYN"
             }
-            button.toolTip = "San — Voice Dictation & AI Polish (Fn key or ⌥ Space)"
+            button.toolTip = "SAYN — Voice Dictation & AI Studio (Fn key or ⌥ Space)"
         }
         
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Toggle San (Fn or ⌥ Space)", action: #selector(togglePill), keyEquivalent: " "))
+        menu.addItem(NSMenuItem(title: "Toggle SAYN Voice (Fn or ⌥ Space)", action: #selector(togglePill), keyEquivalent: " "))
+        menu.addItem(NSMenuItem(title: "Cycle Mode (⌥ M)", action: #selector(cycleModeAction), keyEquivalent: "m"))
         menu.addItem(NSMenuItem.separator())
         
-        // Tone / Style Submenu (Natural, Fluent, Professional)
+        // 1. Execution Modes Submenu
+        let modeSubmenu = NSMenu()
+        for mode in SanExecutionMode.allCases {
+            let item = NSMenuItem(title: "\(mode.displayName) Mode", action: #selector(selectModeAction(_:)), keyEquivalent: "")
+            item.representedObject = mode.rawValue
+            if mode == waveformEngine.currentMode {
+                item.state = .on
+            }
+            modeSubmenu.addItem(item)
+        }
+        let modeMenuItem = NSMenuItem(title: "Active Mode: \(waveformEngine.currentMode.displayName)", action: nil, keyEquivalent: "")
+        modeMenuItem.submenu = modeSubmenu
+        menu.addItem(modeMenuItem)
+        
+        // 2. Tone / Style Submenu
         let styleSubmenu = NSMenu()
         let styles = [
             ("natural", "Natural (Authentic & Conversational)"),
@@ -68,10 +83,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(styleMenuItem)
         
         menu.addItem(NSMenuItem.separator())
+        menu.addItem(NSMenuItem(title: "📝 Edit Custom Vocabulary...", action: #selector(openVocabularyFile), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "⚡ Edit Voice Snippets...", action: #selector(openSnippetsFile), keyEquivalent: ""))
+        menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "🔑 Enable Auto-Paste (Accessibility)...", action: #selector(openAccessibilitySettings), keyEquivalent: ""))
         menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "Quit San", action: #selector(quitApp), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: "Quit SAYN", action: #selector(quitApp), keyEquivalent: "q"))
         statusItem.menu = menu
+    }
+    
+    @objc func cycleModeAction() {
+        waveformEngine.cycleNextMode()
+        setupStatusItem()
+    }
+    
+    @objc func selectModeAction(_ sender: NSMenuItem) {
+        if let raw = sender.representedObject as? String,
+           let mode = SanExecutionMode(rawValue: raw) {
+            waveformEngine.setMode(mode)
+            setupStatusItem()
+        }
     }
     
     @objc func selectStyle(_ sender: NSMenuItem) {
@@ -81,17 +112,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     
+    @objc func openVocabularyFile() {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let vocabURL = home.appendingPathComponent(".san/vocabulary.json")
+        NSWorkspace.shared.open(vocabURL)
+    }
+    
+    @objc func openSnippetsFile() {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let snippetsURL = home.appendingPathComponent(".san/snippets.json")
+        NSWorkspace.shared.open(snippetsURL)
+    }
+    
     @objc func openAccessibilitySettings() {
         TextPaster.openAccessibilitySettings()
     }
     
     private func fallbackLogoPath() -> String? {
         let paths = [
+            Bundle.main.path(forResource: "logo", ofType: "png"),
             "/Applications/San.app/Contents/Resources/logo.png",
             "/Applications/SAYN.app/Contents/Resources/logo.png",
             "/Users/apple/Desktop/SAYN/apps/desktop-macos/Resources/logo.png"
         ]
-        return paths.first(where: { FileManager.default.fileExists(atPath: $0) })
+        return paths.compactMap({ $0 }).first(where: { FileManager.default.fileExists(atPath: $0) })
     }
     
     private func setupPillWindow() {
@@ -124,20 +168,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return event
         }
         
-        // 2. Global Monitor for Option + Space (as alternate shortcut)
+        // 2. Global Monitor for Option + Space (Toggle) & Option + M (Cycle Mode)
         eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            if event.modifierFlags.contains(.option) && event.keyCode == 49 {
+            if event.modifierFlags.contains(.option) && event.keyCode == 49 { // Option + Space
                 DispatchQueue.main.async {
                     self?.togglePill()
+                }
+            } else if event.modifierFlags.contains(.option) && event.keyCode == 46 { // Option + M
+                DispatchQueue.main.async {
+                    self?.waveformEngine.cycleNextMode()
+                    self?.setupStatusItem()
                 }
             }
         }
         
-        // 3. Local Monitor for Escape to dismiss & Option+Space
+        // 3. Local Monitor for Escape to dismiss, Option+Space, Option+M
         localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             if event.modifierFlags.contains(.option) && event.keyCode == 49 {
                 DispatchQueue.main.async {
                     self?.togglePill()
+                }
+                return nil
+            } else if event.modifierFlags.contains(.option) && event.keyCode == 46 {
+                DispatchQueue.main.async {
+                    self?.waveformEngine.cycleNextMode()
+                    self?.setupStatusItem()
                 }
                 return nil
             } else if event.keyCode == 53 { // Escape
@@ -173,11 +228,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self.fnPressTimestamp = nil
                 
                 if self.fnWasAlreadyOpen {
-                    // Tap while already open -> commit and auto-paste
                     self.commitPill(text: self.currentTranscript)
                     self.fnWasAlreadyOpen = false
                 } else if duration > 0.35 {
-                    // Push-to-Talk mode: held Fn while speaking -> commit and auto-paste
                     self.commitPill(text: self.currentTranscript)
                 }
             }
@@ -193,12 +246,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     private func showPill() {
-        // Record the application that had focus before triggering San
         let front = NSWorkspace.shared.frontmostApplication
         if front?.bundleIdentifier != Bundle.main.bundleIdentifier {
             targetApp = front
         }
         currentTranscript = ""
+        
+        // Capture currently selected text if entering Prompt or Proofread mode
+        if waveformEngine.currentMode == .prompt || waveformEngine.currentMode == .proofread {
+            waveformEngine.selectedContextText = TextPaster.getSelectedText(targetApp: targetApp)
+        }
         
         pillWindow?.showAnimated()
         waveformEngine.startRecording { [weak self] transcript in
@@ -216,14 +273,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let appToPasteInto = targetApp ?? NSWorkspace.shared.frontmostApplication
         
         waveformEngine.stopRecording(activeAppBundleId: appToPasteInto?.bundleIdentifier) { [weak self] finalText in
-            // Immediately dismiss floating pill window
             self?.pillWindow?.orderOut(nil)
             
             let chosen = finalText.isEmpty ? text : finalText
             let trimmed = chosen.trimmingCharacters(in: .whitespacesAndNewlines)
             
             if !trimmed.isEmpty {
-                // Automatically re-activate the target app and paste into the text box / chatbot
                 TextPaster.paste(text: trimmed, targetApp: appToPasteInto)
             }
             self?.currentTranscript = ""

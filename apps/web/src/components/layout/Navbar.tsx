@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   Mic,
   PenTool,
@@ -12,7 +12,7 @@ import {
   Menu,
   X,
   User as UserIcon,
-  ChevronRight,
+  ArrowRight,
   Download,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.js';
@@ -23,7 +23,6 @@ export const Navbar: React.FC = () => {
   const { user, signOut } = useAuth();
   const { actualTheme, setTheme } = useTheme();
   const location = useLocation();
-  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDownloadOpen, setIsDownloadOpen] = useState(false);
 
@@ -52,20 +51,20 @@ export const Navbar: React.FC = () => {
       ];
 
   return (
-    <header className="sticky top-0 z-40 backdrop-blur-md bg-sayn-dark-bg/85 dark:bg-sayn-dark-bg/85 light:bg-sayn-light-bg/85 border-b border-sayn-dark-divider dark:border-sayn-dark-divider light:border-sayn-light-divider transition-colors duration-150">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#100709]/90 border-b border-[#3D1520]/60 transition-colors duration-150">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
         {/* Brand Logo & Wordmark */}
         <Link to="/" className="flex items-center space-x-3 group">
-          <img src="/logo.svg" alt="SAYN Logo" className="w-8 h-8 rounded-lg shadow-sm" />
+          <img src="/logo.svg" alt="SAYN Logo" className="w-9 h-9 rounded-xl shadow-md transition-transform group-hover:scale-105" />
           <div className="flex flex-col">
-            <span className="font-semibold text-lg tracking-tight text-sayn-dark-text dark:text-sayn-dark-text light:text-sayn-light-text">
+            <span className="font-bold text-xl tracking-wider text-[#F5EBDD]">
               SAYN
             </span>
           </div>
         </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-1">
+        {/* Desktop Navigation Links */}
+        <nav className="hidden md:flex items-center space-x-8">
           {user ? (
             navLinks.map((link) => {
               const Icon = link.icon;
@@ -74,10 +73,10 @@ export const Navbar: React.FC = () => {
                 <Link
                   key={link.path}
                   to={link.path}
-                  className={`flex items-center space-x-2 px-3 py-1.5 rounded-ios-sm text-sm font-medium transition-colors ${
+                  className={`flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
                     isActive
-                      ? 'bg-sayn-dark-surface2 dark:bg-sayn-dark-surface2 light:bg-sayn-light-surface2 text-sayn-dark-accent dark:text-sayn-dark-accent light:text-sayn-light-accent font-semibold'
-                      : 'text-sayn-dark-secondary dark:text-sayn-dark-secondary light:text-sayn-light-secondary hover:text-sayn-dark-text dark:hover:text-sayn-dark-text light:hover:text-sayn-light-text'
+                      ? 'bg-[#6F1025] text-[#F5EBDD] font-semibold shadow-sm'
+                      : 'text-[#D6C7B2] hover:text-[#F5EBDD]'
                   }`}
                 >
                   {Icon && <Icon className="w-4 h-4" />}
@@ -86,12 +85,12 @@ export const Navbar: React.FC = () => {
               );
             })
           ) : (
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-8">
               {navLinks.map((link) => (
                 <a
                   key={link.label}
                   href={link.path}
-                  className="text-sm font-medium text-sayn-dark-secondary dark:text-sayn-dark-secondary light:text-sayn-light-secondary hover:text-sayn-dark-text dark:hover:text-sayn-dark-text light:hover:text-sayn-light-text transition-colors"
+                  className="text-sm font-medium text-[#D6C7B2] hover:text-[#F5EBDD] transition-colors"
                 >
                   {link.label}
                 </a>
@@ -100,14 +99,14 @@ export const Navbar: React.FC = () => {
           )}
         </nav>
 
-        {/* Right Action Icons */}
-        <div className="hidden md:flex items-center space-x-3">
-          {/* Download App with Auto Device Detection */}
+        {/* Right Action Buttons */}
+        <div className="hidden md:flex items-center space-x-4">
+          {/* Quick Download App Pill */}
           <button
             onClick={() => setIsDownloadOpen(true)}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-ios-sm text-xs font-bold text-[#CBFE00] bg-[#CBFE00]/10 border border-[#CBFE00]/30 hover:bg-[#CBFE00] hover:text-[#0D0D12] active:scale-95 transition-all shadow-[0_0_15px_rgba(203,254,0,0.12)]"
+            className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-[#F5EBDD] bg-[#6F1025]/40 border border-[#A83249]/50 hover:bg-[#6F1025] active:scale-95 transition-all"
           >
-            <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+            <Download className="w-3.5 h-3.5 stroke-[2]" />
             <span>Download</span>
           </button>
 
@@ -115,7 +114,7 @@ export const Navbar: React.FC = () => {
           <button
             onClick={toggleTheme}
             aria-label="Toggle theme"
-            className="p-2 rounded-ios-sm text-sayn-dark-secondary dark:text-sayn-dark-secondary light:text-sayn-light-secondary hover:text-sayn-dark-text dark:hover:text-sayn-dark-text light:hover:text-sayn-light-text hover:bg-sayn-dark-surface2 dark:hover:bg-sayn-dark-surface2 light:hover:bg-sayn-light-surface2 transition-colors"
+            className="p-2 rounded-full text-[#D6C7B2] hover:text-[#F5EBDD] hover:bg-[#240F16] transition-colors"
           >
             {actualTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
@@ -124,34 +123,35 @@ export const Navbar: React.FC = () => {
             <div className="flex items-center space-x-2">
               <Link
                 to="/settings"
-                className="flex items-center space-x-2 px-3 py-1.5 rounded-ios-sm text-sm text-sayn-dark-text dark:text-sayn-dark-text light:text-sayn-light-text bg-sayn-dark-surface dark:bg-sayn-dark-surface light:bg-sayn-light-surface border border-sayn-dark-divider dark:border-sayn-dark-divider light:border-sayn-light-divider hover:border-sayn-dark-muted transition-colors"
+                className="flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm text-[#F5EBDD] bg-[#240F16] border border-[#3D1520] hover:border-[#A83249] transition-colors"
               >
-                <UserIcon className="w-3.5 h-3.5 text-sayn-dark-accent dark:text-sayn-dark-accent light:text-sayn-light-accent" />
+                <UserIcon className="w-3.5 h-3.5 text-[#A83249]" />
                 <span className="truncate max-w-[120px]">{user.displayName || user.email}</span>
               </Link>
               <button
                 onClick={() => signOut()}
                 aria-label="Sign out"
-                className="p-2 rounded-ios-sm text-sayn-dark-secondary dark:text-sayn-dark-secondary light:text-sayn-light-secondary hover:text-sayn-dark-error dark:hover:text-sayn-dark-error light:hover:text-sayn-light-error transition-colors"
+                className="p-2 rounded-full text-[#D6C7B2] hover:text-[#FF453A] hover:bg-[#240F16] transition-colors"
                 title="Sign out"
               >
                 <LogOut className="w-4 h-4" />
               </button>
             </div>
           ) : (
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-4">
               <Link
                 to="/login"
-                className="text-sm font-medium text-sayn-dark-secondary dark:text-sayn-dark-secondary light:text-sayn-light-secondary hover:text-sayn-dark-text dark:hover:text-sayn-dark-text light:hover:text-sayn-light-text transition-colors px-3 py-1.5"
+                className="text-sm font-medium text-[#D6C7B2] hover:text-[#F5EBDD] transition-colors px-2 py-1.5"
               >
                 Sign In
               </Link>
+              {/* Official Warm Cream Pill Button matching mockup */}
               <Link
                 to="/signup"
-                className="inline-flex items-center space-x-1 px-4 py-2 rounded-ios-sm text-sm font-medium text-white bg-sayn-dark-accent dark:bg-sayn-dark-accent light:bg-sayn-light-accent hover:opacity-90 active:scale-95 transition-all shadow-sm"
+                className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-full text-sm font-bold text-[#100709] bg-[#F5EBDD] hover:bg-[#FAF4EB] active:scale-95 transition-all shadow-[0_4px_16px_rgba(245,235,221,0.2)]"
               >
                 <span>Get Started Free</span>
-                <ChevronRight className="w-3.5 h-3.5" />
+                <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
               </Link>
             </div>
           )}
@@ -162,14 +162,14 @@ export const Navbar: React.FC = () => {
           <button
             onClick={toggleTheme}
             aria-label="Toggle theme"
-            className="p-2 rounded-ios-sm text-sayn-dark-secondary dark:text-sayn-dark-secondary light:text-sayn-light-secondary"
+            className="p-2 rounded-full text-[#D6C7B2]"
           >
             {actualTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle menu"
-            className="p-2 rounded-ios-sm text-sayn-dark-text dark:text-sayn-dark-text light:text-sayn-light-text"
+            className="p-2 rounded-full text-[#F5EBDD]"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -178,7 +178,7 @@ export const Navbar: React.FC = () => {
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-sayn-dark-divider dark:border-sayn-dark-divider light:border-sayn-light-divider bg-sayn-dark-surface dark:bg-sayn-dark-surface light:bg-sayn-light-surface px-4 pt-2 pb-4 space-y-1">
+        <div className="md:hidden border-b border-[#3D1520] bg-[#180B0F] px-4 pt-3 pb-5 space-y-2">
           {user ? (
             <>
               {navLinks.map((link) => {
@@ -189,10 +189,10 @@ export const Navbar: React.FC = () => {
                     key={link.path}
                     to={link.path}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center space-x-3 px-3 py-2.5 rounded-ios-sm text-sm font-medium ${
+                    className={`flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium ${
                       isActive
-                        ? 'bg-sayn-dark-surface2 dark:bg-sayn-dark-surface2 light:bg-sayn-light-surface2 text-sayn-dark-accent'
-                        : 'text-sayn-dark-secondary dark:text-sayn-dark-secondary light:text-sayn-light-secondary'
+                        ? 'bg-[#6F1025] text-[#F5EBDD]'
+                        : 'text-[#D6C7B2] hover:text-[#F5EBDD]'
                     }`}
                   >
                     {Icon && <Icon className="w-4 h-4" />}
@@ -200,13 +200,13 @@ export const Navbar: React.FC = () => {
                   </Link>
                 );
               })}
-              <div className="pt-2 border-t border-sayn-dark-divider dark:border-sayn-dark-divider light:border-sayn-light-divider">
+              <div className="pt-2 border-t border-[#3D1520]">
                 <button
                   onClick={() => {
                     signOut();
                     setMobileMenuOpen(false);
                   }}
-                  className="flex items-center space-x-3 w-full px-3 py-2 text-sm text-sayn-dark-error dark:text-sayn-dark-error light:text-sayn-light-error"
+                  className="flex items-center space-x-3 w-full px-3 py-2 text-sm text-[#FF453A]"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>Sign Out</span>
@@ -214,27 +214,27 @@ export const Navbar: React.FC = () => {
               </div>
             </>
           ) : (
-            <div className="space-y-2 pt-2">
+            <div className="space-y-3 pt-2">
               <Link
                 to="/login"
                 onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-ios-sm text-sm text-sayn-dark-text dark:text-sayn-dark-text light:text-sayn-light-text font-medium"
+                className="block px-3 py-2 rounded-xl text-sm text-[#F5EBDD] font-medium"
               >
                 Sign In
               </Link>
               <Link
                 to="/signup"
                 onClick={() => setMobileMenuOpen(false)}
-                className="block text-center px-4 py-2.5 rounded-ios-sm text-sm font-medium text-white bg-sayn-dark-accent"
+                className="block text-center px-4 py-3 rounded-full text-sm font-bold text-[#100709] bg-[#F5EBDD]"
               >
-                Get Started Free
+                Get Started Free →
               </Link>
               <button
                 onClick={() => {
                   setIsDownloadOpen(true);
                   setMobileMenuOpen(false);
                 }}
-                className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-ios-sm text-sm font-bold text-[#0D0D12] bg-[#CBFE00]"
+                className="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-full text-sm font-semibold text-[#F5EBDD] bg-[#6F1025]"
               >
                 <Download className="w-4 h-4" />
                 <span>Download App</span>

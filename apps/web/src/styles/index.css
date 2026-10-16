@@ -13,10 +13,17 @@ html.light {
 body {
   margin: 0;
   min-height: 100vh;
+  background-color: #100709;
+  color: #F5EBDD;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", Inter, ui-sans-serif, system-ui, sans-serif;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background-color: #6F1025;
+  color: #F5EBDD;
 }
 
 /* Custom minimal scrollbar */
@@ -30,12 +37,16 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #303036;
+  background: #3D1520;
   border-radius: 9999px;
 }
 
+::-webkit-scrollbar-thumb:hover {
+  background: #6F1025;
+}
+
 html.light ::-webkit-scrollbar-thumb {
-  background: #D2D2D7;
+  background: #E5D6C2;
 }
 
 /* Grammarly 4-Pillar Underline Linting */
@@ -46,55 +57,59 @@ html.light ::-webkit-scrollbar-thumb {
 }
 
 .wavy-clarity {
-  text-decoration: underline wavy #0A84FF 1.8px;
+  text-decoration: underline wavy #A83249 1.8px;
   text-underline-offset: 4px;
   cursor: pointer;
 }
 
 .wavy-engagement {
-  text-decoration: underline wavy #30D158 1.8px;
+  text-decoration: underline wavy #F5EBDD 1.8px;
   text-underline-offset: 4px;
   cursor: pointer;
 }
 
 .wavy-delivery {
-  text-decoration: underline wavy #BF5AF2 1.8px;
+  text-decoration: underline wavy #6F1025 1.8px;
   text-underline-offset: 4px;
   cursor: pointer;
 }
 
-/* QuillBot Word-by-Word Synonym Chips */
+/* QuillBot Word-by-Word Synonym Chips in SAYN Maroon & Cream */
 .quill-word-replaced {
-  color: #CBFE00;
+  color: #F5EBDD;
   font-weight: 600;
-  padding: 1px 4px;
+  padding: 1px 5px;
   border-radius: 4px;
-  background: rgba(203, 254, 0, 0.12);
+  background: rgba(168, 50, 73, 0.28);
+  border: 1px solid rgba(168, 50, 73, 0.45);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .quill-word-replaced:hover {
-  background: rgba(203, 254, 0, 0.28);
-  box-shadow: 0 0 10px rgba(203, 254, 0, 0.3);
+  background: #6F1025;
+  box-shadow: 0 0 10px rgba(111, 16, 37, 0.5);
 }
 
 .quill-word-structural {
-  color: #5DE4FF;
+  color: #D6C7B2;
   padding: 1px 4px;
   border-radius: 4px;
-  background: rgba(93, 228, 255, 0.1);
+  background: rgba(111, 16, 37, 0.2);
   cursor: pointer;
 }
 
-/* Liquid Obsidian Frosted Glass */
+/* Liquid Obsidian Frosted Glass with Deep Maroon Undertone */
 .glass-obsidian {
-  background: rgba(22, 22, 29, 0.85);
+  background: rgba(24, 11, 15, 0.88);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(168, 50, 73, 0.2);
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #505058;
+.glass-maroon {
+  background: rgba(111, 16, 37, 0.15);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(168, 50, 73, 0.3);
 }

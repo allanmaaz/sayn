@@ -18,6 +18,27 @@ final class TextPaster {
         }
     }
     
+    // Retrieve currently selected text in the active target app for Prompt & Proofread modes
+    static func getSelectedText(targetApp: NSRunningApplication? = nil) -> String? {
+        guard let app = targetApp ?? NSWorkspace.shared.frontmostApplication else { return nil }
+        let appRef = AXUIElementCreateApplication(app.processIdentifier)
+        var focusedElement: CFTypeRef?
+        let copyResult = AXUIElementCopyAttributeValue(appRef, kAXFocusedUIElementAttribute as CFString, &focusedElement)
+        
+        if copyResult == .success, let element = focusedElement {
+            let axElement = element as! AXUIElement
+            var selectedTextValue: CFTypeRef?
+            let textResult = AXUIElementCopyAttributeValue(axElement, kAXSelectedTextAttribute as CFString, &selectedTextValue)
+            if textResult == .success, let str = selectedTextValue as? String {
+                let trimmed = str.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty {
+                    return trimmed
+                }
+            }
+        }
+        return nil
+    }
+    
     static func paste(text: String, targetApp: NSRunningApplication? = nil) {
         let cleanText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanText.isEmpty else { return }

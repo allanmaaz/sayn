@@ -3,9 +3,9 @@ import SwiftUI
 
 final class SanPillWindow: NSPanel {
     init(contentView: NSView) {
-        // Canvas (340x100) so SwiftUI specular glows and shadows feather out naturally with zero clipping
+        // Canvas width 440 x 100 so shadows feather out naturally with zero clipping
         super.init(
-            contentRect: NSRect(x: 0, y: 0, width: 340, height: 100),
+            contentRect: NSRect(x: 0, y: 0, width: 440, height: 100),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -65,26 +65,77 @@ struct SanPillView: View {
     @State private var isHoveredClose: Bool = false
     @State private var dotPulse: Bool = false
     
-    // Volt neon green matching brand identity
-    private let neonGreen = Color(hex: "CBFE00")
+    // Official SAYN Colors
+    private let deepMaroon = Color(hex: "6F1025")
+    private let roseMaroon = Color(hex: "A83249")
+    private let warmCream = Color(hex: "F5EBDD")
+    private let nearBlack = Color(hex: "100709")
+    private let mutedCream = Color(hex: "D6C7B2")
     
     var body: some View {
         ZStack {
             // Pill Capsule
-            HStack(spacing: 12) {
-                // 1. San App Icon Badge
+            HStack(spacing: 10) {
+                // 1. SAYN Brand Icon
                 SanLogoBadge()
                 
-                // 2. Center Content: Soundwave during speaking OR "San Polishing..."
+                // 2. Interactive Mode Chips: [ Dictate | Prompt | Translate | Code ]
+                HStack(spacing: 4) {
+                    ModeChip(
+                        title: "Dictate",
+                        isSelected: waveformEngine.currentMode == .dictate,
+                        activeColor: deepMaroon,
+                        roseColor: roseMaroon,
+                        creamColor: warmCream
+                    ) {
+                        waveformEngine.setMode(.dictate)
+                    }
+                    
+                    ModeChip(
+                        title: "Prompt",
+                        isSelected: waveformEngine.currentMode == .prompt,
+                        activeColor: deepMaroon,
+                        roseColor: roseMaroon,
+                        creamColor: warmCream
+                    ) {
+                        waveformEngine.setMode(.prompt)
+                    }
+                    
+                    ModeChip(
+                        title: "Translate",
+                        isSelected: waveformEngine.currentMode == .translate,
+                        activeColor: deepMaroon,
+                        roseColor: roseMaroon,
+                        creamColor: warmCream
+                    ) {
+                        waveformEngine.setMode(.translate)
+                    }
+                    
+                    ModeChip(
+                        title: "Code",
+                        isSelected: waveformEngine.currentMode == .code,
+                        activeColor: deepMaroon,
+                        roseColor: roseMaroon,
+                        creamColor: warmCream
+                    ) {
+                        waveformEngine.setMode(.code)
+                    }
+                }
+                
+                Divider()
+                    .frame(height: 18)
+                    .background(roseMaroon.opacity(0.35))
+                
+                // 3. Center Activity: Soundwave during speaking OR Processing Status
                 if waveformEngine.isProcessing {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 7) {
                         ZStack {
                             Circle()
-                                .fill(neonGreen.opacity(dotPulse ? 0.35 : 0.15))
-                                .frame(width: 13, height: 13)
-                                .scaleEffect(dotPulse ? 1.2 : 0.85)
+                                .fill(roseMaroon.opacity(dotPulse ? 0.45 : 0.2))
+                                .frame(width: 12, height: 12)
+                                .scaleEffect(dotPulse ? 1.25 : 0.85)
                             Circle()
-                                .fill(neonGreen)
+                                .fill(roseMaroon)
                                 .frame(width: 6, height: 6)
                         }
                         .onAppear {
@@ -93,37 +144,37 @@ struct SanPillView: View {
                             }
                         }
                         
-                        Text("San Polishing...")
-                            .font(.system(size: 13, weight: .semibold, design: .rounded))
-                            .foregroundColor(neonGreen)
-                            .tracking(0.2)
+                        Text(waveformEngine.currentMode.statusTitle)
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .foregroundColor(warmCream)
+                            .tracking(0.15)
                     }
                     .transition(.opacity)
                 } else {
-                    // Audio Equalizer Waveform Bars (in neon volt green)
-                    HStack(spacing: 3) {
+                    // Audio Equalizer Waveform Bars in Soft Rose-Maroon and Warm Cream
+                    HStack(spacing: 2.5) {
                         ForEach(0..<8, id: \.self) { index in
                             RoundedRectangle(cornerRadius: 1.5)
-                                .fill(neonGreen)
-                                .frame(width: 3, height: CGFloat(max(4, waveformEngine.audioLevels[index] * 22)))
+                                .fill(index % 2 == 0 ? roseMaroon : warmCream)
+                                .frame(width: 2.5, height: CGFloat(max(4, waveformEngine.audioLevels[index] * 20)))
                                 .animation(.easeOut(duration: 0.08), value: waveformEngine.audioLevels[index])
                         }
                     }
-                    .frame(width: 45, height: 24)
+                    .frame(width: 36, height: 22)
                     .transition(.opacity)
                 }
                 
-                Spacer(minLength: 4)
+                Spacer(minLength: 2)
                 
-                // 3. Minimal Dismiss Button [ ✕ ]
+                // 4. Minimal Dismiss Button [ ✕ ]
                 Button(action: onCancel) {
                     ZStack {
                         Circle()
-                            .fill(Color.white.opacity(isHoveredClose ? 0.16 : 0.08))
-                            .frame(width: 24, height: 24)
+                            .fill(Color.white.opacity(isHoveredClose ? 0.16 : 0.07))
+                            .frame(width: 22, height: 22)
                         Image(systemName: "xmark")
                             .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(Color.white.opacity(isHoveredClose ? 1.0 : 0.65))
+                            .foregroundColor(isHoveredClose ? warmCream : mutedCream)
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -133,29 +184,29 @@ struct SanPillView: View {
                     }
                 }
             }
-            .padding(.horizontal, 14)
+            .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .frame(width: 272, height: 50)
+            .frame(width: 388, height: 50)
             .background(
                 RoundedRectangle(cornerRadius: 25, style: .continuous)
-                    .fill(Color(hex: "0D0D12").opacity(0.96))
+                    .fill(nearBlack.opacity(0.96))
                     .overlay(
                         RoundedRectangle(cornerRadius: 25, style: .continuous)
                             .stroke(
                                 LinearGradient(
                                     stops: [
-                                        .init(color: Color.white.opacity(0.22), location: 0.0),
-                                        .init(color: Color.white.opacity(0.06), location: 0.4),
-                                        .init(color: Color.white.opacity(0.02), location: 1.0)
+                                        .init(color: roseMaroon.opacity(0.55), location: 0.0),
+                                        .init(color: deepMaroon.opacity(0.35), location: 0.5),
+                                        .init(color: Color.black.opacity(0.8), location: 1.0)
                                     ],
                                     startPoint: .top,
                                     endPoint: .bottom
                                 ),
-                                lineWidth: 1
+                                lineWidth: 1.2
                             )
                     )
-                    .shadow(color: Color.black.opacity(0.65), radius: 18, x: 0, y: 8)
-                    .shadow(color: neonGreen.opacity(0.12), radius: 8, x: 0, y: 2)
+                    .shadow(color: Color.black.opacity(0.75), radius: 20, x: 0, y: 10)
+                    .shadow(color: deepMaroon.opacity(0.4), radius: 12, x: 0, y: 3)
             )
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -163,61 +214,119 @@ struct SanPillView: View {
     }
 }
 
-// San Logo Badge Component
+// Mode Chip Component
+struct ModeChip: View {
+    let title: String
+    let isSelected: Bool
+    let activeColor: Color
+    let roseColor: Color
+    let creamColor: Color
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 11, weight: isSelected ? .bold : .medium, design: .rounded))
+                .foregroundColor(isSelected ? creamColor : creamColor.opacity(0.65))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(isSelected ? activeColor : Color.white.opacity(0.05))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(isSelected ? roseColor : Color.clear, lineWidth: 1)
+                        )
+                )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// SAYN Logo Badge Component in Deep Maroon & Warm Cream
 struct SanLogoBadge: View {
     var body: some View {
         if let image = loadLogoImage() {
             Image(nsImage: image)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 28, height: 28)
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .frame(width: 26, height: 26)
+                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .stroke(Color(hex: "A83249").opacity(0.5), lineWidth: 1)
                 )
         } else {
             ZStack {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color(hex: "18181F"))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .stroke(Color(hex: "CBFE00").opacity(0.4), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(hex: "8F1835"), Color(hex: "6F1025")],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
                     )
-                Text("S")
-                    .font(.system(size: 14, weight: .black, design: .rounded))
-                    .foregroundColor(Color(hex: "CBFE00"))
+                    .frame(width: 26, height: 26)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            .stroke(Color(hex: "F5EBDD").opacity(0.3), lineWidth: 1)
+                    )
+                
+                // Soundwave bars in warm cream
+                HStack(spacing: 2) {
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(Color(hex: "F5EBDD"))
+                        .frame(width: 2, height: 10)
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(Color(hex: "F5EBDD"))
+                        .frame(width: 2, height: 16)
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(Color(hex: "F5EBDD"))
+                        .frame(width: 2, height: 12)
+                }
             }
-            .frame(width: 28, height: 28)
         }
     }
     
     private func loadLogoImage() -> NSImage? {
-        let possiblePaths = [
+        let paths = [
             Bundle.main.path(forResource: "logo", ofType: "png"),
             "/Applications/San.app/Contents/Resources/logo.png",
             "/Applications/SAYN.app/Contents/Resources/logo.png",
             "/Users/apple/Desktop/SAYN/apps/desktop-macos/Resources/logo.png"
         ]
-        
-        for path in possiblePaths.compactMap({ $0 }) {
-            if FileManager.default.fileExists(atPath: path),
-               let image = NSImage(contentsOfFile: path) {
-                return image
+        for p in paths.compactMap({ $0 }) {
+            if FileManager.default.fileExists(atPath: p), let img = NSImage(contentsOfFile: p) {
+                return img
             }
         }
         return nil
     }
 }
 
+// SwiftUI Color Hex Initializer
 extension Color {
     init(hex: String) {
-        let scanner = Scanner(string: hex)
-        var rgbValue: UInt64 = 0
-        scanner.scanHexInt64(&rgbValue)
-        let r = Double((rgbValue & 0xFF0000) >> 16) / 255.0
-        let g = Double((rgbValue & 0x00FF00) >> 8) / 255.0
-        let b = Double(rgbValue & 0x0000FF) / 255.0
-        self.init(red: r, green: g, blue: b)
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 3: // RGB (12-bit)
+            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6: // RGB (24-bit)
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8: // ARGB (32-bit)
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            (a, r, g, b) = (255, 0, 0, 0)
+        }
+        self.init(
+            .sRGB,
+            red: Double(r) / 255,
+            green: Double(g) / 255,
+            blue: Double(b) / 255,
+            opacity: Double(a) / 255
+        )
     }
 }

@@ -57,55 +57,55 @@ export const DownloadPage: React.FC = () => {
   const getOsIcon = (os: string) => {
     switch (os) {
       case 'macos':
-        return <Apple className="w-10 h-10 text-white" />;
+        return <Apple className="w-10 h-10 text-[#F5EBDD]" />;
       case 'windows':
-        return <Monitor className="w-10 h-10 text-[#00A4EF]" />;
+        return <Monitor className="w-10 h-10 text-[#A83249]" />;
       case 'android':
-        return <Smartphone className="w-10 h-10 text-[#3DDC84]" />;
+        return <Smartphone className="w-10 h-10 text-[#30D158]" />;
       default:
-        return <Laptop className="w-10 h-10 text-[#CBFE00]" />;
+        return <Laptop className="w-10 h-10 text-[#F5EBDD]" />;
     }
   };
 
   return (
-    <div className="flex-1 flex flex-col py-12 md:py-20 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto w-full">
+    <div className="flex-1 flex flex-col py-12 md:py-20 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto w-full bg-[#100709] text-[#F5EBDD]">
       {/* Header */}
-      <div className="text-center max-w-2xl mx-auto mb-12">
-        <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-[#CBFE00]/10 border border-[#CBFE00]/30 mb-4">
-          <span className="w-2 h-2 rounded-full bg-[#CBFE00] animate-pulse" />
-          <span className="text-xs font-bold text-[#CBFE00] uppercase tracking-wider">
+      <div className="text-center max-w-2xl mx-auto mb-14">
+        <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-[#180B0F] border border-[#A83249]/50 mb-5 shadow-[0_0_20px_rgba(111,16,37,0.3)]">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#A83249] animate-pulse" />
+          <span className="text-xs font-bold text-[#F5EBDD] uppercase tracking-wider">
             Smart Device Detection
           </span>
         </div>
-        <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
-          Download <span className="text-[#CBFE00]">SAYN</span>
+        <h1 className="text-4xl sm:text-6xl font-extrabold text-[#F5EBDD] tracking-tight">
+          Download <span className="text-[#A83249]">SAYN</span>
         </h1>
-        <p className="mt-3 text-sm sm:text-base text-zinc-400">
+        <p className="mt-3 text-sm sm:text-base text-[#D6C7B2]">
           AI Voice Dictation, QuillBot Paraphrasing, and Grammarly 4-Pillar Proofreading.
         </p>
       </div>
 
       {/* Main Detected OS Card */}
       {device && (
-        <div className="relative p-6 sm:p-8 rounded-2xl bg-[#16161D] border-2 border-[#CBFE00]/50 shadow-[0_0_50px_rgba(203,254,0,0.12)] mb-14">
+        <div className="relative p-7 sm:p-9 rounded-2xl bg-[#1C0B12] border-2 border-[#A83249]/60 shadow-[0_0_50px_rgba(111,16,37,0.35)] mb-14">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-start space-x-5">
-              <div className="p-4 rounded-2xl bg-black/50 border border-white/10 flex-shrink-0">
+              <div className="p-4 rounded-2xl bg-[#100709] border border-[#3D1520] flex-shrink-0">
                 {getOsIcon(device.os)}
               </div>
               <div>
                 <div className="flex items-center space-x-3">
-                  <h2 className="text-xl sm:text-2xl font-bold text-white">
+                  <h2 className="text-xl sm:text-2xl font-bold text-[#F5EBDD]">
                     SAYN for {device.osName}
                   </h2>
-                  <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-[#CBFE00]/20 text-[#CBFE00] border border-[#CBFE00]/30">
+                  <span className="px-3 py-0.5 text-xs font-bold rounded-full bg-[#6F1025] text-[#F5EBDD] border border-[#A83249]">
                     {device.badgeLabel}
                   </span>
                 </div>
-                <p className="text-sm text-zinc-300 mt-1.5">
-                  Detected Architecture: <strong className="text-white">{device.archName}</strong>
+                <p className="text-sm text-[#D6C7B2] mt-1.5">
+                  Detected Architecture: <strong className="text-[#F5EBDD]">{device.archName}</strong>
                 </p>
-                <p className="text-xs text-zinc-400 mt-1 font-mono">
+                <p className="text-xs text-[#A89F91] mt-1 font-mono">
                   {device.recommendedFileName} • Zero Cost (₹0.00) • Free Forever
                 </p>
               </div>
@@ -114,7 +114,7 @@ export const DownloadPage: React.FC = () => {
             {/* Primary Action Button */}
             <button
               onClick={() => handleDownload(device.recommendedDownloadUrl)}
-              className="w-full md:w-auto px-8 py-4 rounded-xl font-extrabold text-sm bg-[#CBFE00] text-[#0D0D12] hover:bg-[#D9FF33] active:scale-95 transition-all shadow-[0_0_25px_rgba(203,254,0,0.4)] flex items-center justify-center space-x-2.5 flex-shrink-0"
+              className="w-full md:w-auto px-8 py-4 rounded-full font-extrabold text-sm bg-[#F5EBDD] text-[#100709] hover:bg-[#FAF4EB] active:scale-95 transition-all shadow-[0_4px_20px_rgba(245,235,221,0.25)] flex items-center justify-center space-x-2.5 flex-shrink-0"
             >
               <Download className="w-5 h-5 stroke-[2.5]" />
               <span>Download for {device.osName}</span>
@@ -122,20 +122,20 @@ export const DownloadPage: React.FC = () => {
           </div>
 
           {downloadStarted && (
-            <div className="mt-5 p-3.5 rounded-xl bg-[#CBFE00]/10 border border-[#CBFE00]/30 flex items-center space-x-2 text-xs font-semibold text-[#CBFE00] animate-in fade-in">
-              <CheckCircle className="w-4 h-4 flex-shrink-0" />
+            <div className="mt-5 p-3.5 rounded-xl bg-[#6F1025]/30 border border-[#A83249] flex items-center space-x-2 text-xs font-semibold text-[#F5EBDD] animate-in fade-in">
+              <CheckCircle className="w-4 h-4 text-[#30D158] flex-shrink-0" />
               <span>Download initiated! Open the file once finished to install.</span>
             </div>
           )}
 
-          <div className="mt-6 pt-5 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-zinc-400">
+          <div className="mt-6 pt-5 border-t border-[#3D1520] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[#D6C7B2]">
             <div className="flex items-center space-x-2">
-              <Zap className="w-4 h-4 text-[#CBFE00] flex-shrink-0" />
+              <Zap className="w-4 h-4 text-[#A83249] flex-shrink-0" />
               <span>{device.instructions}</span>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="flex items-center space-x-1 text-zinc-400">
-                <ShieldCheck className="w-4 h-4 text-[#CBFE00]" />
+              <span className="flex items-center space-x-1 text-[#D6C7B2]">
+                <ShieldCheck className="w-4 h-4 text-[#30D158]" />
                 <span>Code-Signed & Verified</span>
               </span>
             </div>
@@ -146,31 +146,31 @@ export const DownloadPage: React.FC = () => {
       {/* Grid: All Other Platforms & Architectures */}
       <div>
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold text-white">All Platforms & Architectures</h3>
-          <span className="text-xs text-zinc-400">Universal support for every device</span>
+          <h3 className="text-xl font-bold text-[#F5EBDD]">All Platforms & Architectures</h3>
+          <span className="text-xs text-[#D6C7B2]">Universal support for every device</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {ALL_DOWNLOAD_OPTIONS.map((opt, idx) => (
             <div
               key={idx}
-              className="p-5 rounded-xl bg-[#16161D] border border-white/10 hover:border-[#CBFE00]/40 transition-all flex flex-col justify-between"
+              className="p-5 rounded-2xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249] transition-all flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-white/5 text-[#CBFE00] border border-white/5">
+                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-[#240F16] text-[#A83249] border border-[#3D1520]">
                     {opt.category}
                   </span>
-                  <span className="text-xs font-mono text-zinc-400">{opt.format}</span>
+                  <span className="text-xs font-mono text-[#D6C7B2]">{opt.format}</span>
                 </div>
-                <h4 className="text-sm font-bold text-white">{opt.title}</h4>
-                <p className="text-xs text-zinc-400 mt-1">{opt.arch}</p>
-                <p className="text-[11px] text-zinc-500 font-mono mt-1">{opt.fileName}</p>
+                <h4 className="text-sm font-bold text-[#F5EBDD]">{opt.title}</h4>
+                <p className="text-xs text-[#D6C7B2] mt-1">{opt.arch}</p>
+                <p className="text-[11px] text-[#A89F91] font-mono mt-1">{opt.fileName}</p>
               </div>
 
               <button
                 onClick={() => handleDownload(opt.url)}
-                className="mt-4 w-full py-2.5 px-3 rounded-lg text-xs font-bold bg-white/5 hover:bg-[#CBFE00] hover:text-[#0D0D12] text-zinc-200 transition-all flex items-center justify-center space-x-2 border border-white/10"
+                className="mt-4 w-full py-2.5 px-3 rounded-full text-xs font-bold bg-[#240F16] hover:bg-[#6F1025] hover:text-[#F5EBDD] text-[#D6C7B2] transition-all flex items-center justify-center space-x-2 border border-[#3D1520]"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Download ({opt.tag})</span>
@@ -181,16 +181,16 @@ export const DownloadPage: React.FC = () => {
       </div>
 
       {/* Web PWA Card */}
-      <div className="mt-12 p-6 rounded-2xl bg-gradient-to-r from-[#16161D] to-[#0D0D12] border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="mt-14 p-7 rounded-2xl bg-gradient-to-r from-[#1C0B12] to-[#14080D] border border-[#3D1520] flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
-          <h4 className="text-base font-bold text-white">Prefer to use SAYN in your browser?</h4>
-          <p className="text-xs text-zinc-400 mt-1">
+          <h4 className="text-base font-bold text-[#F5EBDD]">Prefer to use SAYN in your browser?</h4>
+          <p className="text-xs text-[#D6C7B2] mt-1">
             Access the full 0ms QuillBot paraphraser and Grammarly proofreading workstation online.
           </p>
         </div>
         <Link
           to="/workspace"
-          className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#CBFE00] text-[#0D0D12] hover:bg-[#D9FF33] transition-all flex items-center space-x-1.5 flex-shrink-0"
+          className="px-6 py-3 rounded-full text-xs font-bold bg-[#F5EBDD] text-[#100709] hover:bg-[#FAF4EB] transition-all flex items-center space-x-1.5 flex-shrink-0 shadow-sm"
         >
           <span>Launch Web Studio</span>
           <ArrowRight className="w-3.5 h-3.5" />
