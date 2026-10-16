@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var pillWindow: SanPillWindow?
     private let waveformEngine = AudioWaveformEngine()
     private var currentTranscript = ""
+    private var isFallbackCard: Bool = false
     
     private var eventMonitor: Any?
     private var flagsMonitor: Any?
@@ -231,11 +232,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 get: { self.currentTranscript },
                 set: { self.currentTranscript = $0 }
             ),
+            isFallbackCard: Binding(
+                get: { self.isFallbackCard },
+                set: { self.isFallbackCard = $0 }
+            ),
             onCancel: { [weak self] in
                 self?.hidePill()
             },
             onConfirm: { [weak self] text in
                 self?.commitPill(text: text)
+            },
+            onCopyText: { [weak self] _ in
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                    self?.hidePill()
+                }
             }
         )
         
@@ -333,6 +343,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     private func showPill() {
         isCommitting = false
+        isFallbackCard = false
         let front = NSWorkspace.shared.frontmostApplication
         if front?.bundleIdentifier != Bundle.main.bundleIdentifier {
             targetApp = front
@@ -347,7 +358,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             waveformEngine.selectedContextText = TextPaster.getSelectedText(targetApp: targetApp)
         }
         
-        pillWindow?.showAnimated()
+        pillWindow?.showAnimated(isCard: false)
         waveformEngine.startRecording { [weak self] transcript in
             self?.currentTranscript = transcript
         }
@@ -356,7 +367,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func hidePill() {
         isCommitting = false
         waveformEngine.stopRecording { _ in }
-        pillWindow?.hideAnimated()
+        pillWindow?.hideAnimated { [weak self] in
+            self?.isFallbackCard = false
+        }
         currentTranscript = ""
     }
     
@@ -376,16 +389,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         
         waveformEngine.stopRecording(activeAppBundleId: appToPasteInto?.bundleIdentifier) { [weak self] finalText in
-            self?.pillWindow?.orderOut(nil)
-            
+            guard let self = self else { return }
             let chosen = finalText.isEmpty ? text : finalText
             let trimmed = chosen.trimmingCharacters(in: .whitespacesAndNewlines)
             
             if !trimmed.isEmpty {
-                TextPaster.paste(text: trimmed, targetApp: appToPasteInto)
+                // Check if target application has an active editable text box / caret
+                let hasTextbox = TextPaster.hasActiveEditableTextBox(targetApp: appToPasteInto)
+                
+                if hasTextbox {
+                    // Scenario A: Active textbox present -> Auto-paste directly into field!
+                    self.pillWindow?.orderOut(nil)
+                    TextPaster.paste(text: trimmed, targetApp: appToPasteInto)
+                    self.currentTranscript = ""
+                    self.isFallbackCard = false
+                    self.isCommitting = false
+                } else {
+                    // Scenario B: No active textbox present (Wispr Flow behavior) -> Show Fallback HUD Card!
+                    self.currentTranscript = trimmed
+                    self.isFallbackCard = true
+                    self.pillWindow?.showAnimated(isCard: true)
+                    self.isCommitting = false
+                }
+            } else {
+                self.pillWindow?.orderOut(nil)
+                self.currentTranscript = ""
+                self.isFallbackCard = false
+                self.isCommitting = false
             }
-            self?.currentTranscript = ""
-            self?.isCommitting = false
         }
     }
     

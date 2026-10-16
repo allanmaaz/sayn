@@ -1,14 +1,22 @@
 import AppKit
 import SwiftUI
 
+/// Window Controller for the Ephemeral System-Wide Voice HUD
+/// Supports both:
+/// 1. Micro-Pill (Recording State): 96x30 minimal black capsule with dancing pure-white waveform bars docked right above the MacBook bezel
+/// 2. Fallback HUD Card: 380x170 floating sheet with "Select a textbox first, then dictate", clean transcript, and [ Copy ] button
 final class SanPillWindow: NSPanel {
-    override var canBecomeKey: Bool { false }
+    override var canBecomeKey: Bool {
+        // Allow becoming key when showing the interactive Fallback Card (with Copy button)
+        return isInteractiveCard
+    }
     override var canBecomeMain: Bool { false }
     
+    var isInteractiveCard: Bool = false
+    
     init(contentView: NSView) {
-        // Canvas width 340 x 90 so shadows feather out naturally with zero clipping
         super.init(
-            contentRect: NSRect(x: 0, y: 0, width: 340, height: 90),
+            contentRect: NSRect(x: 0, y: 0, width: 420, height: 220),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -24,20 +32,22 @@ final class SanPillWindow: NSPanel {
         self.alphaValue = 0.0
         
         self.orderOut(nil)
-        centerOnScreen()
+        centerAtBottomBezel()
     }
     
-    func centerOnScreen() {
+    func centerAtBottomBezel(forCard: Bool = false) {
         if let screen = NSScreen.main {
             let screenRect = screen.visibleFrame
             let x = screenRect.midX - (frame.width / 2)
-            let y = screenRect.minY + 28 // Floating right above the Dock
+            // Docked right above the MacBook bottom bezel
+            let y = forCard ? (screenRect.minY + 36) : (screenRect.minY + 12)
             setFrameOrigin(NSPoint(x: x, y: y))
         }
     }
     
-    func showAnimated() {
-        centerOnScreen()
+    func showAnimated(isCard: Bool = false) {
+        self.isInteractiveCard = isCard
+        centerAtBottomBezel(forCard: isCard)
         self.alphaValue = 0.0
         self.orderFrontRegardless()
         NSAnimationContext.runAnimationGroup { ctx in
@@ -54,221 +64,172 @@ final class SanPillWindow: NSPanel {
             self.animator().alphaValue = 0.0
         }, completionHandler: {
             self.orderOut(nil)
+            self.isInteractiveCard = false
             completion?()
         })
     }
 }
 
+/// Dynamic View switching between Micro-Capsule and Fallback HUD Card
 struct SanPillView: View {
     @ObservedObject var waveformEngine: AudioWaveformEngine
     @Binding var transcriptText: String
+    @Binding var isFallbackCard: Bool
     var onCancel: () -> Void
     var onConfirm: (String) -> Void
+    var onCopyText: ((String) -> Void)?
     
+    @State private var isCopied: Bool = false
     @State private var isHoveredClose: Bool = false
-    @State private var dotPulse: Bool = false
-    
-    // Official SAYN Colors
-    private let deepMaroon = Color(hex: "6F1025")
-    private let roseMaroon = Color(hex: "A83249")
-    private let warmCream = Color(hex: "F5EBDD")
-    private let nearBlack = Color(hex: "100709")
-    private let mutedCream = Color(hex: "D6C7B2")
+    @State private var isHoveredCopy: Bool = false
     
     var body: some View {
         ZStack {
-            // Pill Capsule
-            HStack(spacing: 10) {
-                // 1. SAYN Brand Icon
-                SanLogoBadge()
+            if isFallbackCard {
+                fallbackHUDCard
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.95).combined(with: .opacity),
+                        removal: .scale(scale: 0.95).combined(with: .opacity)
+                    ))
+            } else {
+                microRecordingCapsule
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.9).combined(with: .opacity),
+                        removal: .opacity
+                    ))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .animation(.spring(response: 0.28, dampingFraction: 0.82), value: isFallbackCard)
+    }
+    
+    // MARK: - 1. Micro Recording Capsule (Wispr Flow State)
+    /// Minimalist 96x30 black capsule with dancing pure-white waveform bars
+    private var microRecordingCapsule: some View {
+        HStack(spacing: 3) {
+            // 9 Dynamic Pure-White Equalizer Bars reacting in real-time
+            ForEach(0..<9, id: \.self) { index in
+                RoundedRectangle(cornerRadius: 1.5)
+                    .fill(Color.white)
+                    .frame(
+                        width: 2.4,
+                        height: CGFloat(max(4, waveformEngine.audioLevels[min(index, waveformEngine.audioLevels.count - 1)] * 18))
+                    )
+                    .animation(.easeOut(duration: 0.08), value: waveformEngine.audioLevels[min(index, waveformEngine.audioLevels.count - 1)])
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 7)
+        .frame(width: 96, height: 30)
+        .background(
+            Capsule()
+                .fill(Color(red: 10/255, green: 10/255, blue: 12/255).opacity(0.96))
+                .overlay(
+                    Capsule()
+                        .stroke(Color.white.opacity(0.14), lineWidth: 0.8)
+                )
+                .shadow(color: Color.black.opacity(0.6), radius: 14, x: 0, y: 6)
+        )
+    }
+    
+    // MARK: - 2. Fallback HUD Card (When No Textbox Focused)
+    /// Floating 380x170 dark card with header, clean transcript, and [ Copy ] button
+    private var fallbackHUDCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            // Header Bar: Audio Icon + Context Hint + Circular Dismiss [X]
+            HStack(spacing: 8) {
+                // Waveform real vector icon
+                Image(systemName: "waveform")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(.white)
                 
-                // 2. Center Activity: Soundwave during speaking OR Processing Status
-                if waveformEngine.isProcessing {
-                    HStack(spacing: 8) {
-                        ZStack {
-                            Circle()
-                                .fill(roseMaroon.opacity(dotPulse ? 0.45 : 0.2))
-                                .frame(width: 12, height: 12)
-                                .scaleEffect(dotPulse ? 1.25 : 0.85)
-                            Circle()
-                                .fill(roseMaroon)
-                                .frame(width: 6, height: 6)
-                        }
-                        .onAppear {
-                            withAnimation(Animation.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) {
-                                dotPulse = true
-                            }
-                        }
-                        
-                        Text(waveformEngine.currentMode.statusTitle)
-                            .font(.system(size: 13, weight: .semibold, design: .rounded))
-                            .foregroundColor(warmCream)
-                            .tracking(0.2)
-                    }
-                    .transition(.opacity)
-                } else {
-                    HStack(spacing: 8) {
-                        // Audio Equalizer Waveform Bars in Soft Rose-Maroon and Warm Cream
-                        HStack(spacing: 2.5) {
-                            ForEach(0..<8, id: \.self) { index in
-                                RoundedRectangle(cornerRadius: 1.5)
-                                    .fill(index % 2 == 0 ? roseMaroon : warmCream)
-                                    .frame(width: 2.5, height: CGFloat(max(4, waveformEngine.audioLevels[index] * 20)))
-                                    .animation(.easeOut(duration: 0.08), value: waveformEngine.audioLevels[index])
-                            }
-                        }
-                        .frame(width: 36, height: 22)
-                        
-                        if !transcriptText.isEmpty {
-                            Text(transcriptText)
-                                .font(.system(size: 13, weight: .medium, design: .rounded))
-                                .foregroundColor(warmCream)
-                                .lineLimit(1)
-                                .truncationMode(.tail)
-                                .frame(maxWidth: 130, alignment: .leading)
-                        } else {
-                            Text("Listening...")
-                                .font(.system(size: 13, weight: .medium, design: .rounded))
-                                .foregroundColor(mutedCream.opacity(0.85))
-                        }
-                    }
-                    .transition(.opacity)
-                }
+                Spacer()
                 
-                Spacer(minLength: 4)
+                // Muted context hint
+                Text("Select a textbox first, then dictate")
+                    .font(.system(size: 12, weight: .regular, design: .rounded))
+                    .foregroundColor(Color.white.opacity(0.55))
                 
-                // 3. Minimal Dismiss Button [ Close ]
+                Spacer()
+                
+                // Circular Dismiss Button
                 Button(action: onCancel) {
                     ZStack {
                         Circle()
-                            .fill(Color.white.opacity(isHoveredClose ? 0.16 : 0.07))
-                            .frame(width: 22, height: 22)
+                            .fill(Color.white.opacity(isHoveredClose ? 0.22 : 0.12))
+                            .frame(width: 24, height: 24)
                         Image(systemName: "xmark")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(isHoveredClose ? warmCream : mutedCream)
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.white)
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
-                .onHover { hovering in
-                    withAnimation(.easeInOut(duration: 0.12)) {
-                        isHoveredClose = hovering
-                    }
-                }
+                .onHover { h in isHoveredClose = h }
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .frame(width: 260, height: 48)
-            .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(nearBlack.opacity(0.96))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .stroke(
-                                LinearGradient(
-                                    stops: [
-                                        .init(color: roseMaroon.opacity(0.55), location: 0.0),
-                                        .init(color: deepMaroon.opacity(0.35), location: 0.5),
-                                        .init(color: Color.black.opacity(0.8), location: 1.0)
-                                    ],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                ),
-                                lineWidth: 1.2
-                            )
-                    )
-                    .shadow(color: Color.black.opacity(0.75), radius: 20, x: 0, y: 10)
-                    .shadow(color: deepMaroon.opacity(0.4), radius: 12, x: 0, y: 3)
-            )
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .animation(.spring(response: 0.25, dampingFraction: 0.8), value: waveformEngine.isProcessing)
-    }
-}
-
-// SAYN Logo Badge Component in Deep Maroon & Warm Cream
-struct SanLogoBadge: View {
-    var body: some View {
-        if let image = loadLogoImage() {
-            Image(nsImage: image)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 26, height: 26)
-                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .stroke(Color(hex: "A83249").opacity(0.5), lineWidth: 1)
-                )
-        } else {
-            ZStack {
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color(hex: "8F1835"), Color(hex: "6F1025")],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 26, height: 26)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .stroke(Color(hex: "F5EBDD").opacity(0.3), lineWidth: 1)
-                    )
+            
+            // Transcribed Speech Text
+            ScrollView(.vertical, showsIndicators: false) {
+                Text(transcriptText.isEmpty ? "What's up? What's going on?" : transcriptText)
+                    .font(.system(size: 16, weight: .medium, design: .rounded))
+                    .foregroundColor(Color(red: 242/255, green: 242/255, blue: 247/255))
+                    .lineSpacing(4)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxHeight: 70)
+            
+            // Footer: [ Copy ] Button
+            HStack {
+                Spacer()
                 
-                // Soundwave bars in warm cream
-                HStack(spacing: 2) {
-                    RoundedRectangle(cornerRadius: 1)
-                        .fill(Color(hex: "F5EBDD"))
-                        .frame(width: 2, height: 10)
-                    RoundedRectangle(cornerRadius: 1)
-                        .fill(Color(hex: "F5EBDD"))
-                        .frame(width: 2, height: 16)
-                    RoundedRectangle(cornerRadius: 1)
-                        .fill(Color(hex: "F5EBDD"))
-                        .frame(width: 2, height: 12)
+                Button(action: {
+                    let pasteboard = NSPasteboard.general
+                    pasteboard.clearContents()
+                    pasteboard.setString(transcriptText, forType: .string)
+                    onCopyText?(transcriptText)
+                    
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        isCopied = true
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                        withAnimation {
+                            isCopied = false
+                        }
+                    }
+                }) {
+                    HStack(spacing: 6) {
+                        if isCopied {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 11, weight: .bold))
+                            Text("Copied!")
+                                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        } else {
+                            Text("Copy")
+                                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        }
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 7)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(isCopied ? Color.green.opacity(0.8) : Color(red: 70/255, green: 70/255, blue: 74/255).opacity(isHoveredCopy ? 0.95 : 0.8))
+                    )
                 }
+                .buttonStyle(PlainButtonStyle())
+                .onHover { h in isHoveredCopy = h }
             }
         }
-    }
-    
-    private func loadLogoImage() -> NSImage? {
-        let paths = [
-            Bundle.main.path(forResource: "logo", ofType: "png"),
-            "/Applications/SAYN.app/Contents/Resources/logo.png",
-            "/Applications/San.app/Contents/Resources/logo.png",
-            "/Users/apple/Desktop/SAYN/apps/desktop-macos/Resources/logo.png"
-        ]
-        for p in paths.compactMap({ $0 }) {
-            if FileManager.default.fileExists(atPath: p), let img = NSImage(contentsOfFile: p) {
-                return img
-            }
-        }
-        return nil
-    }
-}
-
-// SwiftUI Color Hex Initializer
-extension Color {
-    init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
-        let a, r, g, b: UInt64
-        switch hex.count {
-        case 3: // RGB (12-bit)
-            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6: // RGB (24-bit)
-            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8: // ARGB (32-bit)
-            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
-        default:
-            (a, r, g, b) = (255, 0, 0, 0)
-        }
-        self.init(
-            .sRGB,
-            red: Double(r) / 255,
-            green: Double(g) / 255,
-            blue: Double(b) / 255,
-            opacity: Double(a) / 255
+        .padding(18)
+        .frame(width: 380, height: 170)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color(red: 12/255, green: 13/255, blue: 15/255).opacity(0.97))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.75), radius: 24, x: 0, y: 12)
         )
     }
 }

@@ -44,6 +44,40 @@ final class TextPaster {
         return nil
     }
     
+    /// Checks whether the target foreground application has an active editable text box / caret
+    static func hasActiveEditableTextBox(targetApp: NSRunningApplication? = nil) -> Bool {
+        let app = targetApp ?? lastExternalApp ?? NSWorkspace.shared.frontmostApplication
+        guard let validApp = app, validApp.bundleIdentifier != Bundle.main.bundleIdentifier else { return false }
+        
+        let appRef = AXUIElementCreateApplication(validApp.processIdentifier)
+        var focusedElement: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(appRef, kAXFocusedUIElementAttribute as CFString, &focusedElement) == .success,
+              let element = focusedElement else {
+            return false
+        }
+        
+        let axElement = element as! AXUIElement
+        var roleValue: CFTypeRef?
+        if AXUIElementCopyAttributeValue(axElement, kAXRoleAttribute as CFString, &roleValue) == .success,
+           let role = roleValue as? String {
+            let editableRoles = ["AXTextField", "AXTextArea", "AXWebArea", "AXComboBox", "AXSearchField"]
+            if editableRoles.contains(role) { return true }
+        }
+        
+        var isSettable: DarwinBoolean = false
+        if AXUIElementIsAttributeSettable(axElement, kAXValueAttribute as CFString, &isSettable) == .success,
+           isSettable.boolValue {
+            return true
+        }
+        
+        var selectedTextValue: CFTypeRef?
+        if AXUIElementCopyAttributeValue(axElement, kAXSelectedTextAttribute as CFString, &selectedTextValue) == .success {
+            return true
+        }
+        
+        return false
+    }
+    
     /// Automatic injection of polished speech directly into the user's active text field
     static func paste(text: String, targetApp: NSRunningApplication? = nil) {
         let cleanText = text.trimmingCharacters(in: .whitespacesAndNewlines)
