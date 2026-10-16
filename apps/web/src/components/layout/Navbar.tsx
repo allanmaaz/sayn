@@ -13,9 +13,11 @@ import {
   X,
   User as UserIcon,
   ChevronRight,
+  Download,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.js';
 import { useTheme } from '../../context/ThemeContext.js';
+import { DownloadModal } from '../download/DownloadModal.js';
 
 export const Navbar: React.FC = () => {
   const { user, signOut } = useAuth();
@@ -23,6 +25,7 @@ export const Navbar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isDownloadOpen, setIsDownloadOpen] = useState(false);
 
   const toggleTheme = () => {
     setTheme(actualTheme === 'dark' ? 'light' : 'dark');
@@ -99,6 +102,15 @@ export const Navbar: React.FC = () => {
 
         {/* Right Action Icons */}
         <div className="hidden md:flex items-center space-x-3">
+          {/* Download App with Auto Device Detection */}
+          <button
+            onClick={() => setIsDownloadOpen(true)}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-ios-sm text-xs font-bold text-[#CBFE00] bg-[#CBFE00]/10 border border-[#CBFE00]/30 hover:bg-[#CBFE00] hover:text-[#0D0D12] active:scale-95 transition-all shadow-[0_0_15px_rgba(203,254,0,0.12)]"
+          >
+            <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+            <span>Download</span>
+          </button>
+
           {/* Theme Toggle Button */}
           <button
             onClick={toggleTheme}
@@ -217,10 +229,23 @@ export const Navbar: React.FC = () => {
               >
                 Get Started Free
               </Link>
+              <button
+                onClick={() => {
+                  setIsDownloadOpen(true);
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-ios-sm text-sm font-bold text-[#0D0D12] bg-[#CBFE00]"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download App</span>
+              </button>
             </div>
           )}
         </div>
       )}
+
+      {/* Smart Device Detection Download Modal */}
+      <DownloadModal isOpen={isDownloadOpen} onClose={() => setIsDownloadOpen(false)} />
     </header>
   );
 };

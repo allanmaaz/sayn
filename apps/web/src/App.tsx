@@ -9,12 +9,14 @@ import { SavedPromptsPage } from './features/prompts/SavedPromptsPage.js';
 import { SettingsPage } from './features/settings/SettingsPage.js';
 import { LoginPage } from './features/auth/LoginPage.js';
 import { SignupPage } from './features/auth/SignupPage.js';
+import { DownloadPage } from './features/download/DownloadPage.js';
 
 export const App: React.FC = () => {
   return (
     <AppShell>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/download" element={<DownloadPage />} />
         <Route path="/workspace" element={<WorkspacePage />} />
         <Route path="/voice" element={<VoicePage />} />
         <Route path="/history" element={<HistoryPage />} />

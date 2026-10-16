@@ -11,11 +11,21 @@ import {
   CheckCircle2,
   Copy,
   Check,
+  Download,
+  Sparkles,
 } from 'lucide-react';
+import { detectDevice, DeviceInfo } from '../../utils/deviceDetector.js';
+import { DownloadModal } from '../../components/download/DownloadModal.js';
 
 export const LandingPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'refine' | 'voice' | 'overlay'>('refine');
   const [copiedDemo, setCopiedDemo] = useState(false);
+  const [isDownloadOpen, setIsDownloadOpen] = useState(false);
+  const [device, setDevice] = useState<DeviceInfo | null>(null);
+
+  React.useEffect(() => {
+    setDevice(detectDevice());
+  }, []);
 
   const handleCopyDemo = () => {
     navigator.clipboard.writeText(
@@ -32,37 +42,54 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           {/* Subtle Tagline Pill */}
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-ios-pill bg-sayn-dark-surface2 dark:bg-sayn-dark-surface2 light:bg-sayn-light-surface2 border border-sayn-dark-divider dark:border-sayn-dark-divider light:border-sayn-light-divider mb-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <span className="w-2 h-2 rounded-full bg-sayn-dark-accent dark:bg-sayn-dark-accent light:bg-sayn-light-accent" />
-            <span className="text-xs font-medium text-sayn-dark-secondary dark:text-sayn-dark-secondary light:text-sayn-light-secondary">
+            <span className="w-2 h-2 rounded-full bg-[#CBFE00]" />
+            <span className="text-xs font-semibold text-[#CBFE00]">
               Say it. Refine it. Send it.
             </span>
           </div>
 
           {/* Primary Headline */}
           <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-sayn-dark-text dark:text-sayn-dark-text light:text-sayn-light-text mb-6">
-            Your voice. Your words. <span className="text-sayn-dark-accent dark:text-sayn-dark-accent light:text-sayn-light-accent">Better.</span>
+            Your voice. Your words. <span className="text-[#CBFE00]">Better.</span>
           </h1>
 
           {/* Supporting Copy */}
-          <p className="max-w-2xl mx-auto text-base sm:text-lg text-sayn-dark-secondary dark:text-sayn-dark-secondary light:text-sayn-light-secondary leading-relaxed mb-10">
-            Speak naturally, refine your writing with AI, and communicate better across the apps you use every day.
+          <p className="max-w-2xl mx-auto text-base sm:text-lg text-sayn-dark-secondary dark:text-sayn-dark-secondary light:text-sayn-light-secondary leading-relaxed mb-8">
+            Speak naturally, refine your writing with 0ms AI, and communicate better across Mac, Windows, Android, and Web.
           </p>
 
-          {/* Action CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+          {/* Dynamic Auto-Detected Action CTAs */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 mb-4">
+            <button
+              onClick={() => setIsDownloadOpen(true)}
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2.5 px-7 py-3.5 rounded-xl font-bold text-sm bg-[#CBFE00] text-[#0D0D12] hover:bg-[#D9FF33] active:scale-95 transition-all shadow-[0_0_25px_rgba(203,254,0,0.35)]"
+            >
+              <Download className="w-4 h-4 stroke-[2.5]" />
+              <span>
+                Download for {device?.osName || 'Your Device'} ({device?.archName ? device.archName.split(' ')[0] : 'Auto-Detected'})
+              </span>
+            </button>
             <Link
               to="/workspace"
-              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-6 py-3 rounded-ios-sm font-semibold text-sm text-white bg-sayn-dark-accent dark:bg-sayn-dark-accent light:bg-sayn-light-accent hover:opacity-90 active:scale-95 transition-all shadow-sm"
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-6 py-3.5 rounded-xl font-semibold text-sm text-white bg-[#16161D] border border-white/10 hover:border-[#CBFE00]/40 transition-all"
             >
-              <span>Get Started Free</span>
+              <span>Open Web Studio</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
-            <a
-              href="#how-it-works"
-              className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 rounded-ios-sm font-semibold text-sm text-sayn-dark-text dark:text-sayn-dark-text light:text-sayn-light-text bg-sayn-dark-surface dark:bg-sayn-dark-surface light:bg-sayn-light-surface border border-sayn-dark-divider dark:border-sayn-dark-divider light:border-sayn-light-divider hover:bg-sayn-dark-surface2 transition-all"
+          </div>
+
+          {/* Subtle Detection Note / Switcher */}
+          <div className="mb-14 flex items-center justify-center space-x-1.5 text-xs text-zinc-400">
+            <Sparkles className="w-3.5 h-3.5 text-[#CBFE00]" />
+            <span>
+              Auto-detected <strong className="text-zinc-200">{device?.osName}</strong> ({device?.archName}) • Free & Unlimited.
+            </span>
+            <button
+              onClick={() => setIsDownloadOpen(true)}
+              className="text-[#CBFE00] hover:underline font-semibold ml-1"
             >
-              See How It Works
-            </a>
+              View all versions
+            </button>
           </div>
 
           {/* 2. INTERACTIVE PRODUCT PREVIEW CARD */}
@@ -374,15 +401,27 @@ export const LandingPage: React.FC = () => {
           <p className="text-sm text-sayn-dark-secondary mb-8">
             Experience the clarity and speed of SAYN on the web today.
           </p>
-          <Link
-            to="/workspace"
-            className="inline-flex items-center space-x-2 px-6 py-3 rounded-ios-sm font-semibold text-sm text-white bg-sayn-dark-accent dark:bg-sayn-dark-accent light:bg-sayn-light-accent hover:opacity-90 active:scale-95 transition-all shadow-sm"
-          >
-            <span>Start Using SAYN</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              onClick={() => setIsDownloadOpen(true)}
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-6 py-3 rounded-xl font-bold text-sm bg-[#CBFE00] text-[#0D0D12] hover:bg-[#D9FF33] active:scale-95 transition-all shadow-[0_0_20px_rgba(203,254,0,0.3)]"
+            >
+              <Download className="w-4 h-4" />
+              <span>Download for {device?.osName || 'Your Device'}</span>
+            </button>
+            <Link
+              to="/workspace"
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-6 py-3 rounded-xl font-semibold text-sm text-white bg-[#16161D] border border-white/10 hover:border-[#CBFE00]/40 transition-all"
+            >
+              <span>Start Using Web Studio</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
       </section>
+
+      {/* Smart Device Detection Download Modal */}
+      <DownloadModal isOpen={isDownloadOpen} onClose={() => setIsDownloadOpen(false)} />
     </div>
   );
 };
