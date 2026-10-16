@@ -192,7 +192,7 @@ export const LandingPage: React.FC = () => {
       ? 1.15
       : 0.85;
 
-  // Scrollytelling Pinned Track & Laser Progress
+  // Viewport scroll-driven laser progress
   const prismTrackRef = React.useRef<HTMLElement | null>(null);
   const [scrollLaserProg, setScrollLaserProg] = useState(0);
 
@@ -200,10 +200,10 @@ export const LandingPage: React.FC = () => {
     const onScroll = () => {
       if (!prismTrackRef.current) return;
       const rect = prismTrackRef.current.getBoundingClientRect();
-      const stickyOffset = 90;
-      const scrollDistance = rect.height - window.innerHeight;
-      if (scrollDistance <= 0) return;
-      const progress = Math.min(1, Math.max(0, (stickyOffset - rect.top) / scrollDistance));
+      const windowHeight = window.innerHeight;
+      const start = windowHeight * 0.85;
+      const end = windowHeight * 0.20;
+      const progress = Math.min(1, Math.max(0, (start - rect.top) / (start - end)));
       setScrollLaserProg(progress);
     };
 
@@ -934,162 +934,9 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* CHAPTER 03: THE GROQ LPU CONSTELLATION (Orbital Reactor Hub) */}
+      {/* CHAPTER 02: THE NEURAL LASER PRISM (Disfluency Shredder) */}
       {/* ========================================================================= */}
-      <section id="lpu-constellation" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 my-16 relative z-10">
-        <div
-          className={`rounded-3xl sm:rounded-[38px] p-8 sm:p-14 text-center border shadow-2xl relative overflow-hidden transition-all ${
-            isLight
-              ? 'bg-gradient-to-b from-[#FFFDF9] via-[#FAF4EB] to-[#F5EFE6] border-[#E2D9CD] shadow-[0_20px_50px_rgba(111,16,37,0.08)]'
-              : 'bg-gradient-to-b from-[#1C060B] via-[#140508] to-[#100205] border-[#4A1522] shadow-[0_30px_80px_rgba(0,0,0,0.85)]'
-          }`}
-        >
-          {/* Section Header */}
-          <span className="text-xs font-bold uppercase tracking-widest text-[#C83E5B] mb-2 block font-mono">
-            CH.03 — HARDWARE-ACCELERATED INFERENCE
-          </span>
-          <h2
-            className={`text-3xl sm:text-5xl font-extrabold tracking-tight mb-3 ${
-              isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
-            }`}
-          >
-            The Groq LPU{' '}
-            <span className="font-serif-instrument italic text-[#C83E5B]">
-              Constellation
-            </span>
-          </h2>
-          <p
-            className={`max-w-xl mx-auto text-xs sm:text-sm mb-12 ${
-              isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
-            }`}
-          >
-            Sub-400ms time-to-first-token speech synthesis powered by Linear Processing Units and zero subscription barriers.
-          </p>
-
-          {/* Central Rotating Orbital Reactor Hub */}
-          <div className="relative w-72 h-72 sm:w-88 sm:h-88 mx-auto my-6 flex items-center justify-center">
-            {/* Outer Slow-Spinning Dashed Orbit */}
-            <div
-              className="absolute inset-0 rounded-full border border-dashed border-[#C83E5B]/40 animate-spin-slow pointer-events-none"
-              style={{ animationDuration: '28s' }}
-            />
-
-            {/* Middle Reverse Ring */}
-            <div
-              className="absolute inset-8 rounded-full border border-[#6F1025]/50 animate-spin-slow pointer-events-none"
-              style={{ animationDuration: '18s', animationDirection: 'reverse' }}
-            />
-
-            {/* Glowing Core Reactor */}
-            <div className="relative w-36 h-36 rounded-full bg-gradient-to-br from-[#260910] to-[#120307] border-2 border-[#C83E5B] shadow-[0_0_40px_rgba(200,62,91,0.5)] flex flex-col items-center justify-center p-4 z-10">
-              <Zap className="w-6 h-6 text-[#C83E5B] mb-1 animate-pulse" />
-              <div className="font-mono text-xs font-black text-[#F5EBDD] tracking-wider">
-                LPU CORE
-              </div>
-              <div className="font-mono text-[10px] text-emerald-400 font-bold mt-0.5">
-                318ms LATENCY
-              </div>
-            </div>
-
-            {/* 6 Circuit Nodes in Orbit */}
-            {[
-              { label: 'NODE 01 — GROQ WHISPER', angle: 0 },
-              { label: 'NODE 02 — LOCAL SQLITE WAL', angle: 60 },
-              { label: 'NODE 03 — DISFLUENCY PRISM', angle: 120 },
-              { label: 'NODE 04 — 100% FREE FOREVER', angle: 180 },
-              { label: 'NODE 05 — CURSOR INJECTION', angle: 240 },
-              { label: 'NODE 06 — EPHEMERAL BUFFER', angle: 300 },
-            ].map((node, i) => {
-              const rad = (node.angle * Math.PI) / 180;
-              const radius = 135;
-              const x = Math.cos(rad) * radius;
-              const y = Math.sin(rad) * radius;
-              return (
-                <div
-                  key={i}
-                  className="absolute px-2.5 py-1 rounded-full text-[9px] font-mono font-bold bg-[#1C060B]/90 border border-[#C83E5B]/50 text-[#F5EBDD] shadow-md transition-transform hover:scale-110 whitespace-nowrap hidden sm:block"
-                  style={{
-                    transform: `translate(${x}px, ${y}px)`,
-                  }}
-                >
-                  {node.label}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Speed Comparison Cards Below */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 text-left mt-10">
-            {/* Standard Keyboard (45 wpm) */}
-            <div
-              className={`md:col-span-4 p-7 rounded-2xl sm:rounded-3xl border flex flex-col justify-between min-h-[220px] transition-all ${
-                isLight
-                  ? 'bg-white border-[#E2D9CD]'
-                  : 'bg-[#100709] border-[#3D1520]'
-              }`}
-            >
-              <div>
-                <div className="text-xs font-medium text-[#A89F91] mb-1">Standard Keyboard</div>
-                <div className="font-serif-instrument text-4xl sm:text-5xl font-normal leading-none text-[#A83249]">
-                  45 <span className="text-xl font-sans text-[#A89F91]">wpm</span>
-                </div>
-              </div>
-              <div className="mt-6 font-mono text-xs sm:text-sm text-[#D6C7B2] border-r-2 border-[#A83249] pr-1 py-1 overflow-hidden whitespace-nowrap">
-                {typingSimText}
-              </div>
-            </div>
-
-            {/* SAYN Voice Dictation (220 wpm) */}
-            <div
-              className={`md:col-span-8 p-7 rounded-2xl sm:rounded-3xl border flex flex-col justify-between min-h-[220px] relative overflow-hidden transition-all ${
-                isLight
-                  ? 'bg-gradient-to-br from-[#FFF5F7] via-[#FFFFFF] to-[#FAF0F2] border-[#C83E5B]/40 shadow-[0_10px_30px_rgba(200,62,91,0.12)]'
-                  : 'bg-gradient-to-br from-[#260910] via-[#1C060B] to-[#120307] border-[#C83E5B]/60 shadow-[0_15px_40px_rgba(200,62,91,0.22)]'
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="text-xs font-bold text-[#A83249] mb-1 tracking-wide">
-                    SAYN Voice Dictation
-                  </div>
-                  <div
-                    className={`font-serif-instrument text-4xl sm:text-5xl font-normal leading-none ${
-                      isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
-                    }`}
-                  >
-                    220 <span className="text-xl font-sans text-[#C83E5B] font-bold">wpm</span>
-                  </div>
-                </div>
-                <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-[#A83249]/20 border border-[#A83249]/40 text-[#A83249] text-xs font-bold">
-                  <Zap className="w-3.5 h-3.5" />
-                  <span>⚡ Real-Time LPU</span>
-                </span>
-              </div>
-
-              {/* Text streamer */}
-              <div className="mt-4 pt-4 border-t border-[#A83249]/20">
-                <div className="flex items-center space-x-2 text-xs font-medium text-[#C83E5B] mb-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Instant Audio-to-Cursor Injection</span>
-                </div>
-                <p
-                  className={`text-xs sm:text-sm leading-relaxed font-medium ${
-                    isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
-                  }`}
-                >
-                  Speak naturally, paraphrase word-by-word, adjust tone, and auto-paste into any active chatbot or editor instantly.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* CHAPTER 02: THE NEURAL LASER PRISM (Pinned Scrollytelling Track) */}
-      {/* ========================================================================= */}
-      <section id="laser-prism" ref={prismTrackRef} className="relative h-[250vh] max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 my-8 z-10">
-        <div className="sticky top-20 sm:top-24 min-h-[calc(100vh-6.5rem)] flex flex-col justify-center">
+      <section id="laser-prism" ref={prismTrackRef} className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 my-12 sm:my-16 relative z-10">
           <div
             className={`rounded-3xl sm:rounded-[38px] p-6 sm:p-12 border shadow-2xl relative overflow-hidden transition-all ${
             isLight
@@ -1278,7 +1125,160 @@ export const LandingPage: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      </section>
+
+
+
+      {/* ========================================================================= */}
+      {/* CHAPTER 03: THE GROQ LPU CONSTELLATION (Orbital Reactor Hub) */}
+      {/* ========================================================================= */}
+      <section id="lpu-constellation" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 my-16 relative z-10">
+        <div
+          className={`rounded-3xl sm:rounded-[38px] p-8 sm:p-14 text-center border shadow-2xl relative overflow-hidden transition-all ${
+            isLight
+              ? 'bg-gradient-to-b from-[#FFFDF9] via-[#FAF4EB] to-[#F5EFE6] border-[#E2D9CD] shadow-[0_20px_50px_rgba(111,16,37,0.08)]'
+              : 'bg-gradient-to-b from-[#1C060B] via-[#140508] to-[#100205] border-[#4A1522] shadow-[0_30px_80px_rgba(0,0,0,0.85)]'
+          }`}
+        >
+          {/* Section Header */}
+          <span className="text-xs font-bold uppercase tracking-widest text-[#C83E5B] mb-2 block font-mono">
+            CH.03 — HARDWARE-ACCELERATED INFERENCE
+          </span>
+          <h2
+            className={`text-3xl sm:text-5xl font-extrabold tracking-tight mb-3 ${
+              isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
+            }`}
+          >
+            The Groq LPU{' '}
+            <span className="font-serif-instrument italic text-[#C83E5B]">
+              Constellation
+            </span>
+          </h2>
+          <p
+            className={`max-w-xl mx-auto text-xs sm:text-sm mb-12 ${
+              isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
+            }`}
+          >
+            Sub-400ms time-to-first-token speech synthesis powered by Linear Processing Units and zero subscription barriers.
+          </p>
+
+          {/* Central Rotating Orbital Reactor Hub */}
+          <div className="relative w-72 h-72 sm:w-88 sm:h-88 mx-auto my-6 flex items-center justify-center">
+            {/* Outer Slow-Spinning Dashed Orbit */}
+            <div
+              className="absolute inset-0 rounded-full border border-dashed border-[#C83E5B]/40 animate-spin-slow pointer-events-none"
+              style={{ animationDuration: '28s' }}
+            />
+
+            {/* Middle Reverse Ring */}
+            <div
+              className="absolute inset-8 rounded-full border border-[#6F1025]/50 animate-spin-slow pointer-events-none"
+              style={{ animationDuration: '18s', animationDirection: 'reverse' }}
+            />
+
+            {/* Glowing Core Reactor */}
+            <div className="relative w-36 h-36 rounded-full bg-gradient-to-br from-[#260910] to-[#120307] border-2 border-[#C83E5B] shadow-[0_0_40px_rgba(200,62,91,0.5)] flex flex-col items-center justify-center p-4 z-10">
+              <Zap className="w-6 h-6 text-[#C83E5B] mb-1 animate-pulse" />
+              <div className="font-mono text-xs font-black text-[#F5EBDD] tracking-wider">
+                LPU CORE
+              </div>
+              <div className="font-mono text-[10px] text-emerald-400 font-bold mt-0.5">
+                318ms LATENCY
+              </div>
+            </div>
+
+            {/* 6 Circuit Nodes in Orbit */}
+            {[
+              { label: 'NODE 01 — GROQ WHISPER', angle: 0 },
+              { label: 'NODE 02 — LOCAL SQLITE WAL', angle: 60 },
+              { label: 'NODE 03 — DISFLUENCY PRISM', angle: 120 },
+              { label: 'NODE 04 — 100% FREE FOREVER', angle: 180 },
+              { label: 'NODE 05 — CURSOR INJECTION', angle: 240 },
+              { label: 'NODE 06 — EPHEMERAL BUFFER', angle: 300 },
+            ].map((node, i) => {
+              const rad = (node.angle * Math.PI) / 180;
+              const radius = 135;
+              const x = Math.cos(rad) * radius;
+              const y = Math.sin(rad) * radius;
+              return (
+                <div
+                  key={i}
+                  className="absolute px-2.5 py-1 rounded-full text-[9px] font-mono font-bold bg-[#1C060B]/90 border border-[#C83E5B]/50 text-[#F5EBDD] shadow-md transition-transform hover:scale-110 whitespace-nowrap hidden sm:block"
+                  style={{
+                    transform: `translate(${x}px, ${y}px)`,
+                  }}
+                >
+                  {node.label}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Speed Comparison Cards Below */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 text-left mt-10">
+            {/* Standard Keyboard (45 wpm) */}
+            <div
+              className={`md:col-span-4 p-7 rounded-2xl sm:rounded-3xl border flex flex-col justify-between min-h-[220px] transition-all ${
+                isLight
+                  ? 'bg-white border-[#E2D9CD]'
+                  : 'bg-[#100709] border-[#3D1520]'
+              }`}
+            >
+              <div>
+                <div className="text-xs font-medium text-[#A89F91] mb-1">Standard Keyboard</div>
+                <div className="font-serif-instrument text-4xl sm:text-5xl font-normal leading-none text-[#A83249]">
+                  45 <span className="text-xl font-sans text-[#A89F91]">wpm</span>
+                </div>
+              </div>
+              <div className="mt-6 font-mono text-xs sm:text-sm text-[#D6C7B2] border-r-2 border-[#A83249] pr-1 py-1 overflow-hidden whitespace-nowrap">
+                {typingSimText}
+              </div>
+            </div>
+
+            {/* SAYN Voice Dictation (220 wpm) */}
+            <div
+              className={`md:col-span-8 p-7 rounded-2xl sm:rounded-3xl border flex flex-col justify-between min-h-[220px] relative overflow-hidden transition-all ${
+                isLight
+                  ? 'bg-gradient-to-br from-[#FFF5F7] via-[#FFFFFF] to-[#FAF0F2] border-[#C83E5B]/40 shadow-[0_10px_30px_rgba(200,62,91,0.12)]'
+                  : 'bg-gradient-to-br from-[#260910] via-[#1C060B] to-[#120307] border-[#C83E5B]/60 shadow-[0_15px_40px_rgba(200,62,91,0.22)]'
+              }`}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="text-xs font-bold text-[#A83249] mb-1 tracking-wide">
+                    SAYN Voice Dictation
+                  </div>
+                  <div
+                    className={`font-serif-instrument text-4xl sm:text-5xl font-normal leading-none ${
+                      isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
+                    }`}
+                  >
+                    220 <span className="text-xl font-sans text-[#C83E5B] font-bold">wpm</span>
+                  </div>
+                </div>
+                <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-[#A83249]/20 border border-[#A83249]/40 text-[#A83249] text-xs font-bold">
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>⚡ Real-Time LPU</span>
+                </span>
+              </div>
+
+              {/* Text streamer */}
+              <div className="mt-4 pt-4 border-t border-[#A83249]/20">
+                <div className="flex items-center space-x-2 text-xs font-medium text-[#C83E5B] mb-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Instant Audio-to-Cursor Injection</span>
+                </div>
+                <p
+                  className={`text-xs sm:text-sm leading-relaxed font-medium ${
+                    isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
+                  }`}
+                >
+                  Speak naturally, paraphrase word-by-word, adjust tone, and auto-paste into any active chatbot or editor instantly.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* 2. THREE-PILLAR CAPABILITIES SECTION */}
