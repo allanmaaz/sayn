@@ -193,8 +193,12 @@ export const LoginPage: React.FC = () => {
       <div className="w-full max-w-md p-8 rounded-3xl bg-white border border-[#EBE8DF] shadow-2xl transition-all">
         {/* Brand Header */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-[#0D3832] text-white font-bold text-lg mb-3 shadow-md">
-            ||||
+          <div className="inline-flex items-center justify-center mb-3">
+            <img
+              src={saynLogo}
+              alt="SAYN Logo"
+              className="w-12 h-12 rounded-2xl shadow-md transition-transform hover:scale-105"
+            />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-[#1A1A1A]">
             {showPersonalization
@@ -229,7 +233,7 @@ export const LoginPage: React.FC = () => {
                 value={fullName}
                 onChange={e => setFullName(e.target.value)}
                 placeholder="Mohammed Maaz"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF9F5] border border-[#EBE8DF] text-sm text-[#1A1A1A] focus:outline-hidden focus:border-[#0D3832]"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF9F5] border border-[#EBE8DF] text-sm text-[#1A1A1A] focus:outline-hidden focus:border-[#6F1025]"
               />
             </div>
 
@@ -254,7 +258,7 @@ export const LoginPage: React.FC = () => {
                       onClick={() => setSelectedRole(r.id)}
                       className={`p-3 rounded-xl border text-left transition-all ${
                         isSelected
-                          ? 'border-[#0D3832] bg-[#0D3832]/5 text-[#0D3832]'
+                          ? 'border-[#6F1025] bg-[#6F1025]/10 text-[#6F1025] shadow-xs'
                           : 'border-[#EBE8DF] bg-[#FAF9F5] text-[#706E6B] hover:border-[#D6D2C4]'
                       }`}
                     >
@@ -285,7 +289,7 @@ export const LoginPage: React.FC = () => {
                       onClick={() => setSelectedStyle(s.id)}
                       className={`p-2.5 rounded-xl border cursor-pointer flex items-center justify-between transition-all ${
                         isSelected
-                          ? 'border-[#0D3832] bg-[#0D3832]/5'
+                          ? 'border-[#6F1025] bg-[#6F1025]/10 shadow-xs'
                           : 'border-[#EBE8DF] bg-[#FAF9F5] hover:border-[#D6D2C4]'
                       }`}
                     >
@@ -293,7 +297,7 @@ export const LoginPage: React.FC = () => {
                         <p className="text-xs font-bold text-[#1A1A1A]">{s.title}</p>
                         <p className="text-[10px] text-[#706E6B]">{s.desc}</p>
                       </div>
-                      {isSelected && <Check className="w-4 h-4 text-[#0D3832]" />}
+                      {isSelected && <Check className="w-4 h-4 text-[#6F1025]" />}
                     </div>
                   );
                 })}
@@ -303,7 +307,7 @@ export const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl text-sm font-semibold text-white bg-[#0D3832] hover:bg-[#144D45] active:scale-[0.99] disabled:opacity-50 transition-all flex items-center justify-center space-x-2 shadow-md"
+              className="w-full py-3 rounded-xl text-sm font-semibold text-[#F5EBDD] bg-[#6F1025] hover:bg-[#8F1835] active:scale-[0.99] disabled:opacity-50 transition-all flex items-center justify-center space-x-2 shadow-md"
             >
               <span>Complete Personalization & Launch</span>
               <ArrowRight className="w-4 h-4" />
@@ -360,7 +364,7 @@ export const LoginPage: React.FC = () => {
                           <select
                             value={countryCode}
                             onChange={e => setCountryCode(e.target.value)}
-                            className="appearance-none pl-3 pr-7 py-2.5 rounded-xl bg-[#FAF9F5] border border-[#EBE8DF] text-xs font-medium text-[#1A1A1A] focus:outline-hidden focus:border-[#0D3832]"
+                            className="appearance-none pl-3 pr-7 py-2.5 rounded-xl bg-[#FAF9F5] border border-[#EBE8DF] text-xs font-medium text-[#1A1A1A] focus:outline-hidden focus:border-[#6F1025]"
                           >
                             {COUNTRY_CODES.map(c => (
                               <option key={c.code} value={c.code}>
@@ -378,7 +382,7 @@ export const LoginPage: React.FC = () => {
                           value={phoneNumber}
                           onChange={e => setPhoneNumber(e.target.value)}
                           placeholder="98765 43210"
-                          className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#FAF9F5] border border-[#EBE8DF] text-sm text-[#1A1A1A] focus:outline-hidden focus:border-[#0D3832]"
+                          className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#FAF9F5] border border-[#EBE8DF] text-sm text-[#1A1A1A] focus:outline-hidden focus:border-[#6F1025]"
                         />
                       </div>
                     </div>
@@ -386,7 +390,7 @@ export const LoginPage: React.FC = () => {
                     <button
                       type="submit"
                       disabled={loading || phoneNumber.trim().length < 5}
-                      className="w-full py-3 rounded-xl text-sm font-semibold text-white bg-[#0D3832] hover:bg-[#144D45] active:scale-[0.99] disabled:opacity-50 transition-all flex items-center justify-center space-x-2 shadow-md"
+                      className="w-full py-3 rounded-xl text-sm font-semibold text-[#F5EBDD] bg-[#6F1025] hover:bg-[#8F1835] active:scale-[0.99] disabled:opacity-50 transition-all flex items-center justify-center space-x-2 shadow-md"
                     >
                       {loading ? (
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -408,7 +412,7 @@ export const LoginPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setOtpSent(false)}
-                          className="text-[11px] text-[#0D3832] hover:underline font-semibold"
+                          className="text-[11px] text-[#6F1025] hover:underline font-semibold"
                         >
                           Change
                         </button>
@@ -426,14 +430,14 @@ export const LoginPage: React.FC = () => {
                             value={digit}
                             onChange={e => handleDigitChange(i, e.target.value)}
                             onKeyDown={e => handleDigitKeyDown(i, e)}
-                            className="w-11 h-12 text-center text-lg font-bold rounded-xl bg-[#FAF9F5] border border-[#EBE8DF] focus:border-[#0D3832] focus:bg-white focus:outline-hidden transition"
+                            className="w-11 h-12 text-center text-lg font-bold rounded-xl bg-[#FAF9F5] border border-[#EBE8DF] focus:border-[#6F1025] focus:bg-white focus:outline-hidden transition"
                           />
                         ))}
                       </div>
 
                       {/* Instant Testing Helper Notice */}
                       {demoCodeNotice && (
-                        <div className="mt-3 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-900 flex items-center justify-between">
+                        <div className="mt-3 p-2.5 rounded-xl bg-[#6F1025]/10 border border-[#6F1025]/20 text-xs text-[#6F1025] flex items-center justify-between">
                           <span>Demo verification code: <strong>{demoCodeNotice}</strong></span>
                           <button
                             type="button"
@@ -441,7 +445,7 @@ export const LoginPage: React.FC = () => {
                               setOtpDigits(demoCodeNotice.split(''));
                               otpRefs.current[5]?.focus();
                             }}
-                            className="text-[11px] font-bold text-amber-950 underline hover:no-underline"
+                            className="text-[11px] font-bold text-[#6F1025] underline hover:no-underline"
                           >
                             Fill in
                           </button>
@@ -452,7 +456,7 @@ export const LoginPage: React.FC = () => {
                     <button
                       type="submit"
                       disabled={loading || otpDigits.join('').length < 6}
-                      className="w-full py-3 rounded-xl text-sm font-semibold text-white bg-[#0D3832] hover:bg-[#144D45] active:scale-[0.99] disabled:opacity-50 transition-all flex items-center justify-center space-x-2 shadow-md"
+                      className="w-full py-3 rounded-xl text-sm font-semibold text-[#F5EBDD] bg-[#6F1025] hover:bg-[#8F1835] active:scale-[0.99] disabled:opacity-50 transition-all flex items-center justify-center space-x-2 shadow-md"
                     >
                       {loading ? (
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -471,7 +475,7 @@ export const LoginPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={handleSendOtp}
-                          className="text-[#0D3832] font-semibold hover:underline"
+                          className="text-[#6F1025] font-semibold hover:underline"
                         >
                           Resend verification code
                         </button>
@@ -497,7 +501,7 @@ export const LoginPage: React.FC = () => {
                       value={email}
                       onChange={e => setEmail(e.target.value)}
                       placeholder="name@example.com"
-                      className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-[#FAF9F5] border border-[#EBE8DF] text-sm text-[#1A1A1A] focus:outline-hidden focus:border-[#0D3832]"
+                      className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-[#FAF9F5] border border-[#EBE8DF] text-sm text-[#1A1A1A] focus:outline-hidden focus:border-[#6F1025]"
                     />
                   </div>
                 </div>
@@ -514,7 +518,7 @@ export const LoginPage: React.FC = () => {
                       value={password}
                       onChange={e => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-[#FAF9F5] border border-[#EBE8DF] text-sm text-[#1A1A1A] focus:outline-hidden focus:border-[#0D3832]"
+                      className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-[#FAF9F5] border border-[#EBE8DF] text-sm text-[#1A1A1A] focus:outline-hidden focus:border-[#6F1025]"
                     />
                   </div>
                 </div>
@@ -522,7 +526,7 @@ export const LoginPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 rounded-xl text-sm font-semibold text-white bg-[#0D3832] hover:bg-[#144D45] active:scale-[0.99] disabled:opacity-50 transition-all flex items-center justify-center space-x-2 shadow-md"
+                  className="w-full py-3 rounded-xl text-sm font-semibold text-[#F5EBDD] bg-[#6F1025] hover:bg-[#8F1835] active:scale-[0.99] disabled:opacity-50 transition-all flex items-center justify-center space-x-2 shadow-md"
                 >
                   {loading ? (
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -541,7 +545,7 @@ export const LoginPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setAuthMethod('phone')}
-                className="text-[#0D3832] hover:underline font-bold"
+                className="text-[#6F1025] hover:underline font-bold"
               >
                 Sign in with phone number
               </button>

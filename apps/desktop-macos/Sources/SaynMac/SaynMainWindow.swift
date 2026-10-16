@@ -121,15 +121,15 @@ struct SaynStudioView: View {
     @State private var scratchpadText: String = "Dictate or draft freely here. When done, you can apply a Transform or copy directly."
     @State private var activeStyleSubTab: String = "Auto cleanup"
     
-    // Color Palette Tokens
+    // Color Palette Tokens (Official SAYN Deep Maroon #6F1025 & Warm Cream #F5EBDD)
     private let bgCanvas = Color(red: 250/255, green: 249/255, blue: 245/255)
     private let cardWhite = Color.white
     private let surfaceBeige = Color(red: 247/255, green: 245/255, blue: 238/255)
     private let textDark = Color(red: 26/255, green: 26/255, blue: 26/255)
     private let textMuted = Color(red: 112/255, green: 110/255, blue: 107/255)
-    private let accentTeal = Color(red: 30/255, green: 90/255, blue: 84/255)
-    private let accentCyan = Color(red: 78/255, green: 168/255, blue: 157/255)
-    private let accentAmber = Color(red: 232/255, green: 140/255, blue: 48/255)
+    private let accentTeal = Color(red: 111/255, green: 16/255, blue: 37/255)    // #6F1025 Deep Maroon Primary
+    private let accentCyan = Color(red: 168/255, green: 50/255, blue: 73/255)    // #A83249 Soft Rose-Maroon
+    private let accentAmber = Color(red: 143/255, green: 24/255, blue: 53/255)   // #8F1835 Mid Maroon Accent
     private let borderDivider = Color(red: 235/255, green: 232/255, blue: 223/255)
     
     var body: some View {
@@ -249,12 +249,12 @@ struct SaynStudioView: View {
             }) {
                 ZStack {
                     Circle()
-                        .fill(Color(red: 79/255, green: 91/255, blue: 213/255))
+                        .fill(accentTeal)
                         .frame(width: 28, height: 28)
                     
                     Text(String(store.firstName.prefix(1)).uppercased())
                         .font(.system(size: 13, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
+                        .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
                 }
             }
             .buttonStyle(PlainButtonStyle())
@@ -274,11 +274,11 @@ struct SaynStudioView: View {
             HStack(spacing: 10) {
                 ZStack {
                     Circle()
-                        .fill(Color(red: 79/255, green: 91/255, blue: 213/255))
+                        .fill(accentTeal)
                         .frame(width: 38, height: 38)
                     Text(String(store.firstName.prefix(1)).uppercased())
                         .font(.system(size: 16, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
+                        .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
                 }
                 
                 VStack(alignment: .leading, spacing: 2) {
@@ -428,15 +428,15 @@ struct SaynStudioView: View {
                     Button(action: { selectedTab = .notetaker }) {
                         Text("Check it out")
                             .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(.white)
+                            .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
-                            .background(Capsule().fill(Color.black))
+                            .background(Capsule().fill(accentTeal))
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
                 .padding(12)
-                .background(RoundedRectangle(cornerRadius: 12).fill(Color(red: 254/255, green: 243/255, blue: 235/255)))
+                .background(RoundedRectangle(cornerRadius: 12).fill(accentTeal.opacity(0.08)))
                 .padding(.horizontal, 10)
             }
             
@@ -498,7 +498,7 @@ struct SaynStudioView: View {
                         RoundedRectangle(cornerRadius: 16)
                             .fill(
                                 LinearGradient(
-                                    colors: [Color(red: 35/255, green: 30/255, blue: 32/255), Color(red: 18/255, green: 16/255, blue: 18/255)],
+                                    colors: [Color(red: 42/255, green: 14/255, blue: 21/255), Color(red: 16/255, green: 7/255, blue: 9/255)],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )
@@ -508,28 +508,28 @@ struct SaynStudioView: View {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("Transform works anywhere you write")
                                     .font(.system(size: 18, weight: .bold, design: .serif))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
                                 
                                 Text("Apply a Transform to rewrite, clean up, or restructure text after you dictate.")
                                     .font(.system(size: 12, weight: .regular))
-                                    .foregroundColor(Color.white.opacity(0.8))
+                                    .foregroundColor(Color(red: 214/255, green: 199/255, blue: 178/255))
                                     .lineLimit(2)
                                 
                                 HStack(spacing: 12) {
                                     Button(action: { selectedTab = .transforms }) {
                                         Text("Try it out")
                                             .font(.system(size: 12, weight: .semibold))
-                                            .foregroundColor(.black)
+                                            .foregroundColor(Color(red: 16/255, green: 7/255, blue: 9/255))
                                             .padding(.horizontal, 14)
                                             .padding(.vertical, 6)
-                                            .background(Capsule().fill(Color.white))
+                                            .background(Capsule().fill(Color(red: 245/255, green: 235/255, blue: 221/255)))
                                     }
                                     .buttonStyle(PlainButtonStyle())
                                     
                                     Button(action: { selectedTab = .transforms }) {
                                         Text("How it works")
                                             .font(.system(size: 12, weight: .regular))
-                                            .foregroundColor(.white)
+                                            .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255).opacity(0.85))
                                     }
                                     .buttonStyle(PlainButtonStyle())
                                 }
@@ -1521,7 +1521,7 @@ struct SaynStudioView: View {
                     RoundedRectangle(cornerRadius: 16)
                         .fill(
                             LinearGradient(
-                                colors: [Color(red: 35/255, green: 30/255, blue: 32/255), Color(red: 18/255, green: 16/255, blue: 18/255)],
+                                colors: [Color(red: 42/255, green: 14/255, blue: 21/255), Color(red: 16/255, green: 7/255, blue: 9/255)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -1531,10 +1531,10 @@ struct SaynStudioView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Transform works anywhere you write")
                                 .font(.system(size: 18, weight: .bold, design: .serif))
-                                .foregroundColor(.white)
+                                .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
                             Text("Apply a Transform to rewrite, clean up, or restructure text after you dictate.")
                                 .font(.system(size: 12))
-                                .foregroundColor(Color.white.opacity(0.85))
+                                .foregroundColor(Color(red: 214/255, green: 199/255, blue: 178/255))
                         }
                         Spacer()
                     }

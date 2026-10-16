@@ -140,11 +140,11 @@ struct SanPillView: View {
             }) {
                 ZStack {
                     Circle()
-                        .fill(Color(red: 46/255, green: 133/255, blue: 64/255))
+                        .fill(Color(red: 111/255, green: 16/255, blue: 37/255))
                         .frame(width: 20, height: 20)
                     Image(systemName: "checkmark")
                         .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
                 }
             }
             .buttonStyle(PlainButtonStyle())
@@ -154,10 +154,10 @@ struct SanPillView: View {
         .frame(height: 32)
         .background(
             Capsule()
-                .fill(Color(red: 10/255, green: 10/255, blue: 12/255).opacity(0.96))
+                .fill(Color(red: 16/255, green: 7/255, blue: 9/255).opacity(0.96))
                 .overlay(
                     Capsule()
-                        .stroke(Color.white.opacity(0.14), lineWidth: 0.8)
+                        .stroke(Color(red: 168/255, green: 50/255, blue: 73/255).opacity(0.4), lineWidth: 0.8)
                 )
                 .shadow(color: Color.black.opacity(0.6), radius: 14, x: 0, y: 6)
         )
@@ -256,12 +256,12 @@ struct SanPillView: View {
                         Text("Insert")
                             .font(.system(size: 13, weight: .semibold, design: .rounded))
                     }
-                    .foregroundColor(.white)
+                    .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
                     .padding(.horizontal, 16)
                     .padding(.vertical, 7)
                     .background(
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(Color(red: 46/255, green: 133/255, blue: 64/255))
+                            .fill(Color(red: 111/255, green: 16/255, blue: 37/255))
                     )
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -271,10 +271,10 @@ struct SanPillView: View {
         .frame(width: 380, height: 170)
         .background(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color(red: 12/255, green: 13/255, blue: 15/255).opacity(0.97))
+                .fill(Color(red: 16/255, green: 7/255, blue: 9/255).opacity(0.97))
                 .overlay(
                     RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        .stroke(Color(red: 168/255, green: 50/255, blue: 73/255).opacity(0.35), lineWidth: 1)
                 )
                 .shadow(color: Color.black.opacity(0.75), radius: 24, x: 0, y: 12)
         )

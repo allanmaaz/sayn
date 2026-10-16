@@ -422,11 +422,11 @@ export const WorkspacePage: React.FC = () => {
         {/* Workspace Brand Lockup */}
         <div className="flex items-center justify-between px-4 h-14 border-b border-[#EBE8DF]">
           <div className="flex items-center space-x-2">
-            <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-[#0D3832] text-white font-bold text-xs">
+            <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-[#6F1025] text-[#F5EBDD] font-bold text-xs shadow-xs">
               ||||
             </span>
             {!isSidebarCollapsed && (
-              <span className="font-semibold text-base tracking-tight text-[#1A1A1A]">Flow</span>
+              <span className="font-extrabold text-base tracking-wider text-[#1A1A1A]">SAYN</span>
             )}
           </div>
           <button
@@ -467,7 +467,7 @@ export const WorkspacePage: React.FC = () => {
                   <>
                     <span className="ml-3 truncate">{item.label}</span>
                     {item.badge && (
-                      <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#E88C30] text-white">
+                      <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#6F1025] text-[#F5EBDD]">
                         {item.badge}
                       </span>
                     )}
@@ -479,8 +479,8 @@ export const WorkspacePage: React.FC = () => {
 
           {/* Explore Notetaker Promo Card */}
           {!isSidebarCollapsed && (
-            <div className="mt-6 mx-1 p-3 rounded-2xl bg-[#FEF3EB] border border-[#FCDDC8] flex flex-col space-y-2">
-              <div className="w-6 h-6 rounded-lg bg-[#E88C30]/20 flex items-center justify-center text-[#E88C30]">
+            <div className="mt-6 mx-1 p-3 rounded-2xl bg-[#6F1025]/10 border border-[#6F1025]/25 flex flex-col space-y-2">
+              <div className="w-6 h-6 rounded-lg bg-[#6F1025]/20 flex items-center justify-center text-[#6F1025]">
                 <Radio className="w-3.5 h-3.5" />
               </div>
               <h4 className="text-xs font-bold text-[#1A1A1A]">Explore Notetaker</h4>
@@ -489,7 +489,7 @@ export const WorkspacePage: React.FC = () => {
               </p>
               <button
                 onClick={() => setActiveTab('notetaker')}
-                className="w-full mt-1 py-1.5 rounded-xl bg-black text-white text-xs font-semibold hover:bg-[#2A2A2A] transition"
+                className="w-full mt-1 py-1.5 rounded-xl bg-[#6F1025] text-[#F5EBDD] text-xs font-semibold hover:bg-[#8F1835] transition shadow-xs"
               >
                 Check it out
               </button>
@@ -566,7 +566,7 @@ export const WorkspacePage: React.FC = () => {
                 setSettingsActiveTab('account');
                 setShowSettingsModal(true);
               }}
-              className="w-8 h-8 rounded-full bg-[#3B5998] text-white font-bold text-xs flex items-center justify-center hover:opacity-90 transition shadow-xs"
+              className="w-8 h-8 rounded-full bg-[#6F1025] text-[#F5EBDD] font-bold text-xs flex items-center justify-center hover:opacity-90 transition shadow-xs"
             >
               {profileName.charAt(0).toUpperCase()}
             </button>
@@ -585,18 +585,18 @@ export const WorkspacePage: React.FC = () => {
                 </h1>
 
                 {/* Transform Works Anywhere Banner */}
-                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#231E20] to-[#121012] text-white p-6 shadow-xl">
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#2A0E15] via-[#1A0A0E] to-[#100709] border border-[#6F1025]/30 text-[#F5EBDD] p-6 shadow-xl">
                   <div className="max-w-md space-y-2">
-                    <h3 className="text-xl font-serif font-bold tracking-tight text-white">
+                    <h3 className="text-xl font-serif font-bold tracking-tight text-[#F5EBDD]">
                       Transform works anywhere you write
                     </h3>
-                    <p className="text-xs text-white/80 leading-relaxed">
+                    <p className="text-xs text-[#D6C7B2] leading-relaxed">
                       Apply a Transform to rewrite, clean up, or restructure text after you dictate.
                     </p>
                     <div className="flex items-center space-x-3 pt-3">
                       <button
                         onClick={() => setActiveTab('transforms')}
-                        className="px-4 py-1.5 rounded-full bg-white text-black text-xs font-semibold hover:bg-neutral-100 transition shadow-xs"
+                        className="px-4 py-1.5 rounded-full bg-[#F5EBDD] text-[#100709] text-xs font-semibold hover:bg-white transition shadow-xs"
                       >
                         Try it out
                       </button>
@@ -644,7 +644,7 @@ export const WorkspacePage: React.FC = () => {
                       placeholder="Search dictations..."
                       value={searchQuery}
                       onChange={e => setSearchQuery(e.target.value)}
-                      className="pl-8 pr-3 py-1.5 text-xs rounded-xl bg-[#F0EDE4] border border-transparent focus:border-[#0D3832] focus:bg-white focus:outline-hidden w-48 transition"
+                      className="pl-8 pr-3 py-1.5 text-xs rounded-xl bg-[#F0EDE4] border border-transparent focus:border-[#6F1025] focus:bg-white focus:outline-hidden w-48 transition"
                     />
                   </div>
                 </div>
@@ -675,11 +675,11 @@ export const WorkspacePage: React.FC = () => {
                           {/* Audio Playback Button */}
                           <button
                             onClick={() => handlePlayAudio(item)}
-                            className="p-1.5 rounded-lg text-[#706E6B] hover:text-[#0D3832] hover:bg-[#F7F5EE] transition"
+                            className="p-1.5 rounded-lg text-[#706E6B] hover:text-[#6F1025] hover:bg-[#F7F5EE] transition"
                             title={playingId === item.id ? 'Stop Audio' : 'Play Audio Recording'}
                           >
                             {playingId === item.id ? (
-                              <Square className="w-3.5 h-3.5 fill-current text-[#0D3832]" />
+                              <Square className="w-3.5 h-3.5 fill-current text-[#6F1025]" />
                             ) : (
                               <Play className="w-3.5 h-3.5 fill-current" />
                             )}
@@ -703,8 +703,8 @@ export const WorkspacePage: React.FC = () => {
                             onClick={() => handleToggleFlag(item.id)}
                             className={`p-1.5 rounded-lg transition ${
                               item.isFlagged
-                                ? 'text-[#E88C30] bg-[#FEF3EB]'
-                                : 'text-[#706E6B] hover:text-[#E88C30] hover:bg-[#F7F5EE]'
+                                ? 'text-[#6F1025] bg-[#6F1025]/15'
+                                : 'text-[#706E6B] hover:text-[#6F1025] hover:bg-[#F7F5EE]'
                             }`}
                             title="Flag dictation"
                           >
@@ -802,7 +802,7 @@ export const WorkspacePage: React.FC = () => {
                       setSettingsActiveTab('billing');
                       setShowSettingsModal(true);
                     }}
-                    className="w-full mt-2 py-2 rounded-xl bg-[#E88C30] hover:bg-[#D97D20] text-black font-semibold text-xs transition shadow-xs"
+                    className="w-full mt-2 py-2 rounded-xl bg-[#6F1025] hover:bg-[#8F1835] text-[#F5EBDD] font-semibold text-xs transition shadow-xs"
                   >
                     Upgrade to Pro
                   </button>
@@ -816,7 +816,7 @@ export const WorkspacePage: React.FC = () => {
                   </p>
                   <button
                     onClick={() => setActiveTab('insights')}
-                    className="w-full mt-2 py-2 rounded-xl bg-[#E88C30] hover:bg-[#D97D20] text-black font-semibold text-xs transition shadow-xs"
+                    className="w-full mt-2 py-2 rounded-xl bg-[#6F1025] hover:bg-[#8F1835] text-[#F5EBDD] font-semibold text-xs transition shadow-xs"
                   >
                     Create report
                   </button>
@@ -837,7 +837,7 @@ export const WorkspacePage: React.FC = () => {
                 </div>
                 <button
                   onClick={toggleDictation}
-                  className="px-4 py-2 rounded-xl bg-[#0D3832] text-white text-xs font-semibold hover:bg-[#144D45] transition flex items-center space-x-2"
+                  className="px-4 py-2 rounded-xl bg-[#6F1025] text-[#F5EBDD] text-xs font-semibold hover:bg-[#8F1835] transition flex items-center space-x-2 shadow-xs"
                 >
                   <Radio className="w-4 h-4" />
                   <span>{isDictating ? 'Stop Meeting Recording' : 'Record New Meeting'}</span>
@@ -906,7 +906,7 @@ export const WorkspacePage: React.FC = () => {
                     <div
                       key={i}
                       className={`h-6 rounded-md ${
-                        i % 5 === 0 ? 'bg-[#0D3832]' : i % 3 === 0 ? 'bg-[#4EA89D]' : 'bg-[#EBE8DF]'
+                        i % 5 === 0 ? 'bg-[#6F1025]' : i % 3 === 0 ? 'bg-[#A83249]' : 'bg-[#EBE8DF]'
                       }`}
                     />
                   ))}
@@ -931,11 +931,11 @@ export const WorkspacePage: React.FC = () => {
                   placeholder="Add a new term (e.g., Kubernetes, SaynStore, Allan)..."
                   value={newVocabTerm}
                   onChange={e => setNewVocabTerm(e.target.value)}
-                  className="flex-1 px-4 py-2 text-sm rounded-xl bg-white border border-[#EBE8DF] focus:border-[#0D3832] focus:outline-hidden"
+                  className="flex-1 px-4 py-2 text-sm rounded-xl bg-white border border-[#EBE8DF] focus:border-[#6F1025] focus:outline-hidden"
                 />
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-[#0D3832] text-white text-xs font-semibold hover:bg-[#144D45] transition flex items-center space-x-1.5"
+                  className="px-5 py-2 rounded-xl bg-[#6F1025] text-[#F5EBDD] text-xs font-semibold hover:bg-[#8F1835] transition flex items-center space-x-1.5 shadow-xs"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Add Term</span>
@@ -980,7 +980,7 @@ export const WorkspacePage: React.FC = () => {
                 {snippets.map(s => (
                   <div key={s.id} className="p-5 rounded-2xl bg-white border border-[#EBE8DF] space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-bold text-[#0D3832] bg-[#FAF9F5] px-2 py-1 rounded-md border border-[#EBE8DF]">
+                      <span className="font-mono text-xs font-bold text-[#6F1025] bg-[#FAF9F5] px-2 py-1 rounded-md border border-[#EBE8DF]">
                         "{s.trigger}"
                       </span>
                       <button
@@ -1017,7 +1017,7 @@ export const WorkspacePage: React.FC = () => {
                         onClick={() => setCleanupLevel(level)}
                         className={`py-2 rounded-xl text-xs font-semibold border transition ${
                           cleanupLevel === level
-                            ? 'bg-[#0D3832] text-white border-[#0D3832]'
+                            ? 'bg-[#6F1025] text-[#F5EBDD] border-[#6F1025] shadow-xs'
                             : 'bg-white text-[#1A1A1A] border-[#EBE8DF] hover:bg-[#FAF9F5]'
                         }`}
                       >
@@ -1039,7 +1039,7 @@ export const WorkspacePage: React.FC = () => {
                         onClick={() => setTone(t)}
                         className={`py-2 rounded-xl text-xs font-semibold border transition ${
                           tone === t
-                            ? 'bg-[#0D3832] text-white border-[#0D3832]'
+                            ? 'bg-[#6F1025] text-[#F5EBDD] border-[#6F1025] shadow-xs'
                             : 'bg-white text-[#1A1A1A] border-[#EBE8DF] hover:bg-[#FAF9F5]'
                         }`}
                       >
@@ -1068,7 +1068,7 @@ export const WorkspacePage: React.FC = () => {
                   placeholder="Enter or dictate text to transform..."
                   value={transformInput}
                   onChange={e => setTransformInput(e.target.value)}
-                  className="w-full text-xs p-3 rounded-xl bg-[#FAF9F5] border border-[#EBE8DF] focus:border-[#0D3832] focus:outline-hidden"
+                  className="w-full text-xs p-3 rounded-xl bg-[#FAF9F5] border border-[#EBE8DF] focus:border-[#6F1025] focus:outline-hidden"
                 />
 
                 <div className="flex flex-wrap gap-2">
@@ -1077,7 +1077,7 @@ export const WorkspacePage: React.FC = () => {
                       key={preset}
                       onClick={() => handleRunTransform(preset)}
                       disabled={isTransforming}
-                      className="px-3.5 py-1.5 rounded-full bg-[#FAF9F5] border border-[#EBE8DF] text-xs font-semibold hover:bg-[#0D3832] hover:text-white transition"
+                      className="px-3.5 py-1.5 rounded-full bg-[#FAF9F5] border border-[#EBE8DF] text-xs font-semibold hover:bg-[#6F1025] hover:text-[#F5EBDD] transition"
                     >
                       {preset}
                     </button>
@@ -1092,7 +1092,7 @@ export const WorkspacePage: React.FC = () => {
                     <p className="text-xs text-[#1A1A1A] whitespace-pre-wrap">{transformOutput}</p>
                     <button
                       onClick={() => handleCopy(transformOutput, 'transform')}
-                      className="mt-2 text-xs font-semibold text-[#0D3832] flex items-center space-x-1"
+                      className="mt-2 text-xs font-semibold text-[#6F1025] flex items-center space-x-1"
                     >
                       <Copy className="w-3.5 h-3.5" />
                       <span>Copy Output</span>
@@ -1115,7 +1115,7 @@ export const WorkspacePage: React.FC = () => {
                 </div>
                 <button
                   onClick={() => handleCopy(scratchpadText, 'scratchpad')}
-                  className="px-4 py-2 rounded-xl bg-[#0D3832] text-white text-xs font-semibold hover:bg-[#144D45] transition flex items-center space-x-1.5"
+                  className="px-4 py-2 rounded-xl bg-[#6F1025] text-[#F5EBDD] text-xs font-semibold hover:bg-[#8F1835] transition flex items-center space-x-1.5 shadow-xs"
                 >
                   <Copy className="w-3.5 h-3.5" />
                   <span>{copiedId === 'scratchpad' ? 'Copied!' : 'Copy All'}</span>
@@ -1233,7 +1233,7 @@ export const WorkspacePage: React.FC = () => {
                       <p className="font-bold text-[#1A1A1A]">Free Starter Plan</p>
                       <p className="text-[#706E6B] mt-1">2,000 words per week included.</p>
                     </div>
-                    <button className="w-full py-2.5 rounded-xl bg-[#0D3832] text-white text-xs font-bold hover:bg-[#144D45] transition">
+                    <button className="w-full py-2.5 rounded-xl bg-[#6F1025] text-[#F5EBDD] text-xs font-bold hover:bg-[#8F1835] transition shadow-xs">
                       Upgrade to Unlimited Pro ($10/mo)
                     </button>
                   </div>
