@@ -21,6 +21,7 @@ import {
   Minimize2,
   Smartphone,
   Monitor,
+  Settings,
 } from 'lucide-react';
 import { detectDevice, DeviceInfo } from '../../utils/deviceDetector.js';
 import { DownloadModal } from '../../components/download/DownloadModal.js';
@@ -47,8 +48,76 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col bg-[#100709] text-[#F5EBDD] overflow-hidden">
-      {/* 1. HERO SECTION (Matching SAYN Landing Page Mockup) */}
-      <section className="relative pt-12 pb-20 md:pt-20 md:pb-28 overflow-hidden">
+      {/* 1. HERO SECTION (Responsive: Mobile iPhone Mockup & Desktop Laptop Showcase) */}
+      <section className="relative pt-20 pb-16 sm:pt-24 sm:pb-24 md:pt-28 md:pb-28 overflow-hidden">
+        {/* Flowing Crimson/Maroon Silk Wave Ribbons (matching mobile mockup) */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
+          <svg
+            className="w-full h-full opacity-65 sm:opacity-40"
+            viewBox="0 0 430 932"
+            fill="none"
+            preserveAspectRatio="xMidYMid slice"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <defs>
+              <linearGradient id="silk-ribbon-1" x1="100%" y1="10%" x2="0%" y2="90%">
+                <stop offset="0%" stopColor="#A83249" stopOpacity="0.75" />
+                <stop offset="30%" stopColor="#6F1025" stopOpacity="0.5" />
+                <stop offset="70%" stopColor="#8A1731" stopOpacity="0.3" />
+                <stop offset="100%" stopColor="#100709" stopOpacity="0" />
+              </linearGradient>
+              <linearGradient id="silk-ribbon-2" x1="100%" y1="25%" x2="10%" y2="85%">
+                <stop offset="0%" stopColor="#FF4D6D" stopOpacity="0.55" />
+                <stop offset="45%" stopColor="#A83249" stopOpacity="0.4" />
+                <stop offset="100%" stopColor="#100709" stopOpacity="0" />
+              </linearGradient>
+              <linearGradient id="silk-ribbon-3" x1="0%" y1="40%" x2="100%" y2="80%">
+                <stop offset="0%" stopColor="#A83249" stopOpacity="0.35" />
+                <stop offset="50%" stopColor="#6F1025" stopOpacity="0.5" />
+                <stop offset="100%" stopColor="#100709" stopOpacity="0" />
+              </linearGradient>
+              <filter id="ribbon-blur" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="1.5" />
+              </filter>
+            </defs>
+
+            {/* Primary flowing ribbon curves */}
+            <path
+              d="M 450,180 C 370,270 240,320 280,470 C 330,620 420,670 380,920"
+              stroke="url(#silk-ribbon-1)"
+              strokeWidth="2"
+              filter="url(#ribbon-blur)"
+            />
+            <path
+              d="M 460,210 C 350,300 220,350 260,500 C 310,650 390,710 350,950"
+              stroke="url(#silk-ribbon-2)"
+              strokeWidth="1.2"
+            />
+            <path
+              d="M 480,240 C 330,340 200,390 240,540 C 290,690 370,750 330,980"
+              stroke="url(#silk-ribbon-1)"
+              strokeWidth="1.5"
+            />
+            <path
+              d="M 430,140 C 300,240 180,360 220,580 C 260,760 360,820 300,1020"
+              stroke="url(#silk-ribbon-2)"
+              strokeWidth="1.8"
+            />
+            
+            {/* Left-side subtle cross-ribbons */}
+            <path
+              d="M -30,380 C 80,480 140,600 90,780 C 50,920 180,990 320,1050"
+              stroke="url(#silk-ribbon-3)"
+              strokeWidth="1.5"
+            />
+            <path
+              d="M -50,420 C 60,520 110,640 70,820 C 30,960 160,1020 300,1080"
+              stroke="url(#silk-ribbon-1)"
+              strokeWidth="1"
+            />
+          </svg>
+        </div>
+
         {/* Ambient Maroon Specular Lighting Glows with Scroll Parallax */}
         <div
           className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-[#6F1025]/25 rounded-full blur-[140px] pointer-events-none transition-transform duration-100 ease-out"
@@ -63,11 +132,169 @@ export const LandingPage: React.FC = () => {
           style={{ transform: `translateY(${scrollY * 0.08}px)` }}
         />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-            
+        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 relative z-10">
+          {/* ========================================================================= */}
+          {/* 1A. MOBILE VIEW (Matches user's iPhone screenshot on mobile viewports) */}
+          {/* ========================================================================= */}
+          <div className="lg:hidden text-left max-w-sm mx-auto">
+            {/* Tagline Pill */}
+            <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-[#18080E]/90 border border-[#A83249]/40 shadow-[0_0_15px_rgba(168,50,73,0.25)] mb-6">
+              <span className="flex items-center space-x-0.5 text-[#A83249]">
+                <span className="w-0.5 h-2.5 bg-[#A83249] rounded-full animate-pulse" />
+                <span className="w-0.5 h-3.5 bg-[#F5EBDD] rounded-full animate-pulse delay-75" />
+                <span className="w-0.5 h-2 bg-[#A83249] rounded-full animate-pulse delay-150" />
+              </span>
+              <span className="text-[11px] font-semibold tracking-wide text-[#A83249]">
+                Say it. Refine it. Send it.
+              </span>
+            </div>
+
+            {/* Primary Headline */}
+            <h1 className="text-5xl font-extrabold tracking-tight text-[#F5EBDD] leading-[1.05] mb-5">
+              Your voice.<br />
+              Your words.<br />
+              <span className="text-[#A83249]">Better.</span>
+            </h1>
+
+            {/* Subtitle */}
+            <p className="text-[15px] text-[#D6C7B2] leading-relaxed mb-6 font-normal">
+              Speak naturally. Write better.<br />
+              Get your time back.
+            </p>
+
+            {/* Primary Pill Button */}
+            <button
+              onClick={() => setIsDownloadOpen(true)}
+              className="w-full inline-flex items-center justify-between px-6 py-3.5 rounded-full font-bold text-sm bg-[#F5EBDD] text-[#100709] hover:bg-[#FAF4EB] active:scale-95 transition-all shadow-[0_4px_24px_rgba(245,235,221,0.25)] mb-3"
+            >
+              <span>Try SAYN Free</span>
+              <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+            </button>
+
+            {/* Secondary Text Link */}
+            <div className="mb-8">
+              <a
+                href="#how-it-works"
+                className="inline-flex items-center space-x-1.5 text-xs text-[#D6C7B2] hover:text-[#F5EBDD] transition-colors group"
+              >
+                <span className="underline underline-offset-4 decoration-[#D6C7B2]/40 group-hover:decoration-[#F5EBDD]">See how it works</span>
+                <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+              </a>
+            </div>
+
+            {/* Smartphone Showcase (iPhone in 3D Perspective) */}
+            <div
+              className="relative w-full max-w-[340px] mx-auto mt-2 transition-transform duration-300 ease-out"
+              style={{
+                transform: `perspective(1000px) rotateX(${Math.max(0, Math.min(6, 4 - scrollY * 0.01))}deg) rotateY(-3deg) rotateZ(-1deg)`,
+              }}
+            >
+              {/* Outer Phone Bezel Chassis */}
+              <div className="relative rounded-[38px] bg-[#17080F] border-[3.5px] border-[#3D1520] shadow-[0_24px_60px_rgba(0,0,0,0.9),0_0_35px_rgba(111,16,37,0.35)] p-2.5 pb-0 overflow-hidden">
+                {/* Specular Rim Glow */}
+                <div className="absolute inset-0 rounded-[35px] pointer-events-none ring-1 ring-inset ring-[#F5EBDD]/10" />
+
+                {/* Screen Area */}
+                <div className="p-3 pt-2 pb-5 rounded-[30px] bg-gradient-to-b from-[#18080E] via-[#100709] to-[#15070B] min-h-[460px] flex flex-col justify-between relative overflow-hidden">
+                  {/* Dynamic Island */}
+                  <div className="w-24 h-4 bg-black rounded-full mx-auto mb-3 shadow-inner flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-[#181818] mr-2" />
+                  </div>
+
+                  {/* Screen Header Row */}
+                  <div className="flex items-center justify-between px-2 mb-3">
+                    <div className="flex items-center space-x-1.5">
+                      <img src={saynLogo} alt="SAYN" className="w-5 h-5 rounded-md" />
+                      <span className="font-extrabold text-xs tracking-wider text-[#F5EBDD]">SAYN</span>
+                    </div>
+                    <div className="p-1 rounded-full text-[#D6C7B2]/70 hover:text-[#F5EBDD]">
+                      <Settings className="w-4 h-4 stroke-[2]" />
+                    </div>
+                  </div>
+
+                  {/* Timer */}
+                  <div className="text-center text-xs font-mono font-medium text-[#D6C7B2] tracking-wider mb-2">
+                    00:04
+                  </div>
+
+                  {/* Pulsing Audio Waveform Equalizer */}
+                  <div className="flex items-center justify-center space-x-1 h-11 mb-3 px-3">
+                    {[16, 26, 38, 52, 68, 84, 96, 100, 92, 100, 96, 84, 68, 52, 38, 26, 16].map((h, i) => (
+                      <div
+                        key={i}
+                        className="w-[2.5px] rounded-full bg-[#A83249]"
+                        style={{
+                          height: `${h}%`,
+                          animation: 'pulse 1.3s ease-in-out infinite',
+                          animationDelay: `${Math.abs(8 - i) * 75}ms`,
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Pause Button */}
+                  <div className="flex justify-center mb-5">
+                    <div className="w-9 h-9 rounded-full bg-[#6F1025] shadow-[0_0_18px_rgba(111,16,37,0.7)] flex items-center justify-center text-[#F5EBDD] cursor-pointer hover:bg-[#8F1835] active:scale-95 transition-all">
+                      <div className="flex items-center space-x-1">
+                        <div className="w-1 h-3 bg-[#F5EBDD] rounded-sm" />
+                        <div className="w-1 h-3 bg-[#F5EBDD] rounded-sm" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Floating Card Overlapping Lower Screen */}
+                  <div className="rounded-2xl bg-[#180B10]/92 backdrop-blur-xl border border-[#A83249]/50 shadow-[0_16px_40px_rgba(16,7,9,0.95),0_0_20px_rgba(111,16,37,0.25)] p-4 relative z-10">
+                    {/* Original Section */}
+                    <div className="mb-2">
+                      <div className="text-[10px] uppercase font-semibold tracking-wider text-[#A89F91] mb-1">
+                        Original
+                      </div>
+                      <p className="text-xs text-[#9E9085] leading-relaxed font-normal">
+                        hey so basically i checked the sprint tasks and design stuff is pretty much done by thursday probably
+                      </p>
+                    </div>
+
+                    {/* Downward Arrow Divider */}
+                    <div className="flex justify-center my-1.5">
+                      <span className="text-[#A83249] text-xs font-bold">↓</span>
+                    </div>
+
+                    {/* Refined Section */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="text-xs font-bold tracking-wide">
+                          <span className="text-[#F5EBDD]">Re</span>
+                          <span className="text-[#C83E58]">fined by SAYN</span>
+                        </div>
+                        <button
+                          onClick={handleCopyDemo}
+                          className="p-1 rounded text-[#D6C7B2] hover:text-[#F5EBDD] transition-colors"
+                          title="Copy refined text"
+                          aria-label="Copy refined text"
+                        >
+                          {copiedDemo ? (
+                            <Check className="w-3.5 h-3.5 text-[#30D158]" />
+                          ) : (
+                            <Copy className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
+                      <p className="text-xs text-[#F5EBDD] leading-relaxed font-normal">
+                        Hey team, I reviewed the latest sprint deliverables. The design system work is largely complete by Thursday.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ========================================================================= */}
+          {/* 1B. DESKTOP VIEW (Two-column layout with 3D Laptop Studio on lg screens) */}
+          {/* ========================================================================= */}
+          <div className="hidden lg:grid grid-cols-12 gap-8 items-center">
             {/* Left Hero Column: Typography & CTAs */}
-            <div className="lg:col-span-6 text-left">
+            <div className="col-span-6 text-left">
               {/* Tagline Pill */}
               <div className="inline-flex items-center space-x-2.5 px-4 py-1.5 rounded-full bg-[#180B0F] border border-[#A83249]/50 shadow-[0_0_20px_rgba(111,16,37,0.3)] mb-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <span className="flex items-center space-x-0.5 text-[#A83249]">
@@ -75,13 +302,13 @@ export const LandingPage: React.FC = () => {
                   <span className="w-1 h-4 bg-[#F5EBDD] rounded-full animate-pulse delay-75" />
                   <span className="w-1 h-2 bg-[#A83249] rounded-full animate-pulse delay-150" />
                 </span>
-                <span className="text-xs font-semibold tracking-wide text-[#F5EBDD]">
+                <span className="text-xs font-semibold tracking-wide text-[#A83249]">
                   Say it. Refine it. Send it.
                 </span>
               </div>
 
               {/* Primary Headline */}
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-[#F5EBDD] leading-[1.06] mb-6">
+              <h1 className="text-6xl lg:text-7xl font-extrabold tracking-tight text-[#F5EBDD] leading-[1.06] mb-6">
                 Your voice.<br />
                 Your words.<br />
                 <span className="text-[#A83249]">Better.</span>
@@ -89,11 +316,11 @@ export const LandingPage: React.FC = () => {
 
               {/* Supporting Copy */}
               <p className="max-w-xl text-base sm:text-lg text-[#D6C7B2] leading-relaxed mb-9">
-                Speak naturally, refine your writing with AI, and communicate better across Mac, Windows, Android, and Web.
+                Speak naturally. Write better. Get your time back. Communicate effortlessly across Mac, Windows, Android, and Web.
               </p>
 
               {/* Dynamic Auto-Detected Action CTAs */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-8">
+              <div className="flex items-center gap-4 mb-8">
                 {/* Primary Warm Cream Button */}
                 <button
                   onClick={() => setIsDownloadOpen(true)}
@@ -138,7 +365,7 @@ export const LandingPage: React.FC = () => {
 
             {/* Right Hero Column: 3D Laptop Studio Showcase with Scroll Tilt */}
             <div
-              className="lg:col-span-6 relative transition-transform duration-200 ease-out"
+              className="col-span-6 relative transition-transform duration-200 ease-out"
               style={{
                 transform: `perspective(1000px) rotateX(${Math.max(-4, Math.min(8, (scrollY - 100) * 0.02))}deg) translateY(${Math.min(30, scrollY * 0.06)}px)`,
               }}
@@ -257,7 +484,6 @@ export const LandingPage: React.FC = () => {
                 <div className="w-20 h-1 bg-[#100709] rounded-b-sm mx-auto" />
               </div>
             </div>
-
           </div>
         </div>
       </section>
