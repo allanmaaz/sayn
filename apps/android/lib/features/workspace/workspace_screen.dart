@@ -366,7 +366,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                       ),
                       const SizedBox(width: 8),
                       IconButton.filled(
-                        style: IconButton.filledStyleFrom(
+                        style: IconButton.styleFrom(
                           backgroundColor: SaynColors.darkElevated,
                           foregroundColor: SaynColors.darkAccent,
                         ),
