@@ -291,8 +291,8 @@ struct SanLogoBadge: View {
     private func loadLogoImage() -> NSImage? {
         let paths = [
             Bundle.main.path(forResource: "logo", ofType: "png"),
-            "/Applications/San.app/Contents/Resources/logo.png",
             "/Applications/SAYN.app/Contents/Resources/logo.png",
+            "/Applications/San.app/Contents/Resources/logo.png",
             "/Users/apple/Desktop/SAYN/apps/desktop-macos/Resources/logo.png"
         ]
         for p in paths.compactMap({ $0 }) {

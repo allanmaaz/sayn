@@ -114,14 +114,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     @objc func openVocabularyFile() {
         let home = FileManager.default.homeDirectoryForCurrentUser
-        let vocabURL = home.appendingPathComponent(".san/vocabulary.json")
-        NSWorkspace.shared.open(vocabURL)
+        let vocabURL = home.appendingPathComponent(".sayn/vocabulary.json")
+        let fallbackURL = home.appendingPathComponent(".san/vocabulary.json")
+        if FileManager.default.fileExists(atPath: vocabURL.path) {
+            NSWorkspace.shared.open(vocabURL)
+        } else {
+            NSWorkspace.shared.open(fallbackURL)
+        }
     }
     
     @objc func openSnippetsFile() {
         let home = FileManager.default.homeDirectoryForCurrentUser
-        let snippetsURL = home.appendingPathComponent(".san/snippets.json")
-        NSWorkspace.shared.open(snippetsURL)
+        let snippetsURL = home.appendingPathComponent(".sayn/snippets.json")
+        let fallbackURL = home.appendingPathComponent(".san/snippets.json")
+        if FileManager.default.fileExists(atPath: snippetsURL.path) {
+            NSWorkspace.shared.open(snippetsURL)
+        } else {
+            NSWorkspace.shared.open(fallbackURL)
+        }
     }
     
     @objc func openAccessibilitySettings() {
@@ -131,8 +141,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func fallbackLogoPath() -> String? {
         let paths = [
             Bundle.main.path(forResource: "logo", ofType: "png"),
-            "/Applications/San.app/Contents/Resources/logo.png",
             "/Applications/SAYN.app/Contents/Resources/logo.png",
+            "/Applications/San.app/Contents/Resources/logo.png",
             "/Users/apple/Desktop/SAYN/apps/desktop-macos/Resources/logo.png"
         ]
         return paths.compactMap({ $0 }).first(where: { FileManager.default.fileExists(atPath: $0) })

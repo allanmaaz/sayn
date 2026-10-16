@@ -1,16 +1,26 @@
 import Foundation
 
-/// Fast, deterministic speech-to-text polisher for San voice flow.
+/// Fast, deterministic speech-to-text polisher for SAYN voice flow.
 /// Handles voice commands, disfluencies, self-corrections, snippet macros, and per-app formatting.
 final class SaynVoicePolisher {
     static let shared = SaynVoicePolisher()
     
     private let snippetsFileURL: URL = {
         let home = FileManager.default.homeDirectoryForCurrentUser
+        return home.appendingPathComponent(".sayn/snippets.json")
+    }()
+    
+    private let fallbackSnippetsFileURL: URL = {
+        let home = FileManager.default.homeDirectoryForCurrentUser
         return home.appendingPathComponent(".san/snippets.json")
     }()
     
     private let vocabularyFileURL: URL = {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        return home.appendingPathComponent(".sayn/vocabulary.json")
+    }()
+    
+    private let fallbackVocabularyFileURL: URL = {
         let home = FileManager.default.homeDirectoryForCurrentUser
         return home.appendingPathComponent(".san/vocabulary.json")
     }()
@@ -20,11 +30,11 @@ final class SaynVoicePolisher {
     }
     
     private func ensureDefaultConfigFiles() {
-        let sanDir = snippetsFileURL.deletingLastPathComponent()
-        try? FileManager.default.createDirectory(at: sanDir, withIntermediateDirectories: true)
+        let saynDir = snippetsFileURL.deletingLastPathComponent()
+        try? FileManager.default.createDirectory(at: saynDir, withIntermediateDirectories: true)
         
         // 1. Initialize default snippets if not present
-        if !FileManager.default.fileExists(atPath: snippetsFileURL.path) {
+        if !FileManager.default.fileExists(atPath: snippetsFileURL.path) && !FileManager.default.fileExists(atPath: fallbackSnippetsFileURL.path) {
             let defaultSnippets: [String: Any] = [
                 "snippets": [
                     [
@@ -37,7 +47,7 @@ final class SaynVoicePolisher {
                     ],
                     [
                         "trigger": "insert signature",
-                        "template": "Best regards,\nSent with San AI Voice"
+                        "template": "Best regards,\nSent with SAYN AI Voice"
                     ],
                     [
                         "trigger": "insert bug report",
@@ -51,10 +61,10 @@ final class SaynVoicePolisher {
         }
         
         // 2. Initialize default custom vocabulary if not present
-        if !FileManager.default.fileExists(atPath: vocabularyFileURL.path) {
+        if !FileManager.default.fileExists(atPath: vocabularyFileURL.path) && !FileManager.default.fileExists(atPath: fallbackVocabularyFileURL.path) {
             let defaultVocab: [String: Any] = [
                 "terms": [
-                    "SAYN", "San", "Groq", "LPU", "Whisper", "Flutter", "SwiftUI",
+                    "SAYN", "Groq", "LPU", "Whisper", "Flutter", "SwiftUI",
                     "PostgreSQL", "Next.js", "TypeScript", "Tailwind", "Kubernetes",
                     "Docker", "GraphQL", "GitHub", "API", "JSON", "SDK", "OAuth"
                 ]
@@ -67,31 +77,33 @@ final class SaynVoicePolisher {
     
     // Load custom vocabulary terms as a comma-separated prompt for Whisper biasing
     func loadVocabularyPrompt() -> String {
-        guard let data = try? Data(contentsOf: vocabularyFileURL),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let terms = json["terms"] as? [String], !terms.isEmpty else {
-            return "SAYN, San, Groq, Whisper, SwiftUI, Flutter, TypeScript, API"
+        for url in [vocabularyFileURL, fallbackVocabularyFileURL] {
+            if let data = try? Data(contentsOf: url),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let terms = json["terms"] as? [String], !terms.isEmpty {
+                return terms.joined(separator: ", ")
+            }
         }
-        return terms.joined(separator: ", ")
+        return "SAYN, Groq, Whisper, SwiftUI, Flutter, TypeScript, API"
     }
     
     // Check if spoken text matches a registered snippet template
     func expandSnippet(from rawText: String) -> String? {
-        guard let data = try? Data(contentsOf: snippetsFileURL),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let snippets = json["snippets"] as? [[String: String]] else {
-            return nil
-        }
-        
-        let cleaned = rawText.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-        for snippet in snippets {
-            if let trigger = snippet["trigger"]?.lowercased(),
-               let template = snippet["template"] {
-                if cleaned == trigger || cleaned.contains(trigger) {
-                    let dateFormatter = DateFormatter()
-                    dateFormatter.dateStyle = .medium
-                    let dateStr = dateFormatter.string(from: Date())
-                    return template.replacingOccurrences(of: "{date}", with: dateStr)
+        for url in [snippetsFileURL, fallbackSnippetsFileURL] {
+            if let data = try? Data(contentsOf: url),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let snippets = json["snippets"] as? [[String: String]] {
+                let cleaned = rawText.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+                for snippet in snippets {
+                    if let trigger = snippet["trigger"]?.lowercased(),
+                       let template = snippet["template"] {
+                        if cleaned == trigger || cleaned.contains(trigger) {
+                            let dateFormatter = DateFormatter()
+                            dateFormatter.dateStyle = .medium
+                            let dateStr = dateFormatter.string(from: Date())
+                            return template.replacingOccurrences(of: "{date}", with: dateStr)
+                        }
+                    }
                 }
             }
         }
@@ -108,7 +120,6 @@ final class SaynVoicePolisher {
         }
         
         // 1. Hands-Free Voice Formatting Commands
-        // "scratch that" / "delete that" removes the preceding sentence or clause
         let scratchPatterns = [
             "(?i).*?\\b(?:scratch that|delete that|cancel that)\\b\\s*",
             "(?i).*?\\b(?:scratch last sentence|delete last sentence)\\b\\s*"

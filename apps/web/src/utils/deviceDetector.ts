@@ -86,16 +86,15 @@ export function detectDevice(): DeviceInfo {
       arch: isAppleSilicon ? 'arm64' : 'universal',
       archName: isAppleSilicon ? 'Apple Silicon (M1/M2/M3/M4)' : 'Universal (Apple Silicon & Intel)',
       isMobile: false,
-      recommendedFileName: 'San-macOS-Installer.dmg',
-      recommendedDownloadUrl: `${GITHUB_RELEASE_BASE}/San-macOS-Installer.dmg`,
+      recommendedFileName: 'SAYN-macOS-Installer.dmg',
+      recommendedDownloadUrl: `${GITHUB_RELEASE_BASE}/SAYN-macOS-Installer.dmg`,
       badgeLabel: 'macOS DMG',
-      instructions: 'Open the DMG and drag San to your Applications folder. Global Hotkey: Press Fn key or ⌥ Space.',
+      instructions: 'Open the DMG and drag SAYN to your Applications folder. Global Hotkey: Press Fn key or ⌥ Space.',
     };
   }
 
   // 4. Windows Detection
   if (/Win32|Win64|Windows|WinCE/i.test(ua)) {
-    // Check 64-bit indicators
     const is64Bit = /WOW64|Win64|x64|x86_64/i.test(ua);
 
     return {
@@ -109,7 +108,7 @@ export function detectDevice(): DeviceInfo {
         ? `${GITHUB_RELEASE_BASE}/SAYN-Setup-1.1.0-x64.exe`
         : `${GITHUB_RELEASE_BASE}/SAYN-Setup-1.1.0-ia32.exe`,
       badgeLabel: is64Bit ? 'Windows 64-bit' : 'Windows 32-bit',
-      instructions: 'Run the setup installer. Press Alt + Space anywhere on Windows to trigger the San voice pill.',
+      instructions: 'Run the setup installer. Press Alt + Space anywhere on Windows to trigger the SAYN voice pill.',
     };
   }
 
@@ -134,8 +133,8 @@ function getFallbackDeviceInfo(): DeviceInfo {
     arch: 'universal',
     archName: 'Universal',
     isMobile: false,
-    recommendedFileName: 'San-macOS-Installer.dmg',
-    recommendedDownloadUrl: `${GITHUB_RELEASE_BASE}/San-macOS-Installer.dmg`,
+    recommendedFileName: 'SAYN-macOS-Installer.dmg',
+    recommendedDownloadUrl: `${GITHUB_RELEASE_BASE}/SAYN-macOS-Installer.dmg`,
     badgeLabel: 'Free Download',
     instructions: 'Choose the appropriate installer for your operating system below.',
   };
@@ -144,13 +143,13 @@ function getFallbackDeviceInfo(): DeviceInfo {
 export const ALL_DOWNLOAD_OPTIONS = [
   {
     category: 'macOS',
-    title: 'San for macOS Universal 2 Installer',
+    title: 'SAYN for macOS Universal 2 Installer',
     arch: 'Apple Silicon (M1/M2/M3/M4) + Intel',
-    fileName: 'San-macOS-Installer.dmg',
-    url: `${GITHUB_RELEASE_BASE}/San-macOS-Installer.dmg`,
+    fileName: 'SAYN-macOS-Installer.dmg',
+    url: `${GITHUB_RELEASE_BASE}/SAYN-macOS-Installer.dmg`,
     tag: 'Recommended for Mac',
     format: '.dmg',
-    size: '898 KB',
+    size: '1.9 MB',
   },
   {
     category: 'Windows',

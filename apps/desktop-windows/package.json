@@ -1,7 +1,7 @@
 {
   "name": "sayn-desktop-windows",
   "version": "1.1.0",
-  "description": "SAYN — AI Voice Assistant & Smart Writing Studio for Windows (San Voice + QuillBot + Grammarly)",
+  "description": "SAYN — AI Voice Assistant & Smart Writing Studio for Windows (Voice Flow + QuillBot + Grammarly)",
   "main": "src/main.js",
   "author": "SAYN Team",
   "license": "MIT",

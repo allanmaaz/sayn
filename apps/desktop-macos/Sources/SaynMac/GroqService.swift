@@ -20,21 +20,21 @@ enum SanExecutionMode: String, CaseIterable {
     
     var statusTitle: String {
         switch self {
-        case .dictate: return "San Polishing..."
-        case .prompt: return "San Prompting..."
-        case .translate: return "San Translating..."
-        case .code: return "San Coding..."
-        case .proofread: return "San Proofreading..."
+        case .dictate: return "SAYN Polishing..."
+        case .prompt: return "SAYN Prompting..."
+        case .translate: return "SAYN Translating..."
+        case .code: return "SAYN Coding..."
+        case .proofread: return "SAYN Proofreading..."
         }
     }
     
     var accentHex: String {
         switch self {
-        case .dictate: return "CBFE00"   // Volt neon lime
-        case .prompt: return "00D2FF"    // Electric cyan
-        case .translate: return "A855F7" // Purple
-        case .code: return "10B981"      // Emerald green
-        case .proofread: return "F59E0B" // Amber
+        case .dictate: return "6F1025"   // Deep Maroon
+        case .prompt: return "A83249"    // Soft Rose-Maroon
+        case .translate: return "8F1835" // Rose Maroon Tint
+        case .code: return "6F1025"      // Deep Maroon
+        case .proofread: return "A83249" // Soft Rose-Maroon
         }
     }
 }
@@ -42,8 +42,12 @@ enum SanExecutionMode: String, CaseIterable {
 final class GroqService {
     static let shared = GroqService()
     
-    private let userDefaultsKey = "SanGroqApiKey"
+    private let userDefaultsKey = "SaynGroqApiKey"
     private let configFileURL: URL = {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        return home.appendingPathComponent(".sayn/config.json")
+    }()
+    private let fallbackConfigFileURL: URL = {
         let home = FileManager.default.homeDirectoryForCurrentUser
         return home.appendingPathComponent(".san/config.json")
     }()
@@ -62,15 +66,20 @@ final class GroqService {
             if let key = UserDefaults.standard.string(forKey: userDefaultsKey), !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 return key.trimmingCharacters(in: .whitespacesAndNewlines)
             }
+            if let oldKey = UserDefaults.standard.string(forKey: "SanGroqApiKey"), !oldKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return oldKey.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
             // 2. Check Environment Variable
             if let envKey = ProcessInfo.processInfo.environment["GROQ_API_KEY"], !envKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 return envKey.trimmingCharacters(in: .whitespacesAndNewlines)
             }
-            // 3. Check ~/.san/config.json
-            if let data = try? Data(contentsOf: configFileURL),
-               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let fileKey = json["groq_api_key"] as? String, !fileKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                return fileKey.trimmingCharacters(in: .whitespacesAndNewlines)
+            // 3. Check ~/.sayn/config.json or ~/.san/config.json
+            for url in [configFileURL, fallbackConfigFileURL] {
+                if let data = try? Data(contentsOf: url),
+                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let fileKey = json["groq_api_key"] as? String, !fileKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    return fileKey.trimmingCharacters(in: .whitespacesAndNewlines)
+                }
             }
             // 4. Default to universal embedded key
             return embeddedGroqKey
@@ -236,7 +245,7 @@ final class GroqService {
             // Prompt / Instruction Mode
             if let ctx = contextText, !ctx.isEmpty {
                 systemPrompt = """
-                You are San AI Assistant in Prompt Mode.
+                You are SAYN AI Assistant in Prompt Mode.
                 The user selected the following context text:
                 \"\"\"
                 \(ctx)
@@ -248,7 +257,7 @@ final class GroqService {
                 userContent = "Instruction: \(rawText)"
             } else {
                 systemPrompt = """
-                You are San AI Assistant in Prompt Mode.
+                You are SAYN AI Assistant in Prompt Mode.
                 The user spoke a request or prompt to generate text.
                 Generate the requested content with clarity, correct structure, and natural tone.
                 Output ONLY the generated text with NO conversational filler, NO quotes, NO preamble.
@@ -259,7 +268,7 @@ final class GroqService {
         case .translate:
             // Live Translation Mode (Polyglot to English)
             systemPrompt = """
-            You are San Universal Translator.
+            You are SAYN Universal Translator.
             The user spoke in a foreign language (or mixed languages).
             Accurately translate the spoken words into polished, fluent, modern English.
             Remove verbal fillers and resolve any spoken self-corrections during translation.
@@ -270,7 +279,7 @@ final class GroqService {
         case .code:
             // Developer & Code Mode
             systemPrompt = """
-            You are San Developer Voice Assistant.
+            You are SAYN Developer Voice Assistant.
             Format the user's spoken words specifically for programming and developer tools:
             1. When function or variable names are spoken (e.g., 'get user profile by id'), format in camelCase (`getUserProfileById`) or snake_case as fitting.
             2. When git commits are spoken ('fix header alignment'), format as conventional commit (`fix(ui): header alignment`).
@@ -284,7 +293,7 @@ final class GroqService {
             // Grammar & Proofread Mode
             let textToProof = (contextText != nil && !contextText!.isEmpty) ? contextText! : rawText
             systemPrompt = """
-            You are San Proofreader & Grammar Polisher.
+            You are SAYN Proofreader & Grammar Polisher.
             Fix all spelling errors, grammatical mistakes, awkward phrasing, and punctuation.
             Elevate sentence flow while preserving the author's original meaning and voice.
             Output ONLY the corrected, polished text with NO explanations, NO markdown backticks, NO quotes.
@@ -316,7 +325,7 @@ final class GroqService {
             }
             
             systemPrompt = """
-            You are San, an ultra-fast speech polishing assistant.
+            You are SAYN, an ultra-fast speech polishing assistant.
             The user spoke the following text. Your job is to format it for immediate direct typing into active applications:
             1. Remove verbal fillers (um, uh, ah, er, you know).
             2. Resolve spoken self-corrections (e.g. 'tomorrow at two no wait three' -> 'tomorrow at 3:00').

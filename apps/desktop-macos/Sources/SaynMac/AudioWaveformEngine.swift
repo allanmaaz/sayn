@@ -10,7 +10,7 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
     private var recognitionTask: SFSpeechRecognitionTask?
     private var previewAudioEngine: AVAudioEngine?
     
-    private let tempAudioURL = URL(fileURLWithPath: "/tmp/san_dictation.wav")
+    private let tempAudioURL = URL(fileURLWithPath: "/tmp/sayn_dictation.wav")
     private var lastAppleTranscript: String = ""
     private var meterTimer: Timer?
     
@@ -23,22 +23,22 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
     
     override init() {
         super.init()
-        let savedRaw = UserDefaults.standard.string(forKey: "SanCurrentMode") ?? "dictate"
+        let savedRaw = UserDefaults.standard.string(forKey: "SaynCurrentMode") ?? UserDefaults.standard.string(forKey: "SanCurrentMode") ?? "dictate"
         self.currentMode = SanExecutionMode(rawValue: savedRaw) ?? .dictate
     }
     
     var activeStyle: String {
         get {
-            return UserDefaults.standard.string(forKey: "SanActiveStyle") ?? "natural"
+            return UserDefaults.standard.string(forKey: "SaynActiveStyle") ?? UserDefaults.standard.string(forKey: "SanActiveStyle") ?? "natural"
         }
         set {
-            UserDefaults.standard.set(newValue, forKey: "SanActiveStyle")
+            UserDefaults.standard.set(newValue, forKey: "SaynActiveStyle")
         }
     }
     
     func setMode(_ mode: SanExecutionMode) {
         self.currentMode = mode
-        UserDefaults.standard.set(mode.rawValue, forKey: "SanCurrentMode")
+        UserDefaults.standard.set(mode.rawValue, forKey: "SaynCurrentMode")
     }
     
     func cycleNextMode() {
