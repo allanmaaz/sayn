@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import saynLogo from '../../assets/logo.png';
 
 export const Footer: React.FC = () => {
   return (
@@ -9,7 +10,7 @@ export const Footer: React.FC = () => {
           {/* Brand Info */}
           <div className="space-y-3">
             <div className="flex items-center space-x-2.5">
-              <img src="/logo.svg" alt="SAYN" className="w-7 h-7 rounded-lg shadow-sm" />
+              <img src={saynLogo} alt="SAYN" className="w-7 h-7 rounded-lg shadow-sm" />
               <span className="font-bold text-[#F5EBDD] text-lg tracking-wide">
                 SAYN
               </span>

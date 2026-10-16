@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.js';
 import { ArrowRight, AlertCircle, Lock, Mail, User } from 'lucide-react';
+import saynLogo from '../../assets/logo.png';
 
 export const SignupPage: React.FC = () => {
   const navigate = useNavigate();
@@ -34,7 +35,7 @@ export const SignupPage: React.FC = () => {
     <div className="flex-1 flex items-center justify-center p-4">
       <div className="w-full max-w-md p-8 rounded-ios bg-sayn-dark-surface dark:bg-sayn-dark-surface light:bg-sayn-light-surface border border-sayn-dark-divider dark:border-sayn-dark-divider light:border-sayn-light-divider shadow-xl transition-colors">
         <div className="text-center mb-8">
-          <img src="/logo.svg" alt="SAYN" className="w-10 h-10 mx-auto rounded-lg mb-3" />
+          <img src={saynLogo} alt="SAYN" className="w-10 h-10 mx-auto rounded-lg mb-3" />
           <h1 className="text-2xl font-bold tracking-tight text-sayn-dark-text dark:text-sayn-dark-text light:text-sayn-light-text">
             Create your SAYN account
           </h1>

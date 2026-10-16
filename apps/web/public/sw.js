@@ -1,10 +1,9 @@
 // SAYN Service Worker for Offline Resilience and PWA Standalone Support
-const CACHE_NAME = 'sayn-v1';
+const CACHE_NAME = 'sayn-v2-official-emblem';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/manifest.json',
-  '/logo.svg'
+  '/manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
@@ -37,19 +36,21 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Network-first strategy: always fetch the latest content from network, fallback to cache when offline
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(event.request).then((networkResponse) => {
+    fetch(event.request)
+      .then((networkResponse) => {
         return networkResponse;
-      }).catch(() => {
-        // Fallback to cache root for SPA client-side navigation
-        if (event.request.mode === 'navigate') {
-          return caches.match('/');
-        }
-      });
-    })
+      })
+      .catch(() => {
+        return caches.match(event.request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          if (event.request.mode === 'navigate') {
+            return caches.match('/');
+          }
+        });
+      })
   );
 });

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import saynLogo from '../../assets/logo.png';
 import {
   Mic,
   PenTool,
@@ -138,7 +139,7 @@ export const LandingPage: React.FC = () => {
                   {/* Top Studio Header */}
                   <div className="flex items-center justify-between pb-3 border-b border-[#3D1520]/60 mb-3">
                     <div className="flex items-center space-x-2">
-                      <img src="/logo.svg" alt="SAYN Logo" className="w-6 h-6 rounded-md" />
+                      <img src={saynLogo} alt="SAYN Logo" className="w-6 h-6 rounded-md" />
                       <span className="font-bold text-sm tracking-wide text-[#F5EBDD]">SAYN</span>
                     </div>
                     <div className="flex items-center space-x-1.5">

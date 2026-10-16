@@ -18,6 +18,7 @@ import {
 import { useAuth } from '../../context/AuthContext.js';
 import { useTheme } from '../../context/ThemeContext.js';
 import { DownloadModal } from '../download/DownloadModal.js';
+import saynLogo from '../../assets/logo.png';
 
 export const Navbar: React.FC = () => {
   const { user, signOut } = useAuth();
@@ -55,7 +56,7 @@ export const Navbar: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
         {/* Brand Logo & Wordmark */}
         <Link to="/" className="flex items-center space-x-3 group">
-          <img src="/logo.svg" alt="SAYN Logo" className="w-9 h-9 rounded-xl shadow-md transition-transform group-hover:scale-105" />
+          <img src={saynLogo} alt="SAYN Logo" className="w-9 h-9 rounded-xl shadow-md transition-transform group-hover:scale-105" />
           <div className="flex flex-col">
             <span className="font-bold text-xl tracking-wider text-[#F5EBDD]">
               SAYN
