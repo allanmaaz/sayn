@@ -146,12 +146,115 @@ class SaynInputMethodService : InputMethodService() {
         reloadFeedbackSettings()
     }
 
+    // Auto-Correct settings & dictionary (Enabled strictly inside the keyboard)
+    private var isAutoCorrectEnabled = true
+
+    private val autoCorrectMap = mapOf(
+        "teh" to "the",
+        "adn" to "and",
+        "taht" to "that",
+        "thsi" to "this",
+        "waht" to "what",
+        "whcih" to "which",
+        "woudl" to "would",
+        "coudl" to "could",
+        "shoudl" to "should",
+        "becuase" to "because",
+        "beacuse" to "because",
+        "definately" to "definitely",
+        "definatly" to "definitely",
+        "definitly" to "definitely",
+        "seperate" to "separate",
+        "seperated" to "separated",
+        "seperation" to "separation",
+        "recieve" to "receive",
+        "recieved" to "received",
+        "recieving" to "receiving",
+        "acheive" to "achieve",
+        "acheived" to "achieved",
+        "beleive" to "believe",
+        "beleived" to "believed",
+        "untill" to "until",
+        "wierd" to "weird",
+        "tommorrow" to "tomorrow",
+        "tomorow" to "tomorrow",
+        "goverment" to "government",
+        "accomodate" to "accommodate",
+        "neccessary" to "necessary",
+        "necesary" to "necessary",
+        "occured" to "occurred",
+        "occuring" to "occurring",
+        "occurence" to "occurrence",
+        "embarass" to "embarrass",
+        "embarassed" to "embarrassed",
+        "alot" to "a lot",
+        "noone" to "no one",
+        "everytime" to "every time",
+        "truely" to "truly",
+        "realy" to "really",
+        "freind" to "friend",
+        "freinds" to "friends",
+        "peice" to "piece",
+        "peices" to "pieces",
+        "grammer" to "grammar",
+        "langauge" to "language",
+        "calender" to "calendar",
+        "apparantly" to "apparently",
+        "succesful" to "successful",
+        "unfortunatly" to "unfortunately",
+        "dissapoint" to "disappoint",
+        "dissappointed" to "disappointed",
+        "privilege" to "privilege",
+        "privelege" to "privilege",
+        // Common Contractions without apostrophe
+        "dont" to "don't",
+        "cant" to "can't",
+        "wont" to "won't",
+        "didnt" to "didn't",
+        "doesnt" to "doesn't",
+        "isnt" to "isn't",
+        "arent" to "aren't",
+        "wasnt" to "wasn't",
+        "werent" to "weren't",
+        "hasnt" to "hasn't",
+        "havent" to "haven't",
+        "hadnt" to "hadn't",
+        "couldnt" to "couldn't",
+        "shouldnt" to "shouldn't",
+        "wouldnt" to "wouldn't",
+        "im" to "I'm",
+        "ive" to "I've",
+        "id" to "I'd",
+        "ill" to "I'll",
+        "youre" to "you're",
+        "youve" to "you've",
+        "youd" to "you'd",
+        "youll" to "you'll",
+        "theyre" to "they're",
+        "theyve" to "they've",
+        "theyd" to "they'd",
+        "theyll" to "they'll",
+        "weve" to "we've",
+        "thats" to "that's",
+        "whats" to "what's",
+        "wheres" to "where's",
+        "whens" to "when's",
+        "whys" to "why's",
+        "hows" to "how's",
+        "hes" to "he's",
+        "shes" to "she's",
+        "theres" to "there's",
+        "heres" to "here's",
+        "lets" to "let's"
+    )
+
     fun reloadFeedbackSettings() {
         val prefs = getSharedPreferences("com.sayn.app.PREFS", Context.MODE_PRIVATE)
         activeMode = prefs.getString("default_mode", "standard") ?: "standard"
         isSoundEnabled = prefs.getBoolean("key_sound_enabled", true)
         isVibrationEnabled = prefs.getBoolean("key_vibration_enabled", true)
         vibrationIntensity = prefs.getString("key_vibration_intensity", "medium") ?: "medium"
+        isAutoCorrectEnabled = prefs.getBoolean("keyboard_autocorrect_enabled", true)
     }
 
     fun triggerVoiceDictation() {
@@ -165,7 +268,8 @@ class SaynInputMethodService : InputMethodService() {
         rootLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.parseColor("#1C1C1E")) // Authentic iOS Dark Gray
-            setPadding(dpToPx(3), dpToPx(3), dpToPx(3), dpToPx(6))
+            // Elevated keyboard: 26dp bottom padding elevates keyboard away from the phone's bottom bezel & gesture bar
+            setPadding(dpToPx(4), dpToPx(6), dpToPx(4), dpToPx(26))
         }
 
         buildVoiceLiveBar()
@@ -1383,24 +1487,25 @@ class SaynInputMethodService : InputMethodService() {
             0 -> renderQwertyLayout()
             1 -> renderSymbols123Layout()
             2 -> renderSymbolsAltLayout()
+            3 -> renderEmojiLayout()
         }
     }
 
     private fun renderQwertyLayout() {
-        // Row 1: Q W E R T Y U I O P (10 keys)
+        // Row 1: Q W E R T Y U I O P (10 keys - weight: 1.0 each = 10.0f)
         val row1 = listOf("Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P")
         keysContainer.addView(createRowView(row1, hasSpacer = false))
 
-        // Row 2: A S D F G H J K L (9 keys, indented with 0.5f spacer on left/right for iconic iOS stagger!)
+        // Row 2: A S D F G H J K L (9 keys, perfectly centered with 0.5f spacer on left & right = 10.0f)
         val row2 = listOf("A", "S", "D", "F", "G", "H", "J", "K", "L")
         keysContainer.addView(createRowView(row2, hasSpacer = true))
 
-        // Row 3: SHIFT, Z X C V B N M, DEL
+        // Row 3: SHIFT (1.45f), Z X C V B N M (7.0f), DEL (1.55f) = 10.0f
         val row3 = listOf("SHIFT", "Z", "X", "C", "V", "B", "N", "M", "DEL")
         keysContainer.addView(createRowView(row3, hasSpacer = false))
 
-        // Row 4: 123, GLOBE, MIC, SPACE, ENTER
-        val row4 = listOf("123", "GLOBE", "MIC", "SPACE", "ENTER")
+        // Row 4: EMOJI in bottom left corner! (1.25f), 123 (1.25f), SPACE (4.5f), MIC (1.15f), ENTER (1.85f) = 10.0f
+        val row4 = listOf("EMOJI", "123", "SPACE", "MIC", "ENTER")
         keysContainer.addView(createRowView(row4, hasSpacer = false))
     }
 
@@ -1414,7 +1519,7 @@ class SaynInputMethodService : InputMethodService() {
         val row3 = listOf("#+=", ".", ",", "?", "!", "'", "DEL")
         keysContainer.addView(createRowView(row3, hasSpacer = false))
 
-        val row4 = listOf("ABC", "GLOBE", "MIC", "SPACE", "ENTER")
+        val row4 = listOf("EMOJI", "ABC", "SPACE", "MIC", "ENTER")
         keysContainer.addView(createRowView(row4, hasSpacer = false))
     }
 
@@ -1428,8 +1533,63 @@ class SaynInputMethodService : InputMethodService() {
         val row3 = listOf("123", ".", ",", "?", "!", "'", "DEL")
         keysContainer.addView(createRowView(row3, hasSpacer = false))
 
-        val row4 = listOf("ABC", "GLOBE", "MIC", "SPACE", "ENTER")
+        val row4 = listOf("EMOJI", "ABC", "SPACE", "MIC", "ENTER")
         keysContainer.addView(createRowView(row4, hasSpacer = false))
+    }
+
+    private fun renderEmojiLayout() {
+        val emojiScroll = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dpToPx(152)
+            ).apply { bottomMargin = dpToPx(7) }
+        }
+
+        val emojiGrid = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dpToPx(4), 0, dpToPx(4), 0)
+        }
+
+        val emojiRows = listOf(
+            listOf("😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇", "🙂", "🙃", "😉", "😍", "🥰", "😘", "😋", "😜", "🤪", "😎", "🤩", "🥳", "🥺"),
+            listOf("👍", "👎", "👏", "🙌", "🤝", "👊", "✌️", "🤞", "🤟", "🤘", "👌", "👈", "👉", "👆", "👇", "✋", "👋", "🤙", "💪", "🙏", "✍️", "🤳", "🔥"),
+            listOf("❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "💔", "❣️", "💕", "✨", "💯", "🎉", "🚀", "⭐", "💡", "📌", "🎯", "🏆", "👑", "🍕", "☕")
+        )
+
+        for (row in emojiRows) {
+            val rowView = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    dpToPx(48)
+                ).apply { bottomMargin = dpToPx(3) }
+            }
+
+            for (emoji in row) {
+                val emojiButton = TextView(this).apply {
+                    text = emoji
+                    textSize = 23f
+                    gravity = Gravity.CENTER
+                    setPadding(dpToPx(8), dpToPx(4), dpToPx(8), dpToPx(4))
+                    isClickable = true
+                    isFocusable = false
+                    setOnClickListener {
+                        triggerKeyFeedback("SPACE")
+                        currentInputConnection?.commitText(emoji, 1)
+                    }
+                }
+                rowView.addView(emojiButton)
+            }
+            emojiGrid.addView(rowView)
+        }
+
+        emojiScroll.addView(emojiGrid)
+        keysContainer.addView(emojiScroll)
+
+        // Bottom control row in emoji layout: [ ABC ] [ 123 ] [ SPACE ] [ DEL ] [ ENTER ]
+        val bottomRow = listOf("ABC", "123", "SPACE", "DEL", "ENTER")
+        keysContainer.addView(createRowView(bottomRow, hasSpacer = false))
     }
 
     private fun createRowView(keys: List<String>, hasSpacer: Boolean): LinearLayout {
@@ -1439,7 +1599,7 @@ class SaynInputMethodService : InputMethodService() {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 dpToPx(46)
-            ).apply { bottomMargin = dpToPx(6) }
+            ).apply { bottomMargin = dpToPx(7) }
         }
 
         if (hasSpacer) {
@@ -1451,11 +1611,13 @@ class SaynInputMethodService : InputMethodService() {
 
         for (key in keys) {
             val weight = when (key) {
-                "SPACE" -> 4.2f
-                "ENTER" -> 1.8f
-                "SHIFT", "DEL" -> 1.35f
-                "123", "ABC", "#+=" -> 1.35f
-                "GLOBE", "MIC" -> 1.0f
+                "SPACE" -> 4.5f
+                "ENTER" -> 1.85f
+                "SHIFT" -> 1.45f
+                "DEL" -> 1.55f
+                "123", "ABC", "#+=" -> 1.25f
+                "EMOJI" -> 1.25f
+                "MIC" -> 1.15f
                 else -> 1.0f
             }
 
@@ -1475,7 +1637,7 @@ class SaynInputMethodService : InputMethodService() {
 
     private fun buildKeycapView(key: String, weight: Float): TextView {
         val displayText = formatKeyText(key)
-        val isSpecial = key in listOf("ENTER", "123", "ABC", "#+=", "DEL", "SHIFT", "GLOBE", "MIC")
+        val isSpecial = key in listOf("ENTER", "123", "ABC", "#+=", "DEL", "SHIFT", "GLOBE", "MIC", "EMOJI")
 
         val keyView = TextView(this).apply {
             text = displayText
@@ -1487,7 +1649,7 @@ class SaynInputMethodService : InputMethodService() {
             isClickable = true
             isFocusable = false
 
-            // Crisp typography matching iOS
+            // Crisp typography matching normal keyboards
             if (key.length == 1 && symbolLayoutMode == 0) {
                 textSize = 22.5f
                 typeface = Typeface.DEFAULT
@@ -1506,6 +1668,10 @@ class SaynInputMethodService : InputMethodService() {
                 setTextColor(Color.parseColor("#D1D1D6"))
             } else if (key in listOf("123", "ABC", "#+=")) {
                 textSize = 14f
+                typeface = Typeface.DEFAULT
+                setTextColor(Color.WHITE)
+            } else if (key == "EMOJI") {
+                textSize = 20f
                 typeface = Typeface.DEFAULT
                 setTextColor(Color.WHITE)
             } else {
@@ -1529,17 +1695,16 @@ class SaynInputMethodService : InputMethodService() {
                 setCompoundDrawables(null, globeDrawable, null, null)
             }
 
-            // Authentic iOS Keycap Chiclet Backgrounds
+            // Authentic tactile Chiclet Backgrounds
             val bg = when {
                 key == "ENTER" -> {
                     createIosKeyDrawable(
-                        normalColor = Color.parseColor("#CBFE00"), // Wispr Volt Neon Green
+                        normalColor = Color.parseColor("#CBFE00"), // San Volt Neon Green
                         pressedColor = Color.parseColor("#A6CF00"),
                         shadowColor = Color.parseColor("#80A000")
                     )
                 }
                 key == "SHIFT" && (isShifted || isCapsLock) -> {
-                    // In iOS, active shift turns white with black icon
                     createIosKeyDrawable(
                         normalColor = Color.WHITE,
                         pressedColor = Color.parseColor("#D1D1D6"),
@@ -1547,7 +1712,6 @@ class SaynInputMethodService : InputMethodService() {
                     )
                 }
                 isSpecial -> {
-                    // iOS Dark Mode Function Keys
                     createIosKeyDrawable(
                         normalColor = Color.parseColor("#2C2C2E"),
                         pressedColor = Color.parseColor("#424246"),
@@ -1555,7 +1719,6 @@ class SaynInputMethodService : InputMethodService() {
                     )
                 }
                 else -> {
-                    // iOS Dark Mode Letter Keys (Raised Chiclets)
                     createIosKeyDrawable(
                         normalColor = Color.parseColor("#4A4A4D"),
                         pressedColor = Color.parseColor("#636366"),
@@ -1590,6 +1753,7 @@ class SaynInputMethodService : InputMethodService() {
             "DEL" -> "⌫"
             "GLOBE" -> ""
             "MIC" -> ""
+            "EMOJI" -> "😊"
             "SPACE" -> "space"
             "ENTER" -> {
                 val currentInfo = currentInputEditorInfo
@@ -1611,13 +1775,67 @@ class SaynInputMethodService : InputMethodService() {
         }
     }
 
+    /**
+     * Applies deterministic auto-correction strictly inside the keyboard.
+     * Corrects common typos, missing apostrophes, and capitalization (e.g. "teh" -> "the", "dont" -> "don't", "im" -> "I'm", lone "i" -> "I").
+     */
+    private fun applyAutoCorrect(delimiter: String) {
+        val ic = currentInputConnection ?: return
+        if (!isAutoCorrectEnabled || isSensitiveField) {
+            if (delimiter.isNotEmpty()) ic.commitText(delimiter, 1)
+            return
+        }
+
+        val before = ic.getTextBeforeCursor(40, 0)?.toString() ?: ""
+        if (before.isEmpty()) {
+            if (delimiter.isNotEmpty()) ic.commitText(delimiter, 1)
+            return
+        }
+
+        val match = Regex("""([a-zA-Z']+)\z""").find(before)
+        if (match != null) {
+            val rawWord = match.value
+            val lower = rawWord.lowercase()
+
+            val replacement = when {
+                rawWord == "i" -> "I"
+                autoCorrectMap.containsKey(lower) -> {
+                    val corrected = autoCorrectMap[lower]!!
+                    when {
+                        rawWord.all { it.isUpperCase() } && rawWord.length > 1 -> corrected.uppercase()
+                        rawWord.first().isUpperCase() -> corrected.replaceFirstChar { it.uppercase() }
+                        else -> corrected
+                    }
+                }
+                else -> null
+            }
+
+            if (replacement != null && replacement != rawWord) {
+                ic.deleteSurroundingText(rawWord.length, 0)
+                ic.commitText(replacement + delimiter, 1)
+                return
+            }
+        }
+
+        if (delimiter.isNotEmpty()) {
+            ic.commitText(delimiter, 1)
+        }
+    }
+
     private fun handleKeyAction(key: String) {
         val ic = currentInputConnection ?: return
         when (key) {
             "DEL" -> ic.deleteSurroundingText(1, 0)
-            "SPACE" -> ic.commitText(" ", 1)
-            "ENTER" -> handleEnterAction()
+            "SPACE" -> applyAutoCorrect(" ")
+            "ENTER" -> {
+                applyAutoCorrect("")
+                handleEnterAction()
+            }
             "MIC" -> toggleInKeyboardVoice()
+            "EMOJI" -> {
+                symbolLayoutMode = if (symbolLayoutMode == 3) 0 else 3
+                renderKeys()
+            }
             "123" -> {
                 symbolLayoutMode = 1
                 renderKeys()
@@ -1630,6 +1848,10 @@ class SaynInputMethodService : InputMethodService() {
                 symbolLayoutMode = 0
                 renderKeys()
             }
+            "." -> applyAutoCorrect(".")
+            "," -> applyAutoCorrect(",")
+            "!" -> applyAutoCorrect("!")
+            "?" -> applyAutoCorrect("?")
             "SHIFT" -> {
                 val now = System.currentTimeMillis()
                 if (now - lastShiftPressTime < 350) {

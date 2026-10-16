@@ -121,9 +121,19 @@ class PlatformChannels {
       if (res is Map) {
         return Map<String, dynamic>.from(res);
       }
-      return {'soundEnabled': true, 'vibrationEnabled': true, 'vibrationIntensity': 'medium'};
+      return {
+        'soundEnabled': true,
+        'vibrationEnabled': true,
+        'vibrationIntensity': 'medium',
+        'autoCorrectEnabled': true,
+      };
     } catch (_) {
-      return {'soundEnabled': true, 'vibrationEnabled': true, 'vibrationIntensity': 'medium'};
+      return {
+        'soundEnabled': true,
+        'vibrationEnabled': true,
+        'vibrationIntensity': 'medium',
+        'autoCorrectEnabled': true,
+      };
     }
   }
 
@@ -131,12 +141,14 @@ class PlatformChannels {
     required bool soundEnabled,
     required bool vibrationEnabled,
     required String vibrationIntensity,
+    bool? autoCorrectEnabled,
   }) async {
     try {
       await _keyboardChannel.invokeMethod('setKeyboardFeedbackSettings', {
         'soundEnabled': soundEnabled,
         'vibrationEnabled': vibrationEnabled,
         'vibrationIntensity': vibrationIntensity,
+        if (autoCorrectEnabled != null) 'autoCorrectEnabled': autoCorrectEnabled,
       });
     } catch (_) {}
   }

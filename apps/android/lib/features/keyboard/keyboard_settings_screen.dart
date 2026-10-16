@@ -18,6 +18,7 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
   bool _keySoundEnabled = true;
   bool _keyVibrationEnabled = true;
   String _keyVibrationIntensity = 'medium';
+  bool _autoCorrectEnabled = true;
   final TextEditingController _sandboxController = TextEditingController();
 
   final List<Map<String, String>> _modes = const [
@@ -46,6 +47,7 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
     final sound = feedback['soundEnabled'] as bool? ?? true;
     final vibration = feedback['vibrationEnabled'] as bool? ?? true;
     final intensity = feedback['vibrationIntensity'] as String? ?? 'medium';
+    final autoCorrect = feedback['autoCorrectEnabled'] as bool? ?? true;
 
     if (mounted) {
       setState(() {
@@ -55,6 +57,7 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
         _keySoundEnabled = sound;
         _keyVibrationEnabled = vibration;
         _keyVibrationIntensity = intensity;
+        _autoCorrectEnabled = autoCorrect;
         _isLoading = false;
       });
     }
@@ -64,19 +67,23 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
     bool? sound,
     bool? vibration,
     String? intensity,
+    bool? autoCorrect,
   }) async {
     final newSound = sound ?? _keySoundEnabled;
     final newVib = vibration ?? _keyVibrationEnabled;
     final newInt = intensity ?? _keyVibrationIntensity;
+    final newAuto = autoCorrect ?? _autoCorrectEnabled;
     setState(() {
       _keySoundEnabled = newSound;
       _keyVibrationEnabled = newVib;
       _keyVibrationIntensity = newInt;
+      _autoCorrectEnabled = newAuto;
     });
     await PlatformChannels.setKeyboardFeedbackSettings(
       soundEnabled: newSound,
       vibrationEnabled: newVib,
       vibrationIntensity: newInt,
+      autoCorrectEnabled: newAuto,
     );
   }
 
@@ -423,6 +430,51 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
                           value: _keySoundEnabled,
                           activeColor: SaynColors.darkAccent,
                           onChanged: (val) => _updateFeedbackSettings(sound: val),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Keyboard Auto-Correct Settings (Strictly inside keyboard)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: SaynColors.darkSurface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: SaynColors.darkDivider),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: const [
+                            Icon(Icons.spellcheck_rounded, size: 18, color: SaynColors.darkAccent),
+                            SizedBox(width: 8),
+                            Text(
+                              'Keyboard Auto-Correct',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: SaynColors.darkText,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text(
+                            'Enable Auto-Correct',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: SaynColors.darkText),
+                          ),
+                          subtitle: const Text(
+                            'Automatically fixes common typos, missing apostrophes, and capitalizes "I" only when typing on this keyboard.',
+                            style: TextStyle(fontSize: 11, color: SaynColors.darkSecondary),
+                          ),
+                          value: _autoCorrectEnabled,
+                          activeColor: SaynColors.darkAccent,
+                          onChanged: (val) => _updateFeedbackSettings(autoCorrect: val),
                         ),
                       ],
                     ),
