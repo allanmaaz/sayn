@@ -1,6 +1,27 @@
 import AppKit
 import SwiftUI
 
+/// Custom Hosting View with .activeAlways tracking area to ensure hover events
+/// are delivered 100% reliably even when another application (VS Code, Chrome, etc.) is active.
+final class SanPillHostingView<Content: View>: NSHostingView<Content> {
+    private var trackingArea: NSTrackingArea?
+    
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let existing = trackingArea {
+            removeTrackingArea(existing)
+        }
+        let area = NSTrackingArea(
+            rect: bounds,
+            options: [.activeAlways, .mouseEnteredAndExited, .mouseMoved, .inVisibleRect],
+            owner: self,
+            userInfo: nil
+        )
+        addTrackingArea(area)
+        trackingArea = area
+    }
+}
+
 /// Window Controller for the Ephemeral System-Wide Voice HUD
 /// Supports both:
 /// 1. Micro-Pill (Recording State): 96x30 minimal black capsule with dancing pure-white waveform bars docked right above the MacBook bezel
@@ -28,6 +49,8 @@ final class SanPillWindow: NSPanel {
         self.backgroundColor = .clear
         self.isOpaque = false
         self.hasShadow = false
+        self.acceptsMouseMovedEvents = true
+        self.ignoresMouseEvents = false
         self.contentView = contentView
         self.alphaValue = 0.0
         
@@ -70,6 +93,51 @@ final class SanPillWindow: NSPanel {
     }
 }
 
+// MARK: - Animated Progress Components
+struct ProcessingSpinner: View {
+    @State private var isSpinning: Bool = false
+    
+    var body: some View {
+        Circle()
+            .trim(from: 0.15, to: 0.85)
+            .stroke(
+                AngularGradient(
+                    gradient: Gradient(colors: [
+                        Color(red: 168/255, green: 50/255, blue: 73/255),
+                        Color(red: 245/255, green: 235/255, blue: 221/255)
+                    ]),
+                    center: .center
+                ),
+                style: StrokeStyle(lineWidth: 2, lineCap: .round)
+            )
+            .rotationEffect(.degrees(isSpinning ? 360 : 0))
+            .animation(.linear(duration: 0.85).repeatForever(autoreverses: false), value: isSpinning)
+            .onAppear {
+                isSpinning = true
+            }
+    }
+}
+
+struct PulsingDotsView: View {
+    @State private var phase: Int = 0
+    let timer = Timer.publish(every: 0.28, on: .main, in: .common).autoconnect()
+    
+    var body: some View {
+        HStack(spacing: 3) {
+            ForEach(0..<3, id: \.self) { index in
+                Circle()
+                    .fill(Color(red: 245/255, green: 235/255, blue: 221/255).opacity(phase == index ? 1.0 : 0.4))
+                    .frame(width: 3.5, height: 3.5)
+                    .scaleEffect(phase == index ? 1.3 : 0.85)
+                    .animation(.easeInOut(duration: 0.25), value: phase)
+            }
+        }
+        .onReceive(timer) { _ in
+            phase = (phase + 1) % 3
+        }
+    }
+}
+
 /// Dynamic View switching between Micro-Capsule and Fallback HUD Card
 struct SanPillView: View {
     @ObservedObject var waveformEngine: AudioWaveformEngine
@@ -109,54 +177,93 @@ struct SanPillView: View {
     // MARK: - 1. Micro Recording Capsule in SAYN Deep Maroon Branding
     private var microRecordingCapsule: some View {
         HStack(spacing: 8) {
-            // Cancel (✕) button
-            Button(action: onCancel) {
-                ZStack {
-                    Circle()
-                        .fill(Color.white.opacity(isHoveredClose ? 0.24 : 0.12))
-                        .frame(width: 22, height: 22)
-                    Image(systemName: "xmark")
-                        .font(.system(size: 9.5, weight: .bold))
-                        .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255).opacity(0.85))
-                }
-            }
-            .buttonStyle(PlainButtonStyle())
-            .onHover { h in isHoveredClose = h }
-            
-            // 9 Dynamic Warm-Cream Equalizer Bars reacting in real-time
-            HStack(spacing: 3) {
-                ForEach(0..<9, id: \.self) { index in
-                    RoundedRectangle(cornerRadius: 1.5)
-                        .fill(Color(red: 245/255, green: 235/255, blue: 221/255))
-                        .frame(
-                            width: 2.5,
-                            height: CGFloat(max(4, waveformEngine.audioLevels[min(index, waveformEngine.audioLevels.count - 1)] * 18))
-                        )
-                        .animation(.easeOut(duration: 0.08), value: waveformEngine.audioLevels[min(index, waveformEngine.audioLevels.count - 1)])
-                }
-            }
-            .padding(.horizontal, 4)
-            
-            // Confirm / Tick Mark (✓) button in signature SAYN Deep Maroon
-            Button(action: {
-                onConfirm(transcriptText)
-            }) {
-                ZStack {
-                    Circle()
-                        .fill(isHoveredConfirm ? Color(red: 143/255, green: 24/255, blue: 53/255) : Color(red: 111/255, green: 16/255, blue: 37/255))
-                        .frame(width: 22, height: 22)
-                        .scaleEffect(isHoveredConfirm ? 1.06 : 1.0)
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 10.5, weight: .bold))
+            if waveformEngine.isProcessing {
+                // Immediate Loading State: Appears IMMEDIATELY when completing dictation or navigating away from Fn
+                HStack(spacing: 8) {
+                    ProcessingSpinner()
+                        .frame(width: 14, height: 14)
+                    
+                    Text("Polishing...")
+                        .font(.system(size: 11.5, weight: .bold, design: .rounded))
                         .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
+                    
+                    PulsingDotsView()
+                }
+                .padding(.horizontal, 10)
+                .transition(.opacity.combined(with: .scale(scale: 0.95)))
+            } else {
+                // Cancel (✕) button with instant hover & cursor feedback
+                Button(action: onCancel) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.white.opacity(isHoveredClose ? 0.30 : 0.12))
+                            .frame(width: 22, height: 22)
+                            .scaleEffect(isHoveredClose ? 1.08 : 1.0)
+                        Image(systemName: "xmark")
+                            .font(.system(size: 9.5, weight: .bold))
+                            .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255).opacity(isHoveredClose ? 1.0 : 0.85))
+                    }
+                }
+                .buttonStyle(PlainButtonStyle())
+                .contentShape(Circle())
+                .onHover { h in
+                    withAnimation(.easeInOut(duration: 0.12)) {
+                        isHoveredClose = h
+                    }
+                    if h {
+                        NSCursor.pointingHand.set()
+                    } else {
+                        NSCursor.arrow.set()
+                    }
+                }
+                
+                // 9 Dynamic Warm-Cream Equalizer Bars reacting in real-time
+                HStack(spacing: 3) {
+                    ForEach(0..<9, id: \.self) { index in
+                        RoundedRectangle(cornerRadius: 1.5)
+                            .fill(Color(red: 245/255, green: 235/255, blue: 221/255))
+                            .frame(
+                                width: 2.5,
+                                height: CGFloat(max(4, waveformEngine.audioLevels[min(index, waveformEngine.audioLevels.count - 1)] * 18))
+                            )
+                            .animation(.easeOut(duration: 0.08), value: waveformEngine.audioLevels[min(index, waveformEngine.audioLevels.count - 1)])
+                    }
+                }
+                .padding(.horizontal, 4)
+                
+                // Confirm / Tick Mark (✓) button in signature SAYN Deep Maroon with reliable hover
+                Button(action: {
+                    waveformEngine.isProcessing = true
+                    onConfirm(transcriptText)
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(isHoveredConfirm ? Color(red: 168/255, green: 28/255, blue: 62/255) : Color(red: 111/255, green: 16/255, blue: 37/255))
+                            .frame(width: 22, height: 22)
+                            .scaleEffect(isHoveredConfirm ? 1.10 : 1.0)
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 10.5, weight: .bold))
+                            .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
+                    }
+                }
+                .buttonStyle(PlainButtonStyle())
+                .contentShape(Circle())
+                .onHover { h in
+                    withAnimation(.easeInOut(duration: 0.12)) {
+                        isHoveredConfirm = h
+                    }
+                    if h {
+                        NSCursor.pointingHand.set()
+                    } else {
+                        NSCursor.arrow.set()
+                    }
                 }
             }
-            .buttonStyle(PlainButtonStyle())
-            .onHover { h in isHoveredConfirm = h }
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .frame(height: 34)
+        .contentShape(Capsule())
         .background(
             Capsule()
                 .fill(
@@ -175,6 +282,7 @@ struct SanPillView: View {
                 )
                 .shadow(color: Color(red: 111/255, green: 16/255, blue: 37/255).opacity(0.4), radius: 10, x: 0, y: 3)
         )
+        .animation(.easeInOut(duration: 0.16), value: waveformEngine.isProcessing)
     }
     
     // MARK: - 2. Fallback HUD Card (When No Textbox Focused)

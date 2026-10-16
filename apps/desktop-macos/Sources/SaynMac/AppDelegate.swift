@@ -265,7 +265,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         )
         
-        let hostingView = NSHostingView(rootView: pillView)
+        let hostingView = SanPillHostingView(rootView: pillView)
         pillWindow = SanPillWindow(contentView: hostingView)
     }
     
@@ -339,11 +339,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 let duration = Date().timeIntervalSince(pressTime)
                 self.fnPressTimestamp = nil
                 
-                if self.fnWasAlreadyOpen {
+                if self.fnWasAlreadyOpen || duration > 0.35 {
+                    self.waveformEngine.isProcessing = true
                     self.commitPill(text: self.currentTranscript)
                     self.fnWasAlreadyOpen = false
-                } else if duration > 0.35 {
-                    self.commitPill(text: self.currentTranscript)
                 }
             }
         }
@@ -351,6 +350,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     @objc func togglePill() {
         if pillWindow?.isVisible == true && (pillWindow?.alphaValue ?? 0) > 0.5 {
+            waveformEngine.isProcessing = true
             commitPill(text: currentTranscript)
         } else {
             showPill()
@@ -360,6 +360,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func showPill() {
         isCommitting = false
         isFallbackCard = false
+        waveformEngine.isProcessing = false
         let front = NSWorkspace.shared.frontmostApplication
         if front?.bundleIdentifier != Bundle.main.bundleIdentifier {
             targetApp = front
@@ -382,6 +383,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     private func hidePill() {
         isCommitting = false
+        waveformEngine.isProcessing = false
         waveformEngine.stopRecording { _ in }
         pillWindow?.hideAnimated { [weak self] in
             self?.isFallbackCard = false
@@ -393,6 +395,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard !isCommitting else { return }
         guard pillWindow?.isVisible == true else { return }
         isCommitting = true
+        waveformEngine.isProcessing = true
         
         var appToPasteInto = targetApp ?? TextPaster.lastExternalApp
         if appToPasteInto?.bundleIdentifier == Bundle.main.bundleIdentifier || appToPasteInto == nil {

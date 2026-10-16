@@ -123,7 +123,9 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
     }
     
     func stopRecording(activeAppBundleId: String? = nil, completion: @escaping (String) -> Void) {
-        guard isRecording else { return }
+        guard isRecording || isProcessing else { return }
+        self.isProcessing = true
+        self.isRecording = false
         
         hasTriggeredSilenceCommit = true
         hasSpokenVoice = false
