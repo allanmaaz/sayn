@@ -2,6 +2,9 @@ import AppKit
 import SwiftUI
 
 final class SanPillWindow: NSPanel {
+    override var canBecomeKey: Bool { false }
+    override var canBecomeMain: Bool { false }
+    
     init(contentView: NSView) {
         // Canvas width 440 x 100 so shadows feather out naturally with zero clipping
         super.init(

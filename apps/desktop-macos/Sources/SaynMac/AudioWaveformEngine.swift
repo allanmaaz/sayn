@@ -20,6 +20,11 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
     @Published var currentMode: SanExecutionMode = .dictate
     
     var selectedContextText: String? = nil
+    var onSilenceDetected: (() -> Void)? = nil
+    
+    private var hasSpokenVoice: Bool = false
+    private var lastSpokenTimestamp: Date? = nil
+    private var hasTriggeredSilenceCommit: Bool = false
     
     override init() {
         super.init()
@@ -56,6 +61,9 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
         
         lastAppleTranscript = ""
         isProcessing = false
+        hasSpokenVoice = false
+        lastSpokenTimestamp = nil
+        hasTriggeredSilenceCommit = false
         
         try? FileManager.default.removeItem(at: tempAudioURL)
         
@@ -88,6 +96,23 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
             let linear = max(0.0, (power + 50.0) / 50.0)
             let normalized = min(max(Float(linear), 0.08), 1.0)
             
+            // Voice Activity Detection: user speaking power above -36 dB
+            if power > -36.0 {
+                self.hasSpokenVoice = true
+                self.lastSpokenTimestamp = Date()
+            }
+            
+            // Auto-Commit on Silence: if user spoke and then stops speaking for >= 1.6 seconds
+            if self.hasSpokenVoice && !self.hasTriggeredSilenceCommit, let lastSpoken = self.lastSpokenTimestamp {
+                let silenceDuration = Date().timeIntervalSince(lastSpoken)
+                if silenceDuration >= 1.6 {
+                    self.hasTriggeredSilenceCommit = true
+                    DispatchQueue.main.async {
+                        self.onSilenceDetected?()
+                    }
+                }
+            }
+            
             DispatchQueue.main.async {
                 self.audioLevels = (0..<8).map { i in
                     let variance = Float.random(in: 0.75...1.25)
@@ -117,6 +142,10 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
             if let result = result {
                 let text = result.bestTranscription.formattedString
                 self?.lastAppleTranscript = text
+                if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    self?.hasSpokenVoice = true
+                    self?.lastSpokenTimestamp = Date()
+                }
                 DispatchQueue.main.async {
                     onLiveTranscript(text)
                 }
@@ -133,6 +162,10 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
     
     func stopRecording(activeAppBundleId: String? = nil, completion: @escaping (String) -> Void) {
         guard isRecording else { return }
+        
+        hasTriggeredSilenceCommit = true
+        hasSpokenVoice = false
+        lastSpokenTimestamp = nil
         
         // 1. Stop audio recorder and metering
         meterTimer?.invalidate()

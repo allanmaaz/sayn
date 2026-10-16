@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var fnPressTimestamp: Date?
     private var fnWasAlreadyOpen: Bool = false
     private var targetApp: NSRunningApplication?
+    private var isCommitting: Bool = false
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupStatusItem()
@@ -149,6 +150,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     private func setupPillWindow() {
+        waveformEngine.onSilenceDetected = { [weak self] in
+            guard let self = self else { return }
+            self.commitPill(text: self.currentTranscript)
+        }
+        
         let pillView = SanPillView(
             waveformEngine: waveformEngine,
             transcriptText: Binding(
@@ -249,13 +255,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     @objc func togglePill() {
         if pillWindow?.isVisible == true && (pillWindow?.alphaValue ?? 0) > 0.5 {
-            hidePill()
+            commitPill(text: currentTranscript)
         } else {
             showPill()
         }
     }
     
     private func showPill() {
+        isCommitting = false
         let front = NSWorkspace.shared.frontmostApplication
         if front?.bundleIdentifier != Bundle.main.bundleIdentifier {
             targetApp = front
@@ -274,12 +281,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     private func hidePill() {
+        isCommitting = false
         waveformEngine.stopRecording { _ in }
         pillWindow?.hideAnimated()
         currentTranscript = ""
     }
     
     private func commitPill(text: String) {
+        guard !isCommitting else { return }
+        guard pillWindow?.isVisible == true else { return }
+        isCommitting = true
+        
         let appToPasteInto = targetApp ?? NSWorkspace.shared.frontmostApplication
         
         waveformEngine.stopRecording(activeAppBundleId: appToPasteInto?.bundleIdentifier) { [weak self] finalText in
@@ -292,6 +304,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 TextPaster.paste(text: trimmed, targetApp: appToPasteInto)
             }
             self?.currentTranscript = ""
+            self?.isCommitting = false
         }
     }
     

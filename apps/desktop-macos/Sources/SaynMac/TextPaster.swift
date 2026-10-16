@@ -56,50 +56,48 @@ final class TextPaster {
             app.activate(options: [.activateIgnoringOtherApps])
         }
         
-        // 4. Tier 1: Direct Accessibility In-Field Insertion
-        if let app = appToActivate {
-            let appRef = AXUIElementCreateApplication(app.processIdentifier)
-            var focusedElement: CFTypeRef?
-            let copyResult = AXUIElementCopyAttributeValue(appRef, kAXFocusedUIElementAttribute as CFString, &focusedElement)
+        // 4. Synthesize Cmd+V keystroke into the active window (Antigravity IDE, Terminal, VS Code, Slack, etc.)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.09) {
+            // Priority 1: AppleScript System Events keystroke
+            // Works 100% reliably in Electron (Antigravity IDE), Terminal, Cursor, VS Code, Browsers, etc.
+            let scriptSource = """
+            tell application "System Events"
+                keystroke "v" using command down
+            end tell
+            """
             
-            if copyResult == .success, let element = focusedElement {
-                let axElement = element as! AXUIElement
-                let setResult = AXUIElementSetAttributeValue(axElement, kAXSelectedTextAttribute as CFString, cleanText as CFTypeRef)
-                if setResult == .success {
-                    return // Injected directly into active chat box / text input!
+            var appleScriptSucceeded = false
+            if let script = NSAppleScript(source: scriptSource) {
+                var errorDict: NSDictionary?
+                script.executeAndReturnError(&errorDict)
+                if errorDict == nil {
+                    appleScriptSucceeded = true
+                } else {
+                    print("SAYN AppleScript paste notice: \(String(describing: errorDict))")
                 }
             }
-        }
-        
-        // 5. Tier 2: Synthesize Cmd+V keystroke into the active chat window
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-            let src = CGEventSource(stateID: .combinedSessionState)
-            let vKeyCode: CGKeyCode = 0x09 // 'v'
-            let cmdKeyCode: CGKeyCode = 0x37 // Left Command
             
-            if let cmdDown = CGEvent(keyboardEventSource: src, virtualKey: cmdKeyCode, keyDown: true),
-               let vDown = CGEvent(keyboardEventSource: src, virtualKey: vKeyCode, keyDown: true),
-               let vUp = CGEvent(keyboardEventSource: src, virtualKey: vKeyCode, keyDown: false),
-               let cmdUp = CGEvent(keyboardEventSource: src, virtualKey: cmdKeyCode, keyDown: false) {
+            // Priority 2: CoreGraphics Session Event Tap Fallback
+            if !appleScriptSucceeded {
+                let src = CGEventSource(stateID: .combinedSessionState)
+                let vKeyCode: CGKeyCode = 0x09 // 'v'
+                let cmdKeyCode: CGKeyCode = 0x37 // Left Command
                 
-                cmdDown.flags = .maskCommand
-                vDown.flags = .maskCommand
-                vUp.flags = .maskCommand
-                cmdUp.flags = []
-                
-                // Deliver directly to the active application's PID
-                if let pid = appToActivate?.processIdentifier {
-                    cmdDown.postToPid(pid)
-                    vDown.postToPid(pid)
-                    vUp.postToPid(pid)
-                    cmdUp.postToPid(pid)
+                if let cmdDown = CGEvent(keyboardEventSource: src, virtualKey: cmdKeyCode, keyDown: true),
+                   let vDown = CGEvent(keyboardEventSource: src, virtualKey: vKeyCode, keyDown: true),
+                   let vUp = CGEvent(keyboardEventSource: src, virtualKey: vKeyCode, keyDown: false),
+                   let cmdUp = CGEvent(keyboardEventSource: src, virtualKey: cmdKeyCode, keyDown: false) {
+                    
+                    cmdDown.flags = .maskCommand
+                    vDown.flags = .maskCommand
+                    vUp.flags = .maskCommand
+                    cmdUp.flags = []
+                    
+                    cmdDown.post(tap: .cgSessionEventTap)
+                    vDown.post(tap: .cgSessionEventTap)
+                    vUp.post(tap: .cgSessionEventTap)
+                    cmdUp.post(tap: .cgSessionEventTap)
                 }
-                
-                // Broadcast to HID event tap so web chat boxes and electron apps receive it
-                cmdDown.post(tap: .cghidEventTap)
-                vDown.post(tap: .cghidEventTap)
-                vUp.post(tap: .cghidEventTap)
-                cmdUp.post(tap: .cghidEventTap)
             }
         }
     }

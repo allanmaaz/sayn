@@ -53,6 +53,8 @@ cat << 'EOF' > /Applications/SAYN.app/Contents/Info.plist
     <string>SAYN uses your microphone for high-speed voice dictation and AI polishing.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
     <string>SAYN uses speech recognition to transcribe your voice directly into your active apps.</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>SAYN uses automation to type your polished speech directly into active applications and terminals.</string>
 </dict>
 </plist>
 EOF
