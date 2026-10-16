@@ -39,8 +39,8 @@ final class SanPillWindow: NSPanel {
         if let screen = NSScreen.main {
             let screenRect = screen.visibleFrame
             let x = screenRect.midX - (frame.width / 2)
-            // Docked right above the MacBook bottom bezel
-            let y = forCard ? (screenRect.minY + 36) : (screenRect.minY + 12)
+            // Docked snug right above the MacBook bottom bezel
+            let y = forCard ? (screenRect.minY + 14) : (screenRect.minY + 6)
             setFrameOrigin(NSPoint(x: x, y: y))
         }
     }
@@ -81,52 +81,55 @@ struct SanPillView: View {
     
     @State private var isCopied: Bool = false
     @State private var isHoveredClose: Bool = false
+    @State private var isHoveredConfirm: Bool = false
     @State private var isHoveredCopy: Bool = false
     
     var body: some View {
-        ZStack {
+        ZStack(alignment: .bottom) {
             if isFallbackCard {
                 fallbackHUDCard
+                    .padding(.bottom, 6)
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.95).combined(with: .opacity),
                         removal: .scale(scale: 0.95).combined(with: .opacity)
                     ))
             } else {
                 microRecordingCapsule
+                    .padding(.bottom, 6)
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.9).combined(with: .opacity),
                         removal: .opacity
                     ))
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         .animation(.spring(response: 0.28, dampingFraction: 0.82), value: isFallbackCard)
     }
     
-    // MARK: - 1. Micro Recording Capsule with Real Equalizer & Tick Mark
+    // MARK: - 1. Micro Recording Capsule in SAYN Deep Maroon Branding
     private var microRecordingCapsule: some View {
         HStack(spacing: 8) {
             // Cancel (✕) button
             Button(action: onCancel) {
                 ZStack {
                     Circle()
-                        .fill(Color.white.opacity(isHoveredClose ? 0.25 : 0.12))
-                        .frame(width: 20, height: 20)
+                        .fill(Color.white.opacity(isHoveredClose ? 0.24 : 0.12))
+                        .frame(width: 22, height: 22)
                     Image(systemName: "xmark")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundColor(Color.white.opacity(0.7))
+                        .font(.system(size: 9.5, weight: .bold))
+                        .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255).opacity(0.85))
                 }
             }
             .buttonStyle(PlainButtonStyle())
             .onHover { h in isHoveredClose = h }
             
-            // 9 Dynamic Pure-White Equalizer Bars reacting in real-time
+            // 9 Dynamic Warm-Cream Equalizer Bars reacting in real-time
             HStack(spacing: 3) {
                 ForEach(0..<9, id: \.self) { index in
                     RoundedRectangle(cornerRadius: 1.5)
-                        .fill(Color.white)
+                        .fill(Color(red: 245/255, green: 235/255, blue: 221/255))
                         .frame(
-                            width: 2.4,
+                            width: 2.5,
                             height: CGFloat(max(4, waveformEngine.audioLevels[min(index, waveformEngine.audioLevels.count - 1)] * 18))
                         )
                         .animation(.easeOut(duration: 0.08), value: waveformEngine.audioLevels[min(index, waveformEngine.audioLevels.count - 1)])
@@ -134,32 +137,43 @@ struct SanPillView: View {
             }
             .padding(.horizontal, 4)
             
-            // Confirm / Tick Mark (✓) button
+            // Confirm / Tick Mark (✓) button in signature SAYN Deep Maroon
             Button(action: {
                 onConfirm(transcriptText)
             }) {
                 ZStack {
                     Circle()
-                        .fill(Color(red: 111/255, green: 16/255, blue: 37/255))
-                        .frame(width: 20, height: 20)
+                        .fill(isHoveredConfirm ? Color(red: 143/255, green: 24/255, blue: 53/255) : Color(red: 111/255, green: 16/255, blue: 37/255))
+                        .frame(width: 22, height: 22)
+                        .scaleEffect(isHoveredConfirm ? 1.06 : 1.0)
                     Image(systemName: "checkmark")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 10.5, weight: .bold))
                         .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
                 }
             }
             .buttonStyle(PlainButtonStyle())
+            .onHover { h in isHoveredConfirm = h }
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .frame(height: 32)
+        .frame(height: 34)
         .background(
             Capsule()
-                .fill(Color(red: 16/255, green: 7/255, blue: 9/255).opacity(0.96))
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 45/255, green: 10/255, blue: 18/255),
+                            Color(red: 20/255, green: 5/255, blue: 8/255)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
                 .overlay(
                     Capsule()
-                        .stroke(Color(red: 168/255, green: 50/255, blue: 73/255).opacity(0.4), lineWidth: 0.8)
+                        .stroke(Color(red: 168/255, green: 50/255, blue: 73/255).opacity(0.6), lineWidth: 1)
                 )
-                .shadow(color: Color.black.opacity(0.6), radius: 14, x: 0, y: 6)
+                .shadow(color: Color(red: 111/255, green: 16/255, blue: 37/255).opacity(0.4), radius: 10, x: 0, y: 3)
         )
     }
     
@@ -271,10 +285,19 @@ struct SanPillView: View {
         .frame(width: 380, height: 170)
         .background(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color(red: 16/255, green: 7/255, blue: 9/255).opacity(0.97))
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 35/255, green: 10/255, blue: 16/255),
+                            Color(red: 16/255, green: 6/255, blue: 9/255)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
                 .overlay(
                     RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .stroke(Color(red: 168/255, green: 50/255, blue: 73/255).opacity(0.35), lineWidth: 1)
+                        .stroke(Color(red: 168/255, green: 50/255, blue: 73/255).opacity(0.45), lineWidth: 1)
                 )
                 .shadow(color: Color.black.opacity(0.75), radius: 24, x: 0, y: 12)
         )
