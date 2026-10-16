@@ -15,6 +15,8 @@ import {
   Download,
   Sparkles,
   Square,
+  Play,
+  Columns2,
   Globe,
   Sliders,
   Maximize2,
@@ -30,6 +32,128 @@ import { detectDevice, DeviceInfo } from '../../utils/deviceDetector.js';
 import { DownloadModal } from '../../components/download/DownloadModal.js';
 import { useScrollAnimation } from '../../hooks/useScrollAnimation.js';
 
+export type StudioModeKey = 'ai-writer' | 'voice-mode' | 'grammar' | 'shorten' | 'expand';
+
+export interface StudioModeConfig {
+  key: StudioModeKey;
+  label: string;
+  icon: React.ElementType;
+  description: string;
+  duration: string;
+  rawWords: number;
+  refinedWords: number;
+  metricBadge: string;
+  rawText: string;
+  rawHighlightedHtml: React.ReactNode;
+  refinedText: string;
+}
+
+const STUDIO_MODES: Record<StudioModeKey, StudioModeConfig> = {
+  'ai-writer': {
+    key: 'ai-writer',
+    label: 'AI Writer',
+    icon: PenTool,
+    description: 'Transforms messy conversational brain-dump into structured, publication-ready prose',
+    duration: '00:04',
+    rawWords: 34,
+    refinedWords: 19,
+    metricBadge: '-44% brevity',
+    rawText: 'uh yeah basically hey team so um I kind of went through the latest sprint stuff and like the design system thing is pretty much on track to wrap up this Thursday I think',
+    rawHighlightedHtml: (
+      <>
+        <span className="line-through decoration-[#C83E5B] text-[#B59CA2] bg-[#4A1522]/40 px-1 py-0.5 rounded">uh yeah</span>{' '}
+        <span className="line-through decoration-[#C83E5B] text-[#B59CA2] bg-[#4A1522]/40 px-1 py-0.5 rounded">basically</span> hey team{' '}
+        <span className="line-through decoration-[#C83E5B] text-[#B59CA2] bg-[#4A1522]/40 px-1 py-0.5 rounded">so um</span> I{' '}
+        <span className="line-through decoration-[#C83E5B] text-[#B59CA2] bg-[#4A1522]/40 px-1 py-0.5 rounded">kind of</span> went through the latest sprint{' '}
+        <span className="line-through decoration-[#C83E5B] text-[#B59CA2] bg-[#4A1522]/40 px-1 py-0.5 rounded">stuff</span> and{' '}
+        <span className="line-through decoration-[#C83E5B] text-[#B59CA2] bg-[#4A1522]/40 px-1 py-0.5 rounded">like</span> the design system{' '}
+        <span className="line-through decoration-[#C83E5B] text-[#B59CA2] bg-[#4A1522]/40 px-1 py-0.5 rounded">thing</span> is{' '}
+        <span className="line-through decoration-[#C83E5B] text-[#B59CA2] bg-[#4A1522]/40 px-1 py-0.5 rounded">pretty much</span> on track to wrap up this Thursday{' '}
+        <span className="line-through decoration-[#C83E5B] text-[#B59CA2] bg-[#4A1522]/40 px-1 py-0.5 rounded">I think</span>.
+      </>
+    ),
+    refinedText:
+      'Hey team, I reviewed the latest sprint deliverables. The design system migration is on track for completion this Thursday.',
+  },
+  'voice-mode': {
+    key: 'voice-mode',
+    label: 'Voice Mode',
+    icon: Mic,
+    description: 'Ultra-low-latency real-time voice dictation with intelligent auto-punctuation',
+    duration: '00:03',
+    rawWords: 17,
+    refinedWords: 18,
+    metricBadge: '220 WPM // 0 latency',
+    rawText: 'schedule sync with product design tomorrow 10 am to go over mobile pill window animations and hotkey latency',
+    rawHighlightedHtml: (
+      <>
+        schedule sync with <span className="text-[#F5EBDD] font-medium">Product Design</span>{' '}
+        <span className="bg-[#4A1522]/50 px-1 py-0.5 rounded text-[#D9385A]">tomorrow at 10:00 AM</span> to go over mobile pill window animations and hotkey latency.
+      </>
+    ),
+    refinedText:
+      'Schedule sync with Product Design tomorrow at 10:00 AM to review mobile pill window animations and hotkey latency.',
+  },
+  grammar: {
+    key: 'grammar',
+    label: 'Grammar',
+    icon: Sliders,
+    description: 'Tone-preserving grammatical refinement fixing agreements, syntax, and commas',
+    duration: '00:05',
+    rawWords: 17,
+    refinedWords: 18,
+    metricBadge: '3 syntax errors fixed',
+    rawText: 'their is several issues with the auth tokens they doesnt refresh when user is idle for twenty minute',
+    rawHighlightedHtml: (
+      <>
+        <span className="line-through decoration-[#C83E5B] text-[#C83E5B] bg-[#4A1522]/50 px-1 py-0.5 rounded">their is</span> several issues with the auth tokens;{' '}
+        <span className="line-through decoration-[#C83E5B] text-[#C83E5B] bg-[#4A1522]/50 px-1 py-0.5 rounded">they doesnt</span> refresh when user is idle for{' '}
+        <span className="line-through decoration-[#C83E5B] text-[#C83E5B] bg-[#4A1522]/50 px-1 py-0.5 rounded">twenty minute</span>.
+      </>
+    ),
+    refinedText:
+      'There are several issues with the auth tokens; they do not refresh when a user is idle for twenty minutes.',
+  },
+  shorten: {
+    key: 'shorten',
+    label: 'Shorten',
+    icon: Minimize2,
+    description: 'High-density compression for Slack updates, standup notes, and executive summaries',
+    duration: '00:06',
+    rawWords: 44,
+    refinedWords: 16,
+    metricBadge: '-64% fluff removed',
+    rawText: 'I was thinking that maybe we could potentially look into whether or not we should reduce the amount of dependencies in our node modules because it takes like 4 minutes to install every single time we run a new build pipeline and that slows everyone down',
+    rawHighlightedHtml: (
+      <>
+        <span className="line-through decoration-[#C83E5B] text-[#B59CA2] bg-[#4A1522]/40 px-1 py-0.5 rounded">I was thinking that maybe we could potentially look into whether or not we should</span> reduce the amount of dependencies in our node modules{' '}
+        <span className="line-through decoration-[#C83E5B] text-[#B59CA2] bg-[#4A1522]/40 px-1 py-0.5 rounded">because it takes like 4 minutes to install every single time we run a new build pipeline and that slows everyone down</span>.
+      </>
+    ),
+    refinedText:
+      'Proposal: Audit and prune unused dependencies. Current 4-minute CI install times significantly degrade developer velocity.',
+  },
+  expand: {
+    key: 'expand',
+    label: 'Expand',
+    icon: Maximize2,
+    description: 'Elaborates concise voice bullet points into comprehensive, thoughtful messages',
+    duration: '00:02',
+    rawWords: 10,
+    refinedWords: 29,
+    metricBadge: '+190% contextual detail',
+    rawText: 'cant make the retro today write up my notes in notion',
+    rawHighlightedHtml: (
+      <>
+        <span className="text-[#C83E5B] font-semibold">cant make</span> the retro today{' '}
+        <span className="text-[#C83E5B] font-semibold">write up my notes</span> in notion
+      </>
+    ),
+    refinedText:
+      "Hi everyone, I won't be able to attend today's retrospective meeting due to a scheduling conflict. I have documented all my project updates and key blockers directly in Notion for the team to review.",
+  },
+};
+
 export const LandingPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'refine' | 'voice' | 'overlay'>('refine');
   const [copiedDemo, setCopiedDemo] = useState(false);
@@ -43,6 +167,13 @@ export const LandingPage: React.FC = () => {
   const { scrollY, scrollProgress } = useScrollAnimation();
   const { actualTheme } = useTheme();
   const isLight = actualTheme === 'light';
+
+  // Interactive Hero Studio States
+  const [activeStudioMode, setActiveStudioMode] = useState<StudioModeKey>('ai-writer');
+  const [comparisonView, setComparisonView] = useState<'refined' | 'original' | 'split'>('refined');
+  const [isListening, setIsListening] = useState(true);
+  const [audioSeconds, setAudioSeconds] = useState(4);
+  const [barHeights, setBarHeights] = useState([20, 45, 80, 100, 65, 90, 40, 75, 30]);
 
   // Chapters & Spine Node dynamic scaling
   const chapterText =
@@ -164,10 +295,41 @@ export const LandingPage: React.FC = () => {
     return () => cancelAnimationFrame(animId);
   }, [isAutoScrolling]);
 
+  // Audio simulation timer & dynamic equalizer animation
+  React.useEffect(() => {
+    if (!isListening) return;
+    const interval = setInterval(() => {
+      setAudioSeconds((s) => (s >= 59 ? 1 : s + 1));
+      setBarHeights([
+        Math.floor(20 + Math.random() * 40),
+        Math.floor(35 + Math.random() * 55),
+        Math.floor(60 + Math.random() * 40),
+        Math.floor(80 + Math.random() * 20),
+        Math.floor(50 + Math.random() * 45),
+        Math.floor(70 + Math.random() * 30),
+        Math.floor(30 + Math.random() * 50),
+        Math.floor(55 + Math.random() * 45),
+        Math.floor(25 + Math.random() * 40),
+      ]);
+    }, 450);
+    return () => clearInterval(interval);
+  }, [isListening]);
+
+  const handleSelectMode = (key: StudioModeKey) => {
+    setActiveStudioMode(key);
+    const dur = parseInt(STUDIO_MODES[key].duration.split(':')[1], 10) || 4;
+    setAudioSeconds(dur);
+    setIsListening(true);
+  };
+
+  const currentModeConfig = STUDIO_MODES[activeStudioMode];
+
   const handleCopyDemo = () => {
-    navigator.clipboard.writeText(
-      'Hey team, I reviewed the latest sprint deliverables. The design system migration is on track for completion this Thursday.'
-    );
+    const textToCopy =
+      comparisonView === 'original'
+        ? currentModeConfig.rawText
+        : currentModeConfig.refinedText;
+    navigator.clipboard.writeText(textToCopy);
     setCopiedDemo(true);
     setTimeout(() => setCopiedDemo(false), 2000);
   };
@@ -561,81 +723,182 @@ export const LandingPage: React.FC = () => {
 
                   {/* Studio Main Workspace Grid */}
                   <div className="grid grid-cols-12 gap-3 items-stretch">
-                    {/* Left Mini Sidebar */}
+                    {/* Left Mini Sidebar - Interactive Navigation */}
                     <div className="col-span-3 space-y-1.5 text-left text-[11px]">
-                      <div className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-[#6F1025] text-[#F5EBDD] font-semibold shadow-sm">
-                        <PenTool className="w-3 h-3 text-[#F5EBDD]" />
-                        <span>AI Writer</span>
-                      </div>
-                      <div className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-[#D6C7B2] hover:bg-[#240F16] transition-colors">
-                        <Mic className="w-3 h-3 text-[#A83249]" />
-                        <span>Voice Mode</span>
-                      </div>
-                      <div className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-[#D6C7B2] hover:bg-[#240F16] transition-colors">
-                        <Sliders className="w-3 h-3" />
-                        <span>Grammar</span>
-                      </div>
-                      <div className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-[#D6C7B2] hover:bg-[#240F16] transition-colors">
-                        <Minimize2 className="w-3 h-3" />
-                        <span>Shorten</span>
-                      </div>
-                      <div className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-[#D6C7B2] hover:bg-[#240F16] transition-colors">
-                        <Maximize2 className="w-3 h-3" />
-                        <span>Expand</span>
-                      </div>
+                      {(Object.keys(STUDIO_MODES) as StudioModeKey[]).map((modeKey) => {
+                        const mode = STUDIO_MODES[modeKey];
+                        const Icon = mode.icon;
+                        const isSelected = activeStudioMode === modeKey;
+                        return (
+                          <button
+                            key={modeKey}
+                            onClick={() => handleSelectMode(modeKey)}
+                            className={`w-full flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg font-semibold text-left transition-all active:scale-95 ${
+                              isSelected
+                                ? 'bg-[#6F1025] text-[#F5EBDD] shadow-md ring-1 ring-[#A83249]/60'
+                                : 'text-[#D6C7B2] hover:bg-[#240F16] hover:text-[#F5EBDD]'
+                            }`}
+                          >
+                            <Icon className={`w-3 h-3 ${isSelected ? 'text-[#F5EBDD]' : 'text-[#A83249]'}`} />
+                            <span className="truncate">{mode.label}</span>
+                          </button>
+                        );
+                      })}
                     </div>
 
-                    {/* Center Voice Waveform Card */}
-                    <div className="col-span-4 rounded-xl bg-[#1C0B12] border border-[#3D1520] p-3.5 flex flex-col items-center justify-between text-center shadow-inner">
-                      <div className="text-[11px] font-mono font-bold text-[#F5EBDD]">00:04</div>
-                      
-                      {/* Equalizer Soundwave Bars in Soft Rose-Maroon */}
-                      <div className="flex items-center justify-center space-x-1 h-12 my-2">
-                        {[20, 45, 80, 100, 65, 90, 40, 75, 30].map((h, i) => (
+                    {/* Center Voice Waveform Card with Live Timer & Soundwave */}
+                    <div className="col-span-4 rounded-xl bg-[#1C0B12] border border-[#3D1520] p-3 flex flex-col items-center justify-between text-center shadow-inner">
+                      <div className="text-[11px] font-mono font-bold text-[#F5EBDD]">
+                        00:{audioSeconds < 10 ? '0' : ''}{audioSeconds}
+                      </div>
+
+                      {/* Equalizer Soundwave Bars Reacting Dynamically */}
+                      <div className="flex items-center justify-center space-x-1 h-12 my-1">
+                        {barHeights.map((h, i) => (
                           <div
                             key={i}
-                            className="w-1 rounded-full bg-[#A83249] animate-pulse"
+                            className={`w-1 rounded-full transition-all duration-200 ${
+                              isListening ? 'bg-[#C83E5B]' : 'bg-[#4A1522]'
+                            }`}
                             style={{
-                              height: `${h}%`,
-                              animationDelay: `${i * 90}ms`,
-                              animationDuration: '900ms',
+                              height: isListening ? `${h}%` : '15%',
                             }}
                           />
                         ))}
                       </div>
 
-                      <div className="text-[10px] text-[#D6C7B2] mb-2 font-medium">Listening...</div>
+                      <div className="text-[10px] text-[#D6C7B2] mb-1 font-medium flex items-center space-x-1.5">
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            isListening ? 'bg-[#22C55E] animate-pulse' : 'bg-[#A89F91]'
+                          }`}
+                        />
+                        <span className="truncate text-[9.5px]">
+                          {isListening ? 'Listening...' : 'Paused — Tap to speak'}
+                        </span>
+                      </div>
 
-                      {/* Deep Maroon Stop Button */}
-                      <button className="w-7 h-7 rounded-full bg-[#6F1025] hover:bg-[#8F1835] text-[#F5EBDD] flex items-center justify-center shadow-md transition-transform hover:scale-110">
-                        <Square className="w-2.5 h-2.5 fill-current" />
+                      {/* Deep Maroon Stop/Play Button */}
+                      <button
+                        onClick={() => setIsListening(!isListening)}
+                        title={isListening ? 'Pause listening' : 'Start dictation'}
+                        className={`w-7 h-7 rounded-full text-[#F5EBDD] flex items-center justify-center shadow-md transition-all hover:scale-110 active:scale-95 ${
+                          isListening
+                            ? 'bg-[#6F1025] hover:bg-[#8F1835]'
+                            : 'bg-[#22C55E] hover:bg-[#16a34a]'
+                        }`}
+                      >
+                        {isListening ? (
+                          <Square className="w-2.5 h-2.5 fill-current" />
+                        ) : (
+                          <Play className="w-2.5 h-2.5 fill-current ml-0.5" />
+                        )}
                       </button>
                     </div>
 
-                    {/* Right Refined Output Card */}
+                    {/* Right Refined Output Card with Original, Refined & Split Toggles */}
                     <div className="col-span-5 rounded-xl bg-[#1C0B12] border border-[#3D1520] p-3 flex flex-col justify-between text-left">
-                      {/* Segmented Original / Refined Switcher */}
+                      {/* Segmented Original / Refined / Split Switcher */}
                       <div className="flex items-center justify-end space-x-1 mb-2">
-                        <button className="px-2 py-0.5 rounded-md text-[10px] text-[#A89F91]">
+                        <button
+                          onClick={() => setComparisonView('original')}
+                          className={`px-1.5 py-0.5 rounded text-[9.5px] transition-colors ${
+                            comparisonView === 'original'
+                              ? 'bg-[#F5EBDD] text-[#100709] font-bold shadow-xs'
+                              : 'text-[#A89F91] hover:text-[#F5EBDD]'
+                          }`}
+                        >
                           Original
                         </button>
-                        <button className="px-2 py-0.5 rounded-md text-[10px] font-bold text-[#100709] bg-[#F5EBDD] shadow-sm">
+                        <button
+                          onClick={() => setComparisonView('refined')}
+                          className={`px-1.5 py-0.5 rounded text-[9.5px] transition-colors ${
+                            comparisonView === 'refined'
+                              ? 'bg-[#F5EBDD] text-[#100709] font-bold shadow-xs'
+                              : 'text-[#A89F91] hover:text-[#F5EBDD]'
+                          }`}
+                        >
                           Refined
+                        </button>
+                        <button
+                          onClick={() => setComparisonView('split')}
+                          className={`px-1.5 py-0.5 rounded text-[9.5px] transition-colors flex items-center space-x-0.5 ${
+                            comparisonView === 'split'
+                              ? 'bg-[#F5EBDD] text-[#100709] font-bold shadow-xs'
+                              : 'text-[#A89F91] hover:text-[#F5EBDD]'
+                          }`}
+                        >
+                          <Columns2 className="w-2.5 h-2.5" />
+                          <span>Split</span>
                         </button>
                       </div>
 
-                      {/* Polished Text Display */}
-                      <p className="text-[11px] text-[#F5EBDD] leading-relaxed mb-3">
-                        "Hey team, I reviewed the latest sprint deliverables. The design system migration is on track for completion this Thursday."
-                      </p>
+                      {/* Output Display Based on Selected View */}
+                      <div className="flex-1 flex flex-col justify-center min-h-[95px] mb-2">
+                        {comparisonView === 'split' ? (
+                          <div className="space-y-1.5">
+                            <div className="rounded bg-[#14080D] border border-[#3D1520]/80 p-1.5 text-left">
+                              <div className="flex items-center justify-between text-[8px] text-[#D9385A] font-mono mb-0.5 font-bold">
+                                <span>RAW ({currentModeConfig.rawWords}w)</span>
+                              </div>
+                              <p className="text-[9.5px] text-[#B59CA2] leading-tight line-clamp-2">
+                                {currentModeConfig.rawHighlightedHtml}
+                              </p>
+                            </div>
+                            <div className="rounded bg-[#240A12] border border-[#6F1025] p-1.5 text-left">
+                              <div className="flex items-center justify-between text-[8px] text-[#22C55E] font-mono mb-0.5 font-bold">
+                                <span>REFINED ({currentModeConfig.refinedWords}w)</span>
+                                <span className="text-[#F5EBDD] bg-[#6F1025] px-1 py-0.2 rounded font-sans text-[7.5px]">
+                                  {currentModeConfig.metricBadge}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-[#F5EBDD] font-medium leading-tight line-clamp-2">
+                                "{currentModeConfig.refinedText}"
+                              </p>
+                            </div>
+                          </div>
+                        ) : comparisonView === 'original' ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-[9px] font-mono text-[#D9385A]">
+                              <span>RAW SPOKEN STREAM</span>
+                              <span className="text-[#A89F91]">{currentModeConfig.rawWords} words</span>
+                            </div>
+                            <p className="text-[10.5px] text-[#D6C7B2] leading-relaxed">
+                              "{currentModeConfig.rawHighlightedHtml}"
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-[9px] font-mono text-[#22C55E]">
+                              <span>REFINED OUTPUT</span>
+                              <span className="text-[#F5EBDD] bg-[#6F1025] px-1.5 py-0.5 rounded text-[8.5px] font-sans font-semibold">
+                                {currentModeConfig.metricBadge}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-[#F5EBDD] leading-relaxed font-medium">
+                              "{currentModeConfig.refinedText}"
+                            </p>
+                          </div>
+                        )}
+                      </div>
 
+                      {/* Footer Actions: Ready Indicator & Interactive Copy */}
                       <div className="flex items-center justify-between pt-1 border-t border-[#3D1520]/50 text-[10px] text-[#A83249]">
                         <span className="flex items-center space-x-1">
                           <CheckCircle2 className="w-3 h-3 text-[#30D158]" />
-                          <span>Ready to paste</span>
+                          <span className="text-[#F5EBDD]/90 text-[9.5px]">
+                            {comparisonView === 'original' ? 'Raw Voice' : 'Ready to paste'}
+                          </span>
                         </span>
-                        <button onClick={handleCopyDemo} className="hover:text-[#F5EBDD] flex items-center space-x-1">
-                          {copiedDemo ? <Check className="w-2.5 h-2.5 text-[#30D158]" /> : <Copy className="w-2.5 h-2.5" />}
+                        <button
+                          onClick={handleCopyDemo}
+                          className="hover:text-[#F5EBDD] flex items-center space-x-1 px-1.5 py-0.5 rounded hover:bg-[#2D0A14] transition-colors"
+                        >
+                          {copiedDemo ? (
+                            <Check className="w-2.5 h-2.5 text-[#30D158]" />
+                          ) : (
+                            <Copy className="w-2.5 h-2.5" />
+                          )}
                           <span>{copiedDemo ? 'Copied' : 'Copy'}</span>
                         </button>
                       </div>
@@ -1465,7 +1728,7 @@ export const LandingPage: React.FC = () => {
       {/* 3B. DIRECT DOWNLOAD SECTION */}
       <section
         id="download"
-        className={`py-24 border-t relative overflow-hidden transition-colors ${
+        className={`scroll-mt-24 py-24 border-t relative overflow-hidden transition-colors ${
           isLight ? 'border-[#E2D9CD] bg-[#FAF7F2]' : 'border-[#3D1520] bg-[#100709]'
         }`}
       >

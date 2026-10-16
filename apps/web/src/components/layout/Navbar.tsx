@@ -4,6 +4,7 @@ import {
   Menu,
   X,
   ArrowUp,
+  ArrowRight,
   Download,
   Sun,
   Moon,
@@ -36,6 +37,17 @@ export const Navbar: React.FC = () => {
 
   const toggleTheme = () => {
     setTheme(isLight ? 'dark' : 'light');
+  };
+
+  const handleGetStarted = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    setMobileMenuOpen(false);
+    const downloadSection = document.getElementById('download');
+    if (downloadSection) {
+      downloadSection.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      setIsDownloadOpen(true);
+    }
   };
 
   return (
@@ -120,17 +132,17 @@ export const Navbar: React.FC = () => {
                 {isLight ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
               </button>
 
-              {/* Direct Download App Pill */}
+              {/* Direct 'Get Started' Action Pill */}
               <button
-                onClick={() => setIsDownloadOpen(true)}
-                className={`inline-flex items-center space-x-2 px-5 py-2 rounded-full text-xs sm:text-sm font-bold active:scale-95 transition-all shadow-md ${
+                onClick={handleGetStarted}
+                className={`inline-flex items-center space-x-2 px-5 py-2 rounded-full text-xs sm:text-sm font-bold active:scale-95 transition-all shadow-md group ${
                   isLight
                     ? 'bg-[#6F1025] hover:bg-[#85162E] text-[#F5EBDD] shadow-[0_4px_16px_rgba(111,16,37,0.25)]'
                     : 'bg-[#F5EBDD] hover:bg-[#FAF4EB] text-[#100709] shadow-[0_4px_18px_rgba(245,235,221,0.2)]'
                 }`}
               >
-                <Download className="w-3.5 h-3.5 stroke-[2.5]" />
-                <span>Download Free</span>
+                <span>Get Started</span>
+                <ArrowRight className="w-3.5 h-3.5 stroke-[2.5] transition-transform group-hover:translate-x-0.5" />
               </button>
             </div>
 
@@ -192,18 +204,15 @@ export const Navbar: React.FC = () => {
                   }`}
                 >
                   <button
-                    onClick={() => {
-                      setIsDownloadOpen(true);
-                      setMobileMenuOpen(false);
-                    }}
+                    onClick={handleGetStarted}
                     className={`w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-full text-sm font-bold shadow-md ${
                       isLight
                         ? 'bg-[#6F1025] text-[#F5EBDD]'
                         : 'bg-[#F5EBDD] text-[#100709]'
                     }`}
                   >
-                    <Download className="w-4 h-4 stroke-[2.5]" />
-                    <span>Download SAYN Free</span>
+                    <span>Get Started</span>
+                    <ArrowRight className="w-4 h-4 stroke-[2.5]" />
                   </button>
                 </div>
               </div>
