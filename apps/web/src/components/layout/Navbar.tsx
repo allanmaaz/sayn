@@ -6,8 +6,6 @@ import {
   History,
   Bookmark,
   Settings,
-  Sun,
-  Moon,
   LogOut,
   Menu,
   X,
@@ -17,22 +15,16 @@ import {
   Download,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.js';
-import { useTheme } from '../../context/ThemeContext.js';
 import { DownloadModal } from '../download/DownloadModal.js';
 import { useScrollAnimation } from '../../hooks/useScrollAnimation.js';
 import saynLogo from '../../assets/logo.png';
 
 export const Navbar: React.FC = () => {
   const { user, signOut } = useAuth();
-  const { actualTheme, setTheme } = useTheme();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDownloadOpen, setIsDownloadOpen] = useState(false);
   const { scrollProgress, scrollY } = useScrollAnimation();
-
-  const toggleTheme = () => {
-    setTheme(actualTheme === 'dark' ? 'light' : 'dark');
-  };
 
   interface NavItem {
     label: string;
@@ -136,15 +128,6 @@ export const Navbar: React.FC = () => {
                 <span>Download</span>
               </button>
 
-              {/* Theme Toggle Button */}
-              <button
-                onClick={toggleTheme}
-                aria-label="Toggle theme"
-                className="p-1.5 rounded-full text-[#D6C7B2] hover:text-[#F5EBDD] hover:bg-[#240F16] transition-colors"
-              >
-                {actualTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              </button>
-
               {user ? (
                 <div className="flex items-center space-x-2">
                   <Link
@@ -164,13 +147,7 @@ export const Navbar: React.FC = () => {
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center space-x-2.5">
-                  <Link
-                    to="/login"
-                    className="text-xs sm:text-sm font-medium text-[#D6C7B2] hover:text-[#F5EBDD] transition-colors px-2.5 py-1"
-                  >
-                    Sign In
-                  </Link>
+                <div className="flex items-center">
                   {/* Official Warm Cream Pill Button */}
                   <Link
                     to="/signup"
@@ -245,26 +222,7 @@ export const Navbar: React.FC = () => {
                     </a>
                   ))}
 
-                  {/* Theme Switch Row */}
-                  <div className="flex items-center justify-between px-3 py-2 rounded-xl text-sm text-[#D6C7B2] bg-[#1C0B12] border border-[#3D1520]/60">
-                    <span>Appearance</span>
-                    <button
-                      onClick={toggleTheme}
-                      className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#2E141D] text-[#F5EBDD]"
-                    >
-                      {actualTheme === 'dark' ? <Sun className="w-3.5 h-3.5 text-[#F5EBDD]" /> : <Moon className="w-3.5 h-3.5 text-[#F5EBDD]" />}
-                      <span>{actualTheme === 'dark' ? 'Dark' : 'Light'}</span>
-                    </button>
-                  </div>
-
                   <div className="pt-2 border-t border-[#3D1520]/60 space-y-2">
-                    <Link
-                      to="/login"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="block px-3 py-2 rounded-xl text-sm text-[#F5EBDD] font-medium"
-                    >
-                      Sign In
-                    </Link>
                     <Link
                       to="/signup"
                       onClick={() => setMobileMenuOpen(false)}
