@@ -60,28 +60,25 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: v1.0.8
-          name: "SAYN Android Release v1.0.8 (Permanent Keystore Signing & In-Place Direct Updates)"
+          tag_name: v1.0.9
+          name: "SAYN Android Release v1.0.9 (Wispr Flow Volt Sync & Floating Liquid Bottom Nav)"
           body: |
-            ### SAYN v1.0.8 — Say it. Refine it. Send it.
+            ### SAYN v1.0.9 — Wispr Flow Sync & Liquid Obsidian Bottom Dock
             Official release for Android.
             
-            **What's New in v1.0.8:**
-            * **Permanent Release Keystore Signing (FIXES "App Not Installed"):**
-              - Fixed Android signature mismatch error permanently. Every release is now signed with the exact same permanent release keystore.
-              - In-place updates directly on top of the installed app now work seamlessly without ever needing intermediate versions or uninstalling in the future!
-            * **Purple Sparkle AI Button [ ✨ ] & Full AI Assistant Panel:**
-              - Tap the vibrant purple sparkle button above the keyboard to open the full Grammarly/Wispr writing assistant.
-              - Explore writing modes: **Grammar**, **Rewrite**, **Humanize**, **Flow**, **Professional**, **Casual**, and **Shorten**.
-              - Interactive diff card with highlighted changes, preview sentence, and instant **Accept** or **Dismiss**.
-            * **Bottom-Left Keyboard Button [ ⌨ ] to Return:**
-              - Added a dedicated keyboard icon button on the bottom-left of the AI panel to smoothly switch back to the QWERTY keyboard anytime.
-              - Prominent **[ Accept all ]** green button on bottom right to apply all refinements at once.
-            * **Keypress Haptic Vibration & Mechanical Sound Toggles:**
-              - Customizable haptics and mechanical click sounds in Keyboard Settings.
-            * **Clean Modern Vector Mic & Globe Icons:**
-              - Replaced emojis with crisp Material/iOS vector icons.
-              - Replaced with crisp, razor-sharp vector icons in keyboard chiclets and floating squircle.
+            **What's New in v1.0.9:**
+            * **Wispr Flow Volt Neon Green (#CBFE00) & Matte Obsidian Void (#0D0D12):**
+              - Official soundwave logo launcher icon generated across all mipmap densities (`mdpi` to `xxxhdpi`).
+              - All legacy blue/purple accents updated to Volt Neon Green branding.
+            * **Floating Liquid Dark Glass Bottom Navigation Bar:**
+              - Custom frosted capsule floating dock with smooth haptics and neon glow.
+              - 4 destinations: **Flow** (live speech tester), **Workspace**, **Overlay**, and **Keyboard**.
+            * **Embedded Universal Unlimited Groq LPU Engine:**
+              - Zero API key prompts anywhere in the app.
+              - Groq Whisper Turbo + Qwen 3.8 27B on Groq LPUs with sub-25ms polishing.
+            * **Wispr 3-Piece Pill Direct In-App Injection:**
+              - Real-time speech transcription with zero placeholder text.
+              - Instantaneous polishing and auto-paste directly into active text boxes.
             * **Universal Voice Across ANY Keyboard (Wispr Flow Style):**
               - Works automatically with Gboard, Samsung Keyboard, SwiftKey, or ANY keyboard on your phone!
               - Powered by `SaynAccessibilityService`: automatically detects when any text field is focused and keyboard opens, and types speech directly into WhatsApp, ChatGPT, Instagram, or any chat box.

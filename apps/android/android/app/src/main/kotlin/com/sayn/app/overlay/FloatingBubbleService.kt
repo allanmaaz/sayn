@@ -28,13 +28,19 @@ import android.view.WindowManager
 import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
 import android.widget.ImageView
+import android.provider.Settings
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.sayn.app.MainActivity
 import com.sayn.app.R
+import com.sayn.app.keyboard.SaynInputMethodService
 import com.sayn.app.service.SaynAccessibilityService
+import com.sayn.app.service.SaynCloudVoiceClient
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 class FloatingBubbleService : Service() {
@@ -213,7 +219,7 @@ class FloatingBubbleService : Service() {
 
             val micIcon = ImageView(this@FloatingBubbleService).apply {
                 setImageResource(R.drawable.ic_sayn_mic)
-                setColorFilter(Color.parseColor("#5DE4FF")) // Voice cyan
+                setColorFilter(Color.parseColor("#CBFE00")) // Volt neon green
                 layoutParams = FrameLayout.LayoutParams(dpToPx(24), dpToPx(24), Gravity.CENTER)
             }
             addView(micIcon)
@@ -291,9 +297,9 @@ class FloatingBubbleService : Service() {
                 buildWaveformBars()
                 addView(waveformContainer)
 
-                // Live Transcript Streaming Text
+                // Live Transcript Streaming Text (No placeholder wording!)
                 transcriptText = TextView(this@FloatingBubbleService).apply {
-                    text = "Listening..."
+                    text = ""
                     textSize = 13.5f
                     setTextColor(Color.WHITE)
                     gravity = Gravity.CENTER_VERTICAL
@@ -306,11 +312,11 @@ class FloatingBubbleService : Service() {
             }
             addView(centerCapsule)
 
-            // C. Confirm / Correct Purple Circle [ ✓ ]
+            // C. Confirm / Correct Volt Neon Green Circle [ ✓ ]
             val confirmCircle = FrameLayout(this@FloatingBubbleService).apply {
                 val bg = GradientDrawable().apply {
                     shape = GradientDrawable.OVAL
-                    setColor(Color.parseColor("#7E57C2")) // Wispr vibrant purple
+                    setColor(Color.parseColor("#CBFE00")) // Wispr volt neon green
                     setStroke(dpToPx(1f), Color.parseColor("#66FFFFFF"))
                 }
                 background = bg
@@ -320,7 +326,7 @@ class FloatingBubbleService : Service() {
                 val confirmText = TextView(this@FloatingBubbleService).apply {
                     text = "✓"
                     textSize = 19f
-                    setTextColor(Color.WHITE)
+                    setTextColor(Color.parseColor("#111115")) // Contrast dark checkmark
                     typeface = Typeface.DEFAULT_BOLD
                     gravity = Gravity.CENTER
                     layoutParams = FrameLayout.LayoutParams(
@@ -353,7 +359,7 @@ class FloatingBubbleService : Service() {
             val bar = View(this).apply {
                 val bg = GradientDrawable().apply {
                     cornerRadius = dpToPx(2).toFloat()
-                    setColor(Color.parseColor("#5DE4FF")) // Voice cyan
+                    setColor(Color.parseColor("#CBFE00")) // Wispr volt neon green
                 }
                 background = bg
                 layoutParams = LinearLayout.LayoutParams(dpToPx(3), dpToPx(10 + (i % 3) * 4)).apply {
@@ -477,7 +483,7 @@ class FloatingBubbleService : Service() {
         stopSpeechRecognizer()
 
         currentSpokenText = ""
-        transcriptText.text = "Listening..."
+        transcriptText.text = ""
         transcriptText.setTextColor(Color.WHITE)
 
         val recognizer = createSpeechRecognizerSafe(applicationContext)
@@ -489,11 +495,11 @@ class FloatingBubbleService : Service() {
         speechRecognizer = recognizer
         speechRecognizer?.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
-                transcriptText.text = "Listening... speak now"
+                // Keep clean without pre-text wording
             }
 
             override fun onBeginningOfSpeech() {
-                transcriptText.text = "Hearing speech..."
+                // Keep clean without pre-text wording
             }
 
             override fun onRmsChanged(rmsdB: Float) {
@@ -505,7 +511,8 @@ class FloatingBubbleService : Service() {
             override fun onBufferReceived(buffer: ByteArray?) {}
 
             override fun onEndOfSpeech() {
-                transcriptText.text = "Processing..."
+                transcriptText.text = "⚡ SAYN Polishing..."
+                transcriptText.setTextColor(Color.parseColor("#CBFE00"))
             }
 
             override fun onError(error: Int) {
@@ -523,11 +530,11 @@ class FloatingBubbleService : Service() {
                         collapseToSquircle()
                     }
                     5 -> {
-                        transcriptText.text = "Reconnecting... Tap mic."
+                        transcriptText.text = "Tap to retry"
                     }
                     SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> {
                         if (currentSpokenText.isEmpty()) {
-                            transcriptText.text = "No speech detected"
+                            transcriptText.text = ""
                         }
                     }
                     else -> {
@@ -540,7 +547,6 @@ class FloatingBubbleService : Service() {
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 if (!matches.isNullOrEmpty()) {
                     currentSpokenText = matches[0]
-                    transcriptText.text = currentSpokenText
                 }
                 isListening = false
             }
@@ -549,7 +555,7 @@ class FloatingBubbleService : Service() {
                 val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 if (!matches.isNullOrEmpty()) {
                     currentSpokenText = matches[0]
-                    transcriptText.text = currentSpokenText
+                    // Do not display live text while speaking - keep overlay silent and clean
                 }
             }
 
@@ -577,18 +583,28 @@ class FloatingBubbleService : Service() {
         stopSpeechRecognizer()
 
         if (textToInsert.isNotEmpty()) {
-            // 1. Inject into currently focused field across ANY keyboard using AccessibilityService!
-            val injected = SaynAccessibilityService.instance?.insertTextIntoFocusedField(textToInsert) ?: false
+            transcriptText.text = "⚡ SAYN Polishing..."
+            transcriptText.setTextColor(Color.parseColor("#CBFE00"))
 
-            if (!injected) {
-                // If Accessibility wasn't enabled, fallback to clipboard and toast user
-                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("SAYN Voice", textToInsert))
-                Toast.makeText(this, "Copied to clipboard. Enable SAYN in Accessibility for 1-tap typing!", Toast.LENGTH_SHORT).show()
+            CoroutineScope(Dispatchers.Main).launch {
+                val hostPackage = SaynAccessibilityService.instance?.findEditableTargetNode()?.packageName?.toString()
+                val refined = SaynCloudVoiceClient.refineText(textToInsert, hostPackage)
+
+                // 1. Inject directly into currently focused field across ANY app (WhatsApp, Slack, Gmail, etc.)
+                val injected = SaynAccessibilityService.instance?.insertTextIntoFocusedField(refined) ?: false
+
+                if (!injected) {
+                    // Fallback to clipboard if accessibility service is pending user toggle
+                    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                    clipboard.setPrimaryClip(android.content.ClipData.newPlainText("SAYN Voice", refined))
+                    Toast.makeText(this@FloatingBubbleService, "Copied to clipboard. Enable SAYN in Accessibility for 1-tap typing!", Toast.LENGTH_SHORT).show()
+                }
+
+                collapseToSquircle()
             }
+        } else {
+            collapseToSquircle()
         }
-
-        collapseToSquircle()
     }
 
     private fun cancelVoiceDictation() {

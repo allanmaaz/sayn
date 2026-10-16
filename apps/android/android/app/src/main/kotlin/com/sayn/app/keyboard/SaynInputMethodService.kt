@@ -34,6 +34,7 @@ import android.os.VibratorManager
 import android.os.VibrationEffect
 import com.sayn.app.R
 import com.sayn.app.MainActivity
+import com.sayn.app.service.SaynCloudVoiceClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -111,6 +112,16 @@ class SaynInputMethodService : InputMethodService() {
     companion object {
         var instance: SaynInputMethodService? = null
             private set
+    }
+
+    /**
+     * Directly commits text into whichever text box the SAYN keyboard is connected to.
+     */
+    fun commitTextFromExternal(text: String): Boolean {
+        val ic = currentInputConnection ?: return false
+        val toCommit = if (text.endsWith(" ")) text else "$text "
+        ic.commitText(toCommit, 1)
+        return true
     }
 
     // Typing sound and haptic feedback settings
@@ -309,7 +320,7 @@ class SaynInputMethodService : InputMethodService() {
         voiceStatusDot = TextView(this).apply {
             text = "• • • • •"
             textSize = 15f
-            setTextColor(Color.parseColor("#7E57C2")) // Elegant Wispr Purple accent
+            setTextColor(Color.parseColor("#CBFE00")) // Wispr Volt Neon Green
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dpToPx(6), 0, 0, 0)
@@ -319,11 +330,11 @@ class SaynInputMethodService : InputMethodService() {
         centerCapsule.addView(voiceStatusDot)
         voiceLiveBar.addView(centerCapsule)
 
-        // 3. Right Circle: Vibrant Purple Confirm Button [ ✓ ]
+        // 3. Right Circle: Wispr Volt Neon Green Confirm Button [ ✓ ]
         val confirmCircle = FrameLayout(this).apply {
             val bg = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
-                setColor(Color.parseColor("#7E57C2")) // Wispr Purple
+                setColor(Color.parseColor("#CBFE00")) // Wispr Volt Neon Green
                 setStroke(dpToPx(1f), Color.parseColor("#44FFFFFF"))
             }
             background = bg
@@ -335,7 +346,7 @@ class SaynInputMethodService : InputMethodService() {
         btnCorrectAndInsert = TextView(this).apply {
             text = "✓"
             textSize = 19f
-            setTextColor(Color.WHITE)
+            setTextColor(Color.parseColor("#111115")) // Contrast black checkmark on volt green
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
             layoutParams = FrameLayout.LayoutParams(
@@ -347,7 +358,7 @@ class SaynInputMethodService : InputMethodService() {
         confirmCircle.setOnClickListener {
             triggerKeyFeedback("ENTER")
             stopInKeyboardVoice()
-            commitSpokenTextToInput()
+            refineAndCommitSpokenText()
         }
         voiceLiveBar.addView(confirmCircle)
 
@@ -358,7 +369,7 @@ class SaynInputMethodService : InputMethodService() {
         voiceLiveBar.visibility = View.VISIBLE
         suggestionArea.visibility = View.GONE
         voiceTranscriptText.text = "Listening..."
-        voiceStatusDot.setTextColor(Color.parseColor("#7E57C2"))
+        voiceStatusDot.setTextColor(Color.parseColor("#CBFE00"))
     }
 
     private fun hideVoiceLiveBar() {
@@ -370,7 +381,6 @@ class SaynInputMethodService : InputMethodService() {
         val textToCommit = currentSpokenText.trim()
         if (textToCommit.isNotEmpty()) {
             ic.commitText(textToCommit + " ", 1)
-            Toast.makeText(this, "Inserted", Toast.LENGTH_SHORT).show()
         }
         currentSpokenText = ""
         hideVoiceLiveBar()
@@ -384,16 +394,18 @@ class SaynInputMethodService : InputMethodService() {
         }
 
         voiceTranscriptText.text = "Polishing (${activeMode})..."
-        Toast.makeText(this, "Polishing with AI...", Toast.LENGTH_SHORT).show()
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val refined = requestAiRefinement(textToRefine, activeMode)
+                val refined = SaynCloudVoiceClient.refineText(
+                    textToRefine,
+                    currentInputBinding?.editorInfo?.packageName,
+                    activeMode
+                )
                 withContext(Dispatchers.Main) {
                     val ic = currentInputConnection
                     if (ic != null && refined.isNotBlank()) {
                         ic.commitText(refined.trim() + " ", 1)
-                        Toast.makeText(applicationContext, "Refined & inserted!", Toast.LENGTH_SHORT).show()
                     }
                     currentSpokenText = ""
                     hideVoiceLiveBar()
@@ -419,7 +431,7 @@ class SaynInputMethodService : InputMethodService() {
             val bg = GradientDrawable().apply {
                 cornerRadius = dpToPx(10).toFloat()
                 setColor(Color.parseColor("#252528"))
-                setStroke(dpToPx(1.2f), Color.parseColor("#007AFF"))
+                setStroke(dpToPx(1.2f), Color.parseColor("#CBFE00"))
             }
             background = bg
             setPadding(dpToPx(10), dpToPx(8), dpToPx(10), dpToPx(8))
@@ -437,7 +449,7 @@ class SaynInputMethodService : InputMethodService() {
         suggestionBadge = TextView(this).apply {
             text = "✨ REFINEMENT SUGGESTION"
             textSize = 10f
-            setTextColor(Color.parseColor("#007AFF"))
+            setTextColor(Color.parseColor("#CBFE00"))
             typeface = Typeface.DEFAULT_BOLD
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
@@ -472,13 +484,13 @@ class SaynInputMethodService : InputMethodService() {
         btnReplace = TextView(this).apply {
             text = "✓ Replace"
             textSize = 12f
-            setTextColor(Color.WHITE)
+            setTextColor(Color.parseColor("#111115"))
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
             background = createIosKeyDrawable(
-                normalColor = Color.parseColor("#007AFF"),
-                pressedColor = Color.parseColor("#0056B3"),
-                shadowColor = Color.parseColor("#004085"),
+                normalColor = Color.parseColor("#CBFE00"),
+                pressedColor = Color.parseColor("#A6CF00"),
+                shadowColor = Color.parseColor("#80A000"),
                 cornerRadiusDp = 7f
             )
             setOnClickListener { handleReplace() }
@@ -611,10 +623,10 @@ class SaynInputMethodService : InputMethodService() {
                 textSize = 11.5f
                 gravity = Gravity.CENTER
                 val isSelected = modeId == activeMode
-                setTextColor(if (isSelected) Color.WHITE else Color.parseColor("#9CA3AF"))
+                setTextColor(if (isSelected) Color.parseColor("#111115") else Color.parseColor("#9CA3AF"))
                 val pillBg = GradientDrawable().apply {
                     cornerRadius = dpToPx(13).toFloat()
-                    setColor(if (isSelected) Color.parseColor("#007AFF") else Color.parseColor("#2C2C2E"))
+                    setColor(if (isSelected) Color.parseColor("#CBFE00") else Color.parseColor("#2C2C2E"))
                 }
                 background = pillBg
                 setPadding(dpToPx(12), 0, dpToPx(12), 0)
@@ -703,10 +715,10 @@ class SaynInputMethodService : InputMethodService() {
             val pill = pillsRow.getChildAt(i) as? TextView ?: continue
             val modeId = modes[i].first
             val isSelected = modeId == activeMode
-            pill.setTextColor(if (isSelected) Color.WHITE else Color.parseColor("#8E8E93"))
+            pill.setTextColor(if (isSelected) Color.parseColor("#111115") else Color.parseColor("#8E8E93"))
             val pillBg = GradientDrawable().apply {
                 cornerRadius = dpToPx(13).toFloat()
-                setColor(if (isSelected) Color.parseColor("#007AFF") else Color.parseColor("#2C2C2E"))
+                setColor(if (isSelected) Color.parseColor("#CBFE00") else Color.parseColor("#2C2C2E"))
             }
             pill.background = pillBg
         }
@@ -1146,30 +1158,14 @@ class SaynInputMethodService : InputMethodService() {
         }
     }
 
-    private fun requestAiRefinement(text: String, mode: String): String {
-        val url = URL("https://sayn-api-worker.allanmaazimdad.workers.dev/api/v1/ai/refine")
-        val conn = (url.openConnection() as HttpURLConnection).apply {
-            requestMethod = "POST"
-            setRequestProperty("Content-Type", "application/json")
-            doOutput = true
-            connectTimeout = 8000
-            readTimeout = 8000
-        }
-
-        val payload = JSONObject().apply {
-            put("text", text)
-            put("mode", mode)
-        }
-
-        conn.outputStream.use { os ->
-            os.write(payload.toString().toByteArray())
-        }
-
-        return if (conn.responseCode == 200) {
-            val respStr = conn.inputStream.bufferedReader().use { it.readText() }
-            val json = JSONObject(respStr)
-            json.optString("refinedText", text)
-        } else {
+    private suspend fun requestAiRefinement(text: String, mode: String): String {
+        return try {
+            SaynCloudVoiceClient.refineText(
+                rawText = text,
+                activeAppPackage = currentInputBinding?.editorInfo?.packageName,
+                mode = mode
+            )
+        } catch (e: Exception) {
             text
         }
     }
@@ -1499,7 +1495,7 @@ class SaynInputMethodService : InputMethodService() {
             } else if (key == "ENTER") {
                 textSize = 14f
                 typeface = Typeface.DEFAULT_BOLD
-                setTextColor(Color.WHITE)
+                setTextColor(Color.parseColor("#111115")) // Contrast dark text on volt neon green key
             } else if (key in listOf("SHIFT", "DEL")) {
                 textSize = 18f
                 typeface = Typeface.DEFAULT
@@ -1523,7 +1519,7 @@ class SaynInputMethodService : InputMethodService() {
                 text = ""
                 val micDrawable = ContextCompat.getDrawable(this@SaynInputMethodService, R.drawable.ic_sayn_mic)?.mutate()
                 micDrawable?.setBounds(0, 0, dpToPx(19), dpToPx(19))
-                micDrawable?.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
+                micDrawable?.setColorFilter(Color.parseColor("#CBFE00"), PorterDuff.Mode.SRC_IN)
                 setCompoundDrawables(null, micDrawable, null, null)
             } else if (key == "GLOBE") {
                 text = ""
@@ -1537,9 +1533,9 @@ class SaynInputMethodService : InputMethodService() {
             val bg = when {
                 key == "ENTER" -> {
                     createIosKeyDrawable(
-                        normalColor = Color.parseColor("#007AFF"), // Apple Blue
-                        pressedColor = Color.parseColor("#0056B3"),
-                        shadowColor = Color.parseColor("#004085")
+                        normalColor = Color.parseColor("#CBFE00"), // Wispr Volt Neon Green
+                        pressedColor = Color.parseColor("#A6CF00"),
+                        shadowColor = Color.parseColor("#80A000")
                     )
                 }
                 key == "SHIFT" && (isShifted || isCapsLock) -> {

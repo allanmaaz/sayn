@@ -9,9 +9,20 @@ swiftc -framework Cocoa -framework SwiftUI -framework Carbon -framework AVFounda
   Sources/SaynMac/*.swift -o /tmp/sayn_mac_bin
 
 APP_DIR="/Applications/SAYN.app/Contents/MacOS"
+RES_DIR="/Applications/SAYN.app/Contents/Resources"
 mkdir -p "$APP_DIR"
+mkdir -p "$RES_DIR"
+
 cp /tmp/sayn_mac_bin "$APP_DIR/SAYN"
 chmod +x "$APP_DIR/SAYN"
+
+# Copy Icon and Logo resources
+if [ -f "Resources/AppIcon.icns" ]; then
+    cp Resources/AppIcon.icns "$RES_DIR/AppIcon.icns"
+fi
+if [ -f "Resources/logo.png" ]; then
+    cp Resources/logo.png "$RES_DIR/logo.png"
+fi
 
 cat << 'EOF' > /Applications/SAYN.app/Contents/Info.plist
 <?xml version="1.0" encoding="UTF-8"?>
@@ -20,6 +31,8 @@ cat << 'EOF' > /Applications/SAYN.app/Contents/Info.plist
 <dict>
     <key>CFBundleExecutable</key>
     <string>SAYN</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
     <string>com.sayn.desktop</string>
     <key>CFBundleName</key>
@@ -27,7 +40,7 @@ cat << 'EOF' > /Applications/SAYN.app/Contents/Info.plist
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.8</string>
+    <string>1.1.0</string>
     <key>LSUIElement</key>
     <true/>
     <key>NSMicrophoneUsageDescription</key>
@@ -38,6 +51,22 @@ cat << 'EOF' > /Applications/SAYN.app/Contents/Info.plist
 </plist>
 EOF
 
-echo "✅ SAYN.app successfully installed in /Applications/SAYN.app!"
-echo "🚀 You can launch it from Spotlight or run: open /Applications/SAYN.app"
-echo "👉 Global Hotkey: Option + Space activates the Wispr 3-Piece Pill overlay!"
+# Properly code sign the application bundle so macOS TCC respects Accessibility permissions
+echo "🔒 Code-signing /Applications/SAYN.app..."
+codesign --force --deep --sign - --identifier "com.sayn.desktop" /Applications/SAYN.app
+
+# Force LaunchServices to refresh Spotlight / Finder app icon
+touch /Applications/SAYN.app
+/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister -f /Applications/SAYN.app 2>/dev/null || true
+
+# Kill any existing running instance
+pkill -f "/Applications/SAYN.app/Contents/MacOS/SAYN" 2>/dev/null || true
+sleep 0.5
+
+# Launch the newly compiled app
+open /Applications/SAYN.app
+
+echo "✅ SAYN.app successfully compiled, branded, and installed in /Applications/SAYN.app!"
+echo "🚀 Launched SAYN background assistant!"
+echo "👉 Global Hotkey: Press Fn key (or Option + Space) to trigger the Wispr Flow pill!"
+

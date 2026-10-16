@@ -4,9 +4,11 @@ import android.accessibilityservice.AccessibilityService
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import android.view.accessibility.AccessibilityWindowInfo
 import com.sayn.app.overlay.FloatingBubbleService
 
 class SaynAccessibilityService : AccessibilityService() {
@@ -36,15 +38,17 @@ class SaynAccessibilityService : AccessibilityService() {
                 }
             }
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
-                val focused = rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
-                if (focused != null && focused.isEditable) {
+                val focused = findEditableTargetNode()
+                if (focused != null) {
                     lastFocusedNode = focused
                     FloatingBubbleService.setUniversalInputActive(true)
-                } else {
-                    val anyFocus = rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
-                    if (anyFocus == null || !anyFocus.isEditable) {
-                        FloatingBubbleService.setUniversalInputActive(false)
-                    }
+                }
+            }
+            AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED -> {
+                val node = event.source
+                if (node != null && node.isEditable && node.isFocused) {
+                    lastFocusedNode = node
+                    FloatingBubbleService.setUniversalInputActive(true)
                 }
             }
         }
@@ -64,27 +68,113 @@ class SaynAccessibilityService : AccessibilityService() {
     }
 
     /**
+     * Recursively searches for the best active editable text field.
+     */
+    fun findEditableTargetNode(): AccessibilityNodeInfo? {
+        // 1. Check lastFocusedNode if still valid and editable
+        lastFocusedNode?.let { node ->
+            try {
+                if (node.refresh() && node.isEditable) {
+                    return node
+                }
+            } catch (e: Exception) {
+                // Ignore stale node
+            }
+        }
+
+        // 2. Search root in active window
+        rootInActiveWindow?.let { root ->
+            try {
+                val focused = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
+                if (focused != null && focused.isEditable) {
+                    return focused
+                }
+                val editable = findFirstEditable(root)
+                if (editable != null) {
+                    return editable
+                }
+            } catch (e: Exception) {
+                // Ignore window errors
+            }
+        }
+
+        // 3. Search across all interactive windows (WhatsApp, Instagram, Telegram)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            try {
+                val appWindows = windows.filter {
+                    it.type == AccessibilityWindowInfo.TYPE_APPLICATION ||
+                    it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD
+                }
+                for (window in appWindows) {
+                    val root = window.root ?: continue
+                    val inputFocused = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
+                    if (inputFocused != null && inputFocused.isEditable) {
+                        return inputFocused
+                    }
+                    val editable = findFirstEditable(root)
+                    if (editable != null) {
+                        return editable
+                    }
+                }
+            } catch (e: Exception) {
+                // Ignore
+            }
+        }
+
+        return null
+    }
+
+    private fun findFirstEditable(root: AccessibilityNodeInfo): AccessibilityNodeInfo? {
+        if (root.isEditable) {
+            return root
+        }
+        for (i in 0 until root.childCount) {
+            val child = root.getChild(i) ?: continue
+            val found = findFirstEditable(child)
+            if (found != null) {
+                return found
+            }
+        }
+        return null
+    }
+
+    /**
      * Inserts text directly into whichever text box is active across ANY app or ANY keyboard.
      */
     fun insertTextIntoFocusedField(text: String): Boolean {
-        val targetNode = lastFocusedNode ?: rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
-        if (targetNode != null) {
-            val arguments = Bundle().apply {
-                putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
-            }
-            val setResult = targetNode.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)
-            if (setResult) return true
+        val targetNode = findEditableTargetNode() ?: return false
 
-            // Fallback: Clipboard paste
+        try {
+            // Ensure target has focus
+            targetNode.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
+
+            val currentText = targetNode.text?.toString() ?: ""
+            val textToInsert = if (currentText.isNotEmpty() && !currentText.endsWith(" ")) {
+                "$currentText $text "
+            } else if (currentText.isNotEmpty()) {
+                "$currentText$text "
+            } else {
+                "$text "
+            }
+
+            // 1. Try ACTION_SET_TEXT directly
+            val arguments = Bundle().apply {
+                putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, textToInsert)
+            }
+            if (targetNode.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)) {
+                return true
+            }
+
+            // 2. Try ACTION_PASTE
             val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            clipboard.setPrimaryClip(ClipData.newPlainText("SAYN Voice", text))
-            val pasteResult = targetNode.performAction(AccessibilityNodeInfo.ACTION_PASTE)
-            if (pasteResult) return true
+            clipboard.setPrimaryClip(ClipData.newPlainText("SAYN Voice", textToInsert))
+            if (targetNode.performAction(AccessibilityNodeInfo.ACTION_PASTE)) {
+                return true
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
 
-        // Final fallback: copy to clipboard
-        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        clipboard.setPrimaryClip(ClipData.newPlainText("SAYN Voice", text))
         return false
     }
 }
