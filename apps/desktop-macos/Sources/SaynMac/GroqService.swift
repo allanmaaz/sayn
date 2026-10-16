@@ -43,6 +43,9 @@ final class GroqService {
     static let shared = GroqService()
     
     private let userDefaultsKey = "SaynGroqApiKey"
+    private let gatewayURL = "https://sayn-api-worker.allanmaazimdad.workers.dev"
+    private let anonToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZXZsZ2R5cXFhdnZ0bW9rd3ZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3NDIyMDAsImV4cCI6MjEwNzMxODIwMH0.gudEGqLAnR0lT9irIqA89eVR_Iqcg1in2M7lbFcd5vI"
+    
     private let configFileURL: URL = {
         let home = FileManager.default.homeDirectoryForCurrentUser
         return home.appendingPathComponent(".sayn/config.json")
@@ -52,37 +55,31 @@ final class GroqService {
         return home.appendingPathComponent(".san/config.json")
     }()
     
-    // Universal embedded Groq key configured for zero-prompt instant access
-    private var embeddedGroqKey: String {
-        let bytes: [UInt8] = [61, 41, 49, 5, 20, 52, 15, 63, 51, 55, 28, 31, 99, 46, 11, 57, 0, 0, 35, 27, 49, 17, 107, 20, 13, 29, 62, 35, 56, 105, 28, 3, 27, 110, 48, 11, 54, 18, 24, 48, 51, 44, 98, 61, 15, 9, 15, 62, 12, 53, 31, 18, 34, 16, 9, 62]
-        return String(bytes.map { Character(UnicodeScalar($0 ^ 0x5A)) })
-    }
-    
     private init() {}
     
-    var apiKey: String? {
+    var customApiKey: String? {
         get {
-            // 1. Check UserDefaults
-            if let key = UserDefaults.standard.string(forKey: userDefaultsKey), !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            // Check UserDefaults
+            if let key = UserDefaults.standard.string(forKey: userDefaultsKey),
+               !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 return key.trimmingCharacters(in: .whitespacesAndNewlines)
             }
-            if let oldKey = UserDefaults.standard.string(forKey: "SanGroqApiKey"), !oldKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                return oldKey.trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-            // 2. Check Environment Variable
-            if let envKey = ProcessInfo.processInfo.environment["GROQ_API_KEY"], !envKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            // Check environment variable
+            if let envKey = ProcessInfo.processInfo.environment["GROQ_API_KEY"],
+               !envKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 return envKey.trimmingCharacters(in: .whitespacesAndNewlines)
             }
-            // 3. Check ~/.sayn/config.json or ~/.san/config.json
+            // Check ~/.sayn/config.json
             for url in [configFileURL, fallbackConfigFileURL] {
                 if let data = try? Data(contentsOf: url),
                    let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let fileKey = json["groq_api_key"] as? String, !fileKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                   let fileKey = json["groq_api_key"] as? String,
+                   !fileKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                   !fileKey.hasPrefix("gsk_NnUeimFE") { // Skip known revoked key
                     return fileKey.trimmingCharacters(in: .whitespacesAndNewlines)
                 }
             }
-            // 4. Default to universal embedded key
-            return embeddedGroqKey
+            return nil
         }
         set {
             if let val = newValue?.trimmingCharacters(in: .whitespacesAndNewlines), !val.isEmpty {
@@ -94,10 +91,6 @@ final class GroqService {
         }
     }
     
-    var isConfigured: Bool {
-        return apiKey != nil
-    }
-    
     private func saveToConfigFile(key: String) {
         let dir = configFileURL.deletingLastPathComponent()
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -107,7 +100,10 @@ final class GroqService {
         }
     }
     
-    // Transcribe audio with Groq Whisper Large-v3-Turbo + domain vocabulary biasing + mode execution
+    /// Multi-tier speech transcription and AI polishing:
+    /// 1. Tries user's custom Groq key if configured
+    /// 2. Primary Tier: SAYN Cloud Gateway (Google Gemini 3.5 Flash Lite multimodal STT)
+    /// 3. Offline Tier: Local deterministic voice polisher
     func transcribeAndPolish(
         audioFileURL: URL,
         mode: SanExecutionMode = .dictate,
@@ -116,64 +112,84 @@ final class GroqService {
         activeAppBundleId: String? = nil,
         completion: @escaping (Result<String, Error>) -> Void
     ) {
-        guard let key = apiKey else {
-            completion(.failure(NSError(domain: "GroqService", code: 401, userInfo: [NSLocalizedDescriptionKey: "No Groq API key configured."])))
-            return
-        }
-        
         guard let audioData = try? Data(contentsOf: audioFileURL), !audioData.isEmpty else {
             completion(.failure(NSError(domain: "GroqService", code: 400, userInfo: [NSLocalizedDescriptionKey: "Audio recording was empty or missing."])))
             return
         }
         
-        // 1. Whisper Large-v3-Turbo Audio Transcription with Vocabulary Biasing
-        let boundary = "Boundary-\(UUID().uuidString)"
-        guard let requestUrl = URL(string: "https://api.groq.com/openai/v1/audio/transcriptions") else { return }
-        
-        var request = URLRequest(url: requestUrl)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 60.0
-        
-        var body = Data()
-        
-        // Model field: whisper-large-v3-turbo
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"model\"\r\n\r\n".data(using: .utf8)!)
-        body.append("whisper-large-v3-turbo\r\n".data(using: .utf8)!)
-        
-        // Response format: json
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"response_format\"\r\n\r\n".data(using: .utf8)!)
-        body.append("json\r\n".data(using: .utf8)!)
-        
-        // Vocabulary Prompt Biasing (Whisper prompt parameter)
-        let vocabPrompt = SaynVoicePolisher.shared.loadVocabularyPrompt()
-        if !vocabPrompt.isEmpty {
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"prompt\"\r\n\r\n".data(using: .utf8)!)
-            body.append("\(vocabPrompt)\r\n".data(using: .utf8)!)
+        // Tier 1: If user supplied a valid custom Groq key
+        if let groqKey = customApiKey, !groqKey.isEmpty {
+            transcribeWithGroq(audioData: audioData, filename: audioFileURL.lastPathComponent, apiKey: groqKey) { [weak self] result in
+                switch result {
+                case .success(let rawText):
+                    self?.processTranscript(
+                        rawText: rawText,
+                        mode: mode,
+                        style: style,
+                        contextText: contextText,
+                        appBundleId: activeAppBundleId,
+                        completion: completion
+                    )
+                case .failure:
+                    // Fall back to SAYN Cloud Gateway
+                    self?.transcribeWithGateway(audioData: audioData) { gwResult in
+                        switch gwResult {
+                        case .success(let rawText):
+                            self?.processTranscript(
+                                rawText: rawText,
+                                mode: mode,
+                                style: style,
+                                contextText: contextText,
+                                appBundleId: activeAppBundleId,
+                                completion: completion
+                            )
+                        case .failure(let err):
+                            completion(.failure(err))
+                        }
+                    }
+                }
+            }
+            return
         }
         
-        // Temperature: 0.0 for deterministic transcription accuracy
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"temperature\"\r\n\r\n".data(using: .utf8)!)
-        body.append("0.0\r\n".data(using: .utf8)!)
+        // Tier 2: Primary Cloud Gateway (Google Gemini Multimodal STT)
+        transcribeWithGateway(audioData: audioData) { [weak self] gwResult in
+            switch gwResult {
+            case .success(let rawText):
+                self?.processTranscript(
+                    rawText: rawText,
+                    mode: mode,
+                    style: style,
+                    contextText: contextText,
+                    appBundleId: activeAppBundleId,
+                    completion: completion
+                )
+            case .failure(let err):
+                completion(.failure(err))
+            }
+        }
+    }
+    
+    // MARK: - SAYN Cloudflare Gateway Transcribe
+    private func transcribeWithGateway(audioData: Data, completion: @escaping (Result<String, Error>) -> Void) {
+        guard let url = URL(string: "\(gatewayURL)/api/v1/ai/transcribe") else {
+            completion(.failure(NSError(domain: "GroqService", code: 400, userInfo: [NSLocalizedDescriptionKey: "Invalid gateway URL"])))
+            return
+        }
         
-        // File field
-        let filename = audioFileURL.lastPathComponent
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
-        body.append("Content-Type: audio/wav\r\n\r\n".data(using: .utf8)!)
-        body.append(audioData)
-        body.append("\r\n".data(using: .utf8)!)
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(anonToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36", forHTTPHeaderField: "User-Agent")
+        request.timeoutInterval = 25.0
         
-        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
-        request.httpBody = body
+        let base64 = audioData.base64EncodedString()
+        let payload: [String: Any] = ["audioBase64": base64]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
         
         let session = URLSession(configuration: .ephemeral)
-        session.dataTask(with: request) { [weak self] data, response, error in
+        session.dataTask(with: request) { data, response, error in
             if let error = error {
                 completion(.failure(error))
                 return
@@ -181,213 +197,170 @@ final class GroqService {
             
             guard let data = data,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                completion(.failure(NSError(domain: "GroqService", code: 500, userInfo: [NSLocalizedDescriptionKey: "Invalid transcription response from Groq."])))
+                completion(.failure(NSError(domain: "GroqService", code: 500, userInfo: [NSLocalizedDescriptionKey: "Invalid JSON response from Cloud Gateway"])))
                 return
             }
             
-            if let errObj = json["error"] as? [String: Any], let msg = errObj["message"] as? String {
-                completion(.failure(NSError(domain: "GroqService", code: 400, userInfo: [NSLocalizedDescriptionKey: msg])))
+            if let transcript = json["transcript"] as? String {
+                completion(.success(transcript.trimmingCharacters(in: .whitespacesAndNewlines)))
                 return
             }
             
-            let rawText = (json["text"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !rawText.isEmpty else {
-                completion(.success(""))
-                return
-            }
-            
-            // 2. Check for Instant Snippet Expansion
-            if let snippet = SaynVoicePolisher.shared.expandSnippet(from: rawText) {
-                completion(.success(snippet))
-                return
-            }
-            
-            // 3. Mode-Aware Groq LPU Processing
-            self?.executeMode(
-                rawText: rawText,
-                mode: mode,
-                style: style,
-                contextText: contextText,
-                appBundleId: activeAppBundleId,
-                apiKey: key
-            ) { result in
-                completion(.success(result))
-            }
+            completion(.failure(NSError(domain: "GroqService", code: 422, userInfo: [NSLocalizedDescriptionKey: "No transcript in response"])))
         }.resume()
     }
     
-    /// Public direct text refinement using Groq LPU with natural human flow
+    // MARK: - Direct Groq Whisper API (when custom key provided)
+    private func transcribeWithGroq(audioData: Data, filename: String, apiKey: String, completion: @escaping (Result<String, Error>) -> Void) {
+        let boundary = "Boundary-\(UUID().uuidString)"
+        guard let url = URL(string: "https://api.groq.com/openai/v1/audio/transcriptions") else { return }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 20.0
+        
+        var body = Data()
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"model\"\r\n\r\n".data(using: .utf8)!)
+        body.append("whisper-large-v3-turbo\r\n".data(using: .utf8)!)
+        
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"response_format\"\r\n\r\n".data(using: .utf8)!)
+        body.append("json\r\n".data(using: .utf8)!)
+        
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: audio/wav\r\n\r\n".data(using: .utf8)!)
+        body.append(audioData)
+        body.append("\r\n".data(using: .utf8)!)
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        
+        request.httpBody = body
+        
+        let session = URLSession(configuration: .ephemeral)
+        session.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            guard let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let text = json["text"] as? String else {
+                completion(.failure(NSError(domain: "GroqService", code: 400, userInfo: [NSLocalizedDescriptionKey: "Failed to parse Groq response"])))
+                return
+            }
+            completion(.success(text.trimmingCharacters(in: .whitespacesAndNewlines)))
+        }.resume()
+    }
+    
+    // MARK: - Post-Transcription Processing
+    private func processTranscript(
+        rawText: String,
+        mode: SanExecutionMode,
+        style: String,
+        contextText: String?,
+        appBundleId: String?,
+        completion: @escaping (Result<String, Error>) -> Void
+    ) {
+        let clean = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !clean.isEmpty else {
+            completion(.success(""))
+            return
+        }
+        
+        // 1. Snippet Expansion Check
+        if let snippet = SaynVoicePolisher.shared.expandSnippet(from: clean) {
+            completion(.success(snippet))
+            return
+        }
+        
+        // 2. Direct Dictate Mode: Fast Local Natural Polish (Sub-5ms, Zero Excessive Punctuation)
+        if mode == .dictate && style == "natural" {
+            let polished = SaynVoicePolisher.shared.polishLocally(clean, appBundleId: appBundleId)
+            completion(.success(polished))
+            return
+        }
+        
+        // 3. Cloud Polish for Complex Modes (Prompt, Translate, Code, Proofread)
+        refineViaGateway(text: clean, mode: mode, style: style, contextText: contextText) { result in
+            let finalOutput = result.isEmpty ? SaynVoicePolisher.shared.polishLocally(clean, appBundleId: appBundleId) : result
+            completion(.success(finalOutput))
+        }
+    }
+    
+    // MARK: - Cloud Gateway Refine
     func refineText(
         text: String,
         mode: SanExecutionMode = .dictate,
         style: String = "natural",
         completion: @escaping (String) -> Void
     ) {
-        guard let key = apiKey else {
-            let fallback = SaynVoicePolisher.shared.polishLocally(text)
-            completion(fallback)
+        let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !clean.isEmpty else {
+            completion("")
             return
         }
-        executeMode(
-            rawText: text,
-            mode: mode,
-            style: style,
-            contextText: nil,
-            appBundleId: nil,
-            apiKey: key,
-            completion: completion
-        )
+        
+        refineViaGateway(text: clean, mode: mode, style: style, contextText: nil) { result in
+            if !result.isEmpty {
+                completion(result)
+            } else {
+                let local = SaynVoicePolisher.shared.polishLocally(clean)
+                completion(local)
+            }
+        }
     }
     
-    // High-capacity LPU mode execution
-    private func executeMode(
-        rawText: String,
+    private func refineViaGateway(
+        text: String,
         mode: SanExecutionMode,
         style: String,
         contextText: String?,
-        appBundleId: String?,
-        apiKey: String,
         completion: @escaping (String) -> Void
     ) {
-        guard let url = URL(string: "https://api.groq.com/openai/v1/chat/completions") else {
-            completion(rawText)
+        guard let url = URL(string: "\(gatewayURL)/api/v1/ai/refine") else {
+            completion("")
             return
         }
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 45.0
+        request.setValue("Bearer \(anonToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36", forHTTPHeaderField: "User-Agent")
+        request.timeoutInterval = 18.0
         
-        let systemPrompt: String
-        let userContent: String
-        
+        let apiMode: String
         switch mode {
-        case .prompt:
-            // Prompt / Instruction Mode
-            if let ctx = contextText, !ctx.isEmpty {
-                systemPrompt = """
-                You are SAYN AI Assistant in Prompt Mode.
-                The user selected the following context text:
-                \"\"\"
-                \(ctx)
-                \"\"\"
-                Execute the user's spoken instruction precisely on the selected text.
-                Format the result cleanly for direct typing into their application.
-                Output ONLY the final result with NO conversational filler, NO quotes, NO preamble.
-                """
-                userContent = "Instruction: \(rawText)"
-            } else {
-                systemPrompt = """
-                You are SAYN AI Assistant in Prompt Mode.
-                The user spoke a request or prompt to generate text.
-                Generate the requested content with clarity, correct structure, and natural tone.
-                Output ONLY the generated text with NO conversational filler, NO quotes, NO preamble.
-                """
-                userContent = rawText
-            }
-            
-        case .translate:
-            // Live Translation Mode (Polyglot to English)
-            systemPrompt = """
-            You are SAYN Universal Translator.
-            The user spoke in a foreign language (or mixed languages).
-            Accurately translate the spoken words into polished, fluent, modern English.
-            Remove verbal fillers and resolve any spoken self-corrections during translation.
-            Output ONLY the English translation with NO explanations, NO quotes, NO notes.
-            """
-            userContent = rawText
-            
-        case .code:
-            // Developer & Code Mode
-            systemPrompt = """
-            You are SAYN Developer Voice Assistant.
-            Format the user's spoken words specifically for programming and developer tools:
-            1. When function or variable names are spoken (e.g., 'get user profile by id'), format in camelCase (`getUserProfileById`) or snake_case as fitting.
-            2. When git commits are spoken ('fix header alignment'), format as conventional commit (`fix(ui): header alignment`).
-            3. When terminal commands or code blocks are spoken, wrap appropriately with backticks.
-            4. Preserve precise developer syntax and remove spoken fillers.
-            5. Output ONLY the formatted code or technical text with NO preamble.
-            """
-            userContent = rawText
-            
-        case .proofread:
-            // Grammar & Proofread Mode
-            let textToProof = (contextText != nil && !contextText!.isEmpty) ? contextText! : rawText
-            systemPrompt = """
-            You are SAYN Proofreader & Grammar Polisher.
-            Fix all spelling errors, grammatical mistakes, awkward phrasing, and punctuation.
-            Elevate sentence flow while preserving the author's original meaning and voice.
-            Output ONLY the corrected, polished text with NO explanations, NO markdown backticks, NO quotes.
-            """
-            userContent = (contextText != nil && !contextText!.isEmpty)
-                ? "Text to fix:\n\(textToProof)\n\nAdditional instructions: \(rawText)"
-                : textToProof
-            
-        case .dictate:
-            // Dictation Mode with Per-App Adaptation & Style
-            var appDirective = ""
-            if let bundle = appBundleId?.lowercased() {
-                if bundle.contains("slack") || bundle.contains("discord") || bundle.contains("whatsapp") || bundle.contains("telegram") || bundle.contains("messages") {
-                    appDirective = "App Context: Quick Chat (\(bundle)). Keep sentences punchy, conversational, and natural for instant messaging."
-                } else if bundle.contains("mail") || bundle.contains("outlook") {
-                    appDirective = "App Context: Email Client (\(bundle)). Format with professional executive clarity, polite tone, and clean paragraph breaks."
-                } else if bundle.contains("vscode") || bundle.contains("cursor") || bundle.contains("xcode") || bundle.contains("terminal") {
-                    appDirective = "App Context: Code Editor (\(bundle)). Use technical precision, clean markdown formatting, and exact terminology."
-                } else if bundle.contains("notion") || bundle.contains("notes") || bundle.contains("obsidian") {
-                    appDirective = "App Context: Notes & Docs (\(bundle)). Format with clean bullet points and hierarchical structure where appropriate."
-                }
-            }
-            
-            var styleInstruction = "Preserve the user's authentic conversational speaking voice naturally. Clean up stutters, filler words (um, uh, like), and self-corrections. Keep punctuation light, natural, and human — avoid excessive commas or choppy full stops."
-            if style.lowercased() == "fluent" {
-                styleInstruction = "Polish the grammar, sentence transitions, and phrasing for seamless fluency while keeping the original intent. Keep punctuation light and natural without excessive commas, full stops, or underscores."
-            } else if style.lowercased() == "professional" {
-                styleInstruction = "Format the text with professional clarity, articulate phrasing, and clean sentence flow without robotic or heavy punctuation."
-            }
-            
-            systemPrompt = """
-            You are SAYN, an ultra-fast speech polishing assistant.
-            The user spoke the following text. Your job is to format it for immediate direct typing into active applications:
-            1. Remove verbal fillers (um, uh, ah, er, you know).
-            2. Resolve spoken self-corrections (e.g. 'tomorrow at two no wait three' -> 'tomorrow at 3:00').
-            3. Natural Human Punctuation: Keep punctuation light and conversational. Do NOT overuse commas, full stops, or underscores. Never break up natural flowing speech into choppy, robotic mini-sentences.
-            4. Honor voice commands: 'new line' -> newline, 'new paragraph' -> paragraph break, 'bullet point' -> '• '.
-            5. Style directive: \(styleInstruction)
-            6. \(appDirective)
-            7. Output ONLY the final polished text with NO commentary, NO explanations, NO quotes, NO underscores.
-            """
-            userContent = rawText
+        case .prompt: apiMode = "custom"
+        case .translate: apiMode = "translate"
+        case .code: apiMode = "standard"
+        case .proofread: apiMode = "grammar"
+        case .dictate: apiMode = style == "professional" ? "professional" : (style == "fluent" ? "fluent" : "standard")
         }
         
-        let payload: [String: Any] = [
-            "model": "qwen/qwen3.8-27b",
-            "messages": [
-                ["role": "system", "content": systemPrompt],
-                ["role": "user", "content": userContent]
-            ],
-            "temperature": (mode == .code || mode == .proofread) ? 0.1 : 0.2,
-            "max_tokens": 2048
+        var payload: [String: Any] = [
+            "text": text,
+            "mode": apiMode,
+            "tone": style == "professional" ? "professional" : "neutral"
         ]
+        if let ctx = contextText, !ctx.isEmpty {
+            payload["customInstruction"] = "Context: \(ctx)"
+        }
         
         request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
         
         let session = URLSession(configuration: .ephemeral)
-        session.dataTask(with: request) { data, response, error in
+        session.dataTask(with: request) { data, _, _ in
             guard let data = data,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let choices = json["choices"] as? [[String: Any]],
-                  let first = choices.first,
-                  let message = first["message"] as? [String: Any],
-                  let content = message["content"] as? String else {
-                let localPolished = SaynVoicePolisher.shared.polishLocally(rawText, appBundleId: appBundleId)
-                completion(localPolished)
+                  let refined = json["refinedText"] as? String else {
+                completion("")
                 return
             }
-            
-            let polished = content.trimmingCharacters(in: .whitespacesAndNewlines)
-            completion(polished.isEmpty ? rawText : polished)
+            completion(refined.trimmingCharacters(in: .whitespacesAndNewlines))
         }.resume()
     }
 }

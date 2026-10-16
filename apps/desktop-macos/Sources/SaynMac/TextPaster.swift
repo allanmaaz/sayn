@@ -3,6 +3,9 @@ import Carbon
 import ApplicationServices
 
 final class TextPaster {
+    /// Tracks the last non-SAYN active application so text is always pasted into the correct field
+    static var lastExternalApp: NSRunningApplication?
+    
     @discardableResult
     static func checkAccessibilityPermission(prompt: Bool = false) -> Bool {
         if prompt {
@@ -20,8 +23,10 @@ final class TextPaster {
     
     // Retrieve currently selected text in the active target app for Prompt & Proofread modes
     static func getSelectedText(targetApp: NSRunningApplication? = nil) -> String? {
-        guard let app = targetApp ?? NSWorkspace.shared.frontmostApplication else { return nil }
-        let appRef = AXUIElementCreateApplication(app.processIdentifier)
+        let app = targetApp ?? lastExternalApp ?? NSWorkspace.shared.frontmostApplication
+        guard let validApp = app, validApp.bundleIdentifier != Bundle.main.bundleIdentifier else { return nil }
+        
+        let appRef = AXUIElementCreateApplication(validApp.processIdentifier)
         var focusedElement: CFTypeRef?
         let copyResult = AXUIElementCopyAttributeValue(appRef, kAXFocusedUIElementAttribute as CFString, &focusedElement)
         
@@ -39,6 +44,7 @@ final class TextPaster {
         return nil
     }
     
+    /// Automatic injection of polished speech directly into the user's active text field
     static func paste(text: String, targetApp: NSRunningApplication? = nil) {
         let cleanText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanText.isEmpty else { return }
@@ -48,55 +54,59 @@ final class TextPaster {
         pasteboard.clearContents()
         pasteboard.setString(cleanText, forType: .string)
         
-        // 2. Identify the app to restore focus to
-        let appToActivate = targetApp ?? NSWorkspace.shared.frontmostApplication
+        // 2. Resolve destination application (guarantee non-SAYN target)
+        var appToActivate = targetApp ?? lastExternalApp
+        if appToActivate?.bundleIdentifier == Bundle.main.bundleIdentifier || appToActivate == nil {
+            let front = NSWorkspace.shared.frontmostApplication
+            if front?.bundleIdentifier != Bundle.main.bundleIdentifier {
+                appToActivate = front
+            } else {
+                appToActivate = lastExternalApp
+            }
+        }
         
-        // 3. Force activate target application ignoring background daemon
+        // 3. Force activate target application so its window and caret receive focus
         if let app = appToActivate {
             app.activate(options: [.activateIgnoringOtherApps])
         }
         
-        // 4. Synthesize Cmd+V keystroke into the active window (Antigravity IDE, Terminal, VS Code, Slack, etc.)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.09) {
-            // Priority 1: AppleScript System Events keystroke
-            // Works 100% reliably in Electron (Antigravity IDE), Terminal, Cursor, VS Code, Browsers, etc.
-            let scriptSource = """
-            tell application "System Events"
-                keystroke "v" using command down
-            end tell
-            """
+        // 4. Synthesize Cmd+V after cooperative window transition delay (140ms)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
+            let pid = appToActivate?.processIdentifier
             
-            var appleScriptSucceeded = false
-            if let script = NSAppleScript(source: scriptSource) {
-                var errorDict: NSDictionary?
-                script.executeAndReturnError(&errorDict)
-                if errorDict == nil {
-                    appleScriptSucceeded = true
-                } else {
-                    print("SAYN AppleScript paste notice: \(String(describing: errorDict))")
+            // Method A: Targeted CoreGraphics HID Event directly to process PID
+            let src = CGEventSource(stateID: .hidSystemState)
+            let vKeyCode: CGKeyCode = 0x09 // 'v'
+            
+            if let keyDown = CGEvent(keyboardEventSource: src, virtualKey: vKeyCode, keyDown: true),
+               let keyUp = CGEvent(keyboardEventSource: src, virtualKey: vKeyCode, keyDown: false) {
+                
+                keyDown.flags = .maskCommand
+                keyUp.flags = []
+                
+                // Post directly into target process event stream
+                if let targetPid = pid {
+                    keyDown.postToPid(targetPid)
+                    keyUp.postToPid(targetPid)
                 }
+                
+                // Also broadcast to HID and Session event taps for Electron / Antigravity IDE
+                keyDown.post(tap: .cghidEventTap)
+                keyUp.post(tap: .cghidEventTap)
+                keyDown.post(tap: .cgSessionEventTap)
+                keyUp.post(tap: .cgSessionEventTap)
             }
             
-            // Priority 2: CoreGraphics Session Event Tap Fallback
-            if !appleScriptSucceeded {
-                let src = CGEventSource(stateID: .combinedSessionState)
-                let vKeyCode: CGKeyCode = 0x09 // 'v'
-                let cmdKeyCode: CGKeyCode = 0x37 // Left Command
-                
-                if let cmdDown = CGEvent(keyboardEventSource: src, virtualKey: cmdKeyCode, keyDown: true),
-                   let vDown = CGEvent(keyboardEventSource: src, virtualKey: vKeyCode, keyDown: true),
-                   let vUp = CGEvent(keyboardEventSource: src, virtualKey: vKeyCode, keyDown: false),
-                   let cmdUp = CGEvent(keyboardEventSource: src, virtualKey: cmdKeyCode, keyDown: false) {
-                    
-                    cmdDown.flags = .maskCommand
-                    vDown.flags = .maskCommand
-                    vUp.flags = .maskCommand
-                    cmdUp.flags = []
-                    
-                    cmdDown.post(tap: .cgSessionEventTap)
-                    vDown.post(tap: .cgSessionEventTap)
-                    vUp.post(tap: .cgSessionEventTap)
-                    cmdUp.post(tap: .cgSessionEventTap)
+            // Method B: AppleScript System Events keystroke redundancy
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.04) {
+                let scriptSource = """
+                tell application "System Events"
+                    keystroke "v" using command down
+                end tell
+                """
+                if let script = NSAppleScript(source: scriptSource) {
+                    var errorDict: NSDictionary?
+                    script.executeAndReturnError(&errorDict)
                 }
             }
         }

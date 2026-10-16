@@ -24,6 +24,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupPillWindow()
         setupGlobalShortcut()
         showMainWindow()
+        
+        // Proactively request Accessibility permission if needed
+        TextPaster.checkAccessibilityPermission(prompt: true)
+        
+        // Continuously track non-SAYN active application for precise auto-pasting
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { notification in
+            if let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+               app.bundleIdentifier != Bundle.main.bundleIdentifier {
+                TextPaster.lastExternalApp = app
+            }
+        }
+        
+        if let front = NSWorkspace.shared.frontmostApplication,
+           front.bundleIdentifier != Bundle.main.bundleIdentifier {
+            TextPaster.lastExternalApp = front
+        }
     }
     
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -316,6 +336,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let front = NSWorkspace.shared.frontmostApplication
         if front?.bundleIdentifier != Bundle.main.bundleIdentifier {
             targetApp = front
+            TextPaster.lastExternalApp = front
+        } else {
+            targetApp = TextPaster.lastExternalApp
         }
         currentTranscript = ""
         
@@ -342,7 +365,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard pillWindow?.isVisible == true else { return }
         isCommitting = true
         
-        let appToPasteInto = targetApp ?? NSWorkspace.shared.frontmostApplication
+        var appToPasteInto = targetApp ?? TextPaster.lastExternalApp
+        if appToPasteInto?.bundleIdentifier == Bundle.main.bundleIdentifier || appToPasteInto == nil {
+            let front = NSWorkspace.shared.frontmostApplication
+            if front?.bundleIdentifier != Bundle.main.bundleIdentifier {
+                appToPasteInto = front
+            } else {
+                appToPasteInto = TextPaster.lastExternalApp
+            }
+        }
         
         waveformEngine.stopRecording(activeAppBundleId: appToPasteInto?.bundleIdentifier) { [weak self] finalText in
             self?.pillWindow?.orderOut(nil)
