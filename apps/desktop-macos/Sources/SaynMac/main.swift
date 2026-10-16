@@ -3,5 +3,5 @@ import AppKit
 let app = NSApplication.shared
 let delegate = AppDelegate()
 app.delegate = delegate
-app.setActivationPolicy(.accessory) // Sits in Menu Bar, doesn't clutter Dock
+app.setActivationPolicy(.regular) // Visible first-class macOS app with Dock icon and Window
 app.run()

@@ -48,7 +48,7 @@ cat << 'EOF' > /Applications/SAYN.app/Contents/Info.plist
     <key>CFBundleShortVersionString</key>
     <string>1.2.0</string>
     <key>LSUIElement</key>
-    <true/>
+    <false/>
     <key>NSMicrophoneUsageDescription</key>
     <string>SAYN uses your microphone for high-speed voice dictation and AI polishing.</string>
     <key>NSSpeechRecognitionUsageDescription</key>

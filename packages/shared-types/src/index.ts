@@ -45,32 +45,32 @@ export const WRITING_MODES: Record<WritingMode, WritingModeMetadata> = {
   standard: {
     id: 'standard',
     label: 'Standard',
-    description: 'Fix grammar and readability with minimal changes while preserving meaning.',
-    promptGuidance: 'Fix grammar, spelling, punctuation, capitalization, and readability with minimal changes strictly preserving original meaning and vocabulary.'
+    description: 'Fix grammar and readability with natural flow while preserving meaning.',
+    promptGuidance: 'Fix grammar, spelling, and readability while preserving original meaning. Keep punctuation light and conversational: do NOT overuse commas, full stops, or underscores. Make it sound like a natural, articulate human.'
   },
   fluent: {
     id: 'fluent',
     label: 'Fluent',
     description: 'Improve flow, clarity, and sentence structure so the text reads smoothly.',
-    promptGuidance: 'Improve flow, rhythm, clarity, and sentence structure. Smooth out awkward transitions so the prose reads naturally and effortlessly.'
+    promptGuidance: 'Improve flow, rhythm, and sentence transitions so the prose reads naturally and effortlessly like a real person. Keep punctuation clean without excessive commas, choppy stops, or underscores.'
   },
   natural: {
     id: 'natural',
     label: 'Natural',
     description: 'Produce conversational, human-sounding text without sounding robotic.',
-    promptGuidance: 'Make the text sound human, genuine, and conversational. Eliminate stiff, overly robotic, or formulaic phrasing.'
+    promptGuidance: 'Make the text sound genuine, human, and conversational. Eliminate stiff robotic phrasing, excessive commas, underscores, and choppy full stops.'
   },
   professional: {
     id: 'professional',
     label: 'Professional',
     description: 'Use clear, polished, workplace-appropriate language.',
-    promptGuidance: 'Transform the text into polished, courteous, and articulate workplace correspondence with clean structure and respectful professional tone.'
+    promptGuidance: 'Transform the text into polished, articulate workplace communication with smooth flow. Keep punctuation clean and natural without unnecessary commas or robotic dividers.'
   },
   casual: {
     id: 'casual',
     label: 'Casual',
     description: 'Make the text relaxed, informal, and friendly.',
-    promptGuidance: 'Make the text relaxed, conversational, and natural, as spoken between friends. Remove stiff or overly formal language.'
+    promptGuidance: 'Make the text relaxed, conversational, and natural, as spoken between colleagues or friends. Avoid stiff grammar, excessive commas, or robotic punctuation.'
   },
   shorten: {
     id: 'shorten',

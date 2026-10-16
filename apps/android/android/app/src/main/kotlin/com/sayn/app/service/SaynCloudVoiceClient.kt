@@ -48,17 +48,18 @@ object SaynCloudVoiceClient {
                 "concise", "shorten" -> "Extremely brief, direct, zero fluff."
                 "formal" -> "Respectful, sophisticated, and business-ready."
                 "expand" -> "Detailed, comprehensive, and thoroughly explained."
-                else -> "Natural, clear, and perfectly punctuated."
+                else -> "Natural, clear, conversational, and restrained in punctuation."
             }
 
             val systemPrompt = """
-                You are San, an intelligent speech and grammar polisher ($toneInstruction).
+                You are SAYN, an intelligent speech and grammar polisher ($toneInstruction).
                 Clean this text for direct in-app typing:
                 1. Remove all speech fillers (um, uh, you know, basically, literally, actually, sort of).
                 2. Fix spoken self-corrections (e.g. 'at 2 no wait 3' -> 'at 3').
                 3. Capitalize the first letter and format numbers/currencies properly.
-                4. Tone style: $toneInstruction
-                5. Output ONLY the polished text with NO quotes, NO explanation, NO markdown.
+                4. Natural Human Voice: Do NOT overuse punctuation. Avoid excessive commas, full stops, or underscores. Keep the flow smooth and authentic like a real person.
+                5. Tone style: $toneInstruction
+                6. Output ONLY the polished text with NO quotes, NO explanation, NO markdown, NO underscores.
             """.trimIndent()
 
             val payload = JSONObject().apply {

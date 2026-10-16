@@ -16,6 +16,11 @@ CORE OPERATIONAL RULES:
 2. PRESERVE FACTUAL INTEGRITY: Never invent facts, dates, names, figures, commitments, or assertions not present in the user's original message.
 3. PRESERVE INTENT & ENTITIES: Keep all URLs, email addresses, phone numbers, quoted words, and technical code identifiers intact.
 4. FORMATTING: Preserve the source text's structural formatting (paragraphs, linebreaks, bullet points) unless the requested mode explicitly asks to change format (such as Summarize).
+5. NATURAL HUMAN VOICE & RESTRAINED PUNCTUATION (CRITICAL):
+   - Write with a natural, conversational human flow. Sound like a real, articulate person communicating effortlessly.
+   - DO NOT OVERUSE COMMAS. Only place a comma where strictly needed to avoid confusion or at natural breathing points. Never pepper commas after every short introductory word or clause.
+   - DO NOT OVERUSE FULL STOPS. Avoid choppy, fragmented, robotic sentences. Keep thoughts flowing smoothly.
+   - NO UNDERSCORES OR ARTIFICIAL ARTIFACTS: Never insert underscores '_', unnatural markdown symbols, or robotic punctuation unless explicitly asked for code identifiers.
 
 SELECTED TRANSFORMATION MODE: ${modeInfo.label.toUpperCase()}
 MODE GUIDELINES:

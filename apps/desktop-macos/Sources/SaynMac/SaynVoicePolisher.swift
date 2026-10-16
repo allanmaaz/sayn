@@ -227,7 +227,17 @@ final class SaynVoicePolisher {
             }
         }
         
-        // 7. Clean whitespace
+        // 7. Clean underscores and excessive punctuation
+        // Remove accidental or robotic underscores
+        result = result.replacingOccurrences(of: "_+", with: " ", options: .regularExpression)
+        
+        // Clean excessive or duplicate commas
+        result = result.replacingOccurrences(of: "\\s*,\\s*,+", with: ",", options: .regularExpression)
+        result = result.replacingOccurrences(of: "\\s+,", with: ",", options: .regularExpression)
+        result = result.replacingOccurrences(of: ",\\s*\\.", with: ".", options: .regularExpression)
+        result = result.replacingOccurrences(of: "\\.{2,}", with: ".", options: .regularExpression)
+        
+        // Clean whitespace
         result = result.replacingOccurrences(of: "[ \\t]+", with: " ", options: .regularExpression)
         result = result.trimmingCharacters(in: .whitespacesAndNewlines)
         
@@ -236,13 +246,16 @@ final class SaynVoicePolisher {
             result = String(first).uppercased() + String(result.dropFirst())
         }
         
-        // 9. App-Aware Punctuation
+        // 9. Natural Human Flow Punctuation
+        // Avoid forcing full stops on short spoken utterances or single thoughts
         let isChatApp = (appBundleId?.lowercased().contains("slack") == true) ||
                         (appBundleId?.lowercased().contains("whatsapp") == true) ||
                         (appBundleId?.lowercased().contains("telegram") == true) ||
                         (appBundleId?.lowercased().contains("messages") == true)
         
-        if !isChatApp && !result.isEmpty && !result.contains("\n") {
+        let wordCount = result.split(separator: " ").count
+        // Only append period if it's an extensive sentence (more than 7 words) and not a chat app
+        if !isChatApp && wordCount >= 8 && !result.isEmpty && !result.contains("\n") {
             let lastChar = result.last
             if lastChar != "." && lastChar != "?" && lastChar != "!" {
                 result += "."

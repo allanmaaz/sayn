@@ -216,6 +216,29 @@ final class GroqService {
         }.resume()
     }
     
+    /// Public direct text refinement using Groq LPU with natural human flow
+    func refineText(
+        text: String,
+        mode: SanExecutionMode = .dictate,
+        style: String = "natural",
+        completion: @escaping (String) -> Void
+    ) {
+        guard let key = apiKey else {
+            let fallback = SaynVoicePolisher.shared.polishLocally(text)
+            completion(fallback)
+            return
+        }
+        executeMode(
+            rawText: text,
+            mode: mode,
+            style: style,
+            contextText: nil,
+            appBundleId: nil,
+            apiKey: key,
+            completion: completion
+        )
+    }
+    
     // High-capacity LPU mode execution
     private func executeMode(
         rawText: String,
@@ -317,11 +340,11 @@ final class GroqService {
                 }
             }
             
-            var styleInstruction = "Preserve the user's authentic conversational speaking voice naturally. Clean up stutters, filler words (um, uh, like), and self-corrections."
+            var styleInstruction = "Preserve the user's authentic conversational speaking voice naturally. Clean up stutters, filler words (um, uh, like), and self-corrections. Keep punctuation light, natural, and human — avoid excessive commas or choppy full stops."
             if style.lowercased() == "fluent" {
-                styleInstruction = "Polish the grammar, sentence transitions, and phrasing for seamless fluency while keeping the original intent and core vocabulary."
+                styleInstruction = "Polish the grammar, sentence transitions, and phrasing for seamless fluency while keeping the original intent. Keep punctuation light and natural without excessive commas, full stops, or underscores."
             } else if style.lowercased() == "professional" {
-                styleInstruction = "Format the text with professional executive clarity, formal grammar, and concise business phrasing."
+                styleInstruction = "Format the text with professional clarity, articulate phrasing, and clean sentence flow without robotic or heavy punctuation."
             }
             
             systemPrompt = """
@@ -329,11 +352,11 @@ final class GroqService {
             The user spoke the following text. Your job is to format it for immediate direct typing into active applications:
             1. Remove verbal fillers (um, uh, ah, er, you know).
             2. Resolve spoken self-corrections (e.g. 'tomorrow at two no wait three' -> 'tomorrow at 3:00').
-            3. Apply accurate punctuation, capitalization, paragraphs, and list formatting if multiple points were spoken.
+            3. Natural Human Punctuation: Keep punctuation light and conversational. Do NOT overuse commas, full stops, or underscores. Never break up natural flowing speech into choppy, robotic mini-sentences.
             4. Honor voice commands: 'new line' -> newline, 'new paragraph' -> paragraph break, 'bullet point' -> '• '.
             5. Style directive: \(styleInstruction)
             6. \(appDirective)
-            7. Output ONLY the final polished text with NO commentary, NO explanations, NO quotes.
+            7. Output ONLY the final polished text with NO commentary, NO explanations, NO quotes, NO underscores.
             """
             userContent = rawText
         }

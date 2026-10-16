@@ -17,11 +17,46 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var fnWasAlreadyOpen: Bool = false
     private var targetApp: NSRunningApplication?
     private var isCommitting: Bool = false
+    private var mainWindow: SaynMainWindow?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupStatusItem()
         setupPillWindow()
         setupGlobalShortcut()
+        showMainWindow()
+    }
+    
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        showMainWindow()
+        return true
+    }
+    
+    @objc func showMainWindow() {
+        if mainWindow == nil {
+            setupMainWindow()
+        }
+        mainWindow?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+    
+    private func setupMainWindow() {
+        let studioView = SaynStudioView(
+            waveformEngine: waveformEngine,
+            onToggleDictation: { [weak self] in
+                self?.togglePill()
+            },
+            onRefineText: { [weak self] text, completion in
+                guard let self = self else { return }
+                GroqService.shared.refineText(
+                    text: text,
+                    mode: self.waveformEngine.currentMode,
+                    style: self.waveformEngine.activeStyle,
+                    completion: completion
+                )
+            }
+        )
+        let hostingView = NSHostingView(rootView: studioView)
+        mainWindow = SaynMainWindow(contentView: hostingView)
     }
     
     private func setupStatusItem() {
@@ -44,6 +79,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         
         let menu = NSMenu()
+        menu.addItem(NSMenuItem(title: "Open SAYN Studio", action: #selector(showMainWindow), keyEquivalent: "o"))
         menu.addItem(NSMenuItem(title: "Toggle SAYN Voice (Fn or Option + Space)", action: #selector(togglePill), keyEquivalent: " "))
         menu.addItem(NSMenuItem(title: "Cycle Mode (Option + M)", action: #selector(cycleModeAction), keyEquivalent: "m"))
         menu.addItem(NSMenuItem.separator())

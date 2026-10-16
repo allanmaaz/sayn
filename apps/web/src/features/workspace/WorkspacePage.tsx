@@ -236,7 +236,12 @@ export const WorkspacePage: React.FC = () => {
     for (let i = 0; i < iterations; i++) {
       out = out.replace(rules[i].from, rules[i].to);
     }
-    return out;
+    // Clean accidental underscores, double commas, and excessive punctuation
+    out = out.replace(/_+/g, ' ');
+    out = out.replace(/\s*,\s*,+/g, ',');
+    out = out.replace(/\s+,/g, ',');
+    out = out.replace(/\.{2,}/g, '.');
+    return out.trim();
   };
 
   // Inline Dictation Toggle via Web Speech API

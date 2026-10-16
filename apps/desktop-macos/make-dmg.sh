@@ -61,7 +61,7 @@ cat << 'EOF' > "$APP_BUNDLE/Contents/Info.plist"
     <key>CFBundleShortVersionString</key>
     <string>1.2.0</string>
     <key>LSUIElement</key>
-    <true/>
+    <false/>
     <key>NSMicrophoneUsageDescription</key>
     <string>SAYN uses your microphone for real-time speech dictation and AI polishing.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
