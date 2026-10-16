@@ -40,12 +40,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             } else {
                 button.title = "SAYN"
             }
-            button.toolTip = "SAYN — Voice Dictation & AI Studio (Fn key or ⌥ Space)"
+            button.toolTip = "SAYN — Voice Dictation & AI Studio (Fn key or Option + Space)"
         }
         
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Toggle SAYN Voice (Fn or ⌥ Space)", action: #selector(togglePill), keyEquivalent: " "))
-        menu.addItem(NSMenuItem(title: "Cycle Mode (⌥ M)", action: #selector(cycleModeAction), keyEquivalent: "m"))
+        menu.addItem(NSMenuItem(title: "Toggle SAYN Voice (Fn or Option + Space)", action: #selector(togglePill), keyEquivalent: " "))
+        menu.addItem(NSMenuItem(title: "Cycle Mode (Option + M)", action: #selector(cycleModeAction), keyEquivalent: "m"))
         menu.addItem(NSMenuItem.separator())
         
         // 1. Execution Modes Submenu
@@ -84,12 +84,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(styleMenuItem)
         
         menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "📝 Edit Custom Vocabulary...", action: #selector(openVocabularyFile), keyEquivalent: ""))
-        menu.addItem(NSMenuItem(title: "⚡ Edit Voice Snippets...", action: #selector(openSnippetsFile), keyEquivalent: ""))
+        
+        let vocabItem = NSMenuItem(title: "Edit Custom Vocabulary...", action: #selector(openVocabularyFile), keyEquivalent: "")
+        vocabItem.image = NSImage(systemSymbolName: "character.book.closed.fill", accessibilityDescription: nil)
+        menu.addItem(vocabItem)
+        
+        let snippetsItem = NSMenuItem(title: "Edit Voice Snippets...", action: #selector(openSnippetsFile), keyEquivalent: "")
+        snippetsItem.image = NSImage(systemSymbolName: "bolt.fill", accessibilityDescription: nil)
+        menu.addItem(snippetsItem)
+        
         menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "🔑 Enable Auto-Paste (Accessibility)...", action: #selector(openAccessibilitySettings), keyEquivalent: ""))
+        
+        let accessItem = NSMenuItem(title: "Enable Auto-Paste (Accessibility)...", action: #selector(openAccessibilitySettings), keyEquivalent: "")
+        accessItem.image = NSImage(systemSymbolName: "lock.shield.fill", accessibilityDescription: nil)
+        menu.addItem(accessItem)
+        
         menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "Quit SAYN", action: #selector(quitApp), keyEquivalent: "q"))
+        
+        let quitItem = NSMenuItem(title: "Quit SAYN", action: #selector(quitApp), keyEquivalent: "q")
+        quitItem.image = NSImage(systemSymbolName: "power", accessibilityDescription: nil)
+        menu.addItem(quitItem)
         statusItem.menu = menu
     }
     

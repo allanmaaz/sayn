@@ -19,6 +19,8 @@ import {
   Sliders,
   Maximize2,
   Minimize2,
+  Smartphone,
+  Monitor,
 } from 'lucide-react';
 import { detectDevice, DeviceInfo } from '../../utils/deviceDetector.js';
 import { DownloadModal } from '../../components/download/DownloadModal.js';
@@ -105,15 +107,15 @@ export const LandingPage: React.FC = () => {
               {/* Platform Badges Row */}
               <div className="flex items-center space-x-6 text-xs text-[#D6C7B2] font-medium pt-2">
                 <span className="inline-flex items-center space-x-1.5 hover:text-[#F5EBDD] transition-colors">
-                  <span></span>
+                  <Laptop className="w-3.5 h-3.5 text-[#A83249]" />
                   <span>macOS</span>
                 </span>
                 <span className="inline-flex items-center space-x-1.5 hover:text-[#F5EBDD] transition-colors">
-                  <span>⊞</span>
+                  <Monitor className="w-3.5 h-3.5 text-[#A83249]" />
                   <span>Windows</span>
                 </span>
                 <span className="inline-flex items-center space-x-1.5 hover:text-[#F5EBDD] transition-colors">
-                  <span>🤖</span>
+                  <Smartphone className="w-3.5 h-3.5 text-[#A83249]" />
                   <span>Android</span>
                 </span>
                 <span className="inline-flex items-center space-x-1.5 hover:text-[#F5EBDD] transition-colors">
@@ -220,7 +222,10 @@ export const LandingPage: React.FC = () => {
                       </p>
 
                       <div className="flex items-center justify-between pt-1 border-t border-[#3D1520]/50 text-[10px] text-[#A83249]">
-                        <span>✓ Ready to paste</span>
+                        <span className="flex items-center space-x-1">
+                          <CheckCircle2 className="w-3 h-3 text-[#30D158]" />
+                          <span>Ready to paste</span>
+                        </span>
                         <button onClick={handleCopyDemo} className="hover:text-[#F5EBDD] flex items-center space-x-1">
                           {copiedDemo ? <Check className="w-2.5 h-2.5 text-[#30D158]" /> : <Copy className="w-2.5 h-2.5" />}
                           <span>{copiedDemo ? 'Copied' : 'Copy'}</span>

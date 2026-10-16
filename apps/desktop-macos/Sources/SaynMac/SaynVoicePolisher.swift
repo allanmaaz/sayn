@@ -39,11 +39,11 @@ final class SaynVoicePolisher {
                 "snippets": [
                     [
                         "trigger": "insert standup",
-                        "template": "🚀 Daily Standup:\n- Yesterday: \n- Today: \n- Blockers: None"
+                        "template": "Daily Standup:\n- Yesterday: \n- Today: \n- Blockers: None"
                     ],
                     [
                         "trigger": "insert meeting notes",
-                        "template": "📝 Meeting Notes\nDate: {date}\nAttendees: \n\nAgenda:\n- \n\nKey Decisions:\n- \n\nAction Items:\n- [ ] "
+                        "template": "Meeting Notes\nDate: {date}\nAttendees: \n\nAgenda:\n- \n\nKey Decisions:\n- \n\nAction Items:\n- [ ] "
                     ],
                     [
                         "trigger": "insert signature",
@@ -51,7 +51,7 @@ final class SaynVoicePolisher {
                     ],
                     [
                         "trigger": "insert bug report",
-                        "template": "🐛 Bug Report:\n- Description: \n- Steps to Reproduce:\n  1. \n- Expected Result: \n- Actual Result: "
+                        "template": "Bug Report:\n- Description: \n- Steps to Reproduce:\n  1. \n- Expected Result: \n- Actual Result: "
                     ]
                 ]
             ]

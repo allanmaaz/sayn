@@ -283,7 +283,7 @@ class _UpdateDialogContentState extends State<_UpdateDialogContent> {
                   elevation: 0,
                 ),
                 child: const Text(
-                  '⚡ Download & Install Update',
+                  'Download & Install Update',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
               ),

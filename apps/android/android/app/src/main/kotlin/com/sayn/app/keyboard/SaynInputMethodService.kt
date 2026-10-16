@@ -55,7 +55,7 @@ class SaynInputMethodService : InputMethodService() {
     // Wispr Voice Live Bar Views (3-piece Wispr pill)
     private lateinit var voiceStatusDot: TextView
     private lateinit var voiceTranscriptText: TextView
-    private lateinit var btnCorrectAndInsert: TextView
+    private lateinit var btnCorrectAndInsert: ImageView
 
     // Suggestion Area Views
     private lateinit var suggestionBadge: TextView
@@ -63,7 +63,7 @@ class SaynInputMethodService : InputMethodService() {
     private lateinit var btnReplace: TextView
     private lateinit var btnInsert: TextView
     private lateinit var btnCopy: TextView
-    private lateinit var btnDismiss: TextView
+    private lateinit var btnDismiss: ImageView
 
     // Full AI Assistant Panel (Matching Screenshot 2)
     private lateinit var fullAiPanelContainer: LinearLayout
@@ -346,7 +346,7 @@ class SaynInputMethodService : InputMethodService() {
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // 1. Wispr Flow 3-Piece Floating Speech Pill ([ ✕ ] [ ••• text ••• ] [ ✓ (purple) ])
+    // 1. Wispr Flow 3-Piece Floating Speech Pill ([ Close ] [ ••• text ••• ] [ Confirm ])
     // ─────────────────────────────────────────────────────────────────────────────
 
     private fun buildVoiceLiveBar() {
@@ -361,7 +361,7 @@ class SaynInputMethodService : InputMethodService() {
             ).apply { bottomMargin = dpToPx(2) }
         }
 
-        // 1. Left Circle: Frosted Glass Cancel Button [ ✕ ]
+        // 1. Left Circle: Frosted Glass Cancel Button [ Close ]
         val cancelCircle = FrameLayout(this).apply {
             val bg = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
@@ -374,18 +374,16 @@ class SaynInputMethodService : InputMethodService() {
             layoutParams = LinearLayout.LayoutParams(dpToPx(44), dpToPx(44))
         }
 
-        val cancelText = TextView(this).apply {
-            text = "✕"
-            textSize = 15f
-            setTextColor(Color.parseColor("#1C1C1E"))
-            typeface = Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER
+        val cancelIcon = ImageView(this).apply {
+            setImageResource(R.drawable.ic_sayn_close)
+            setColorFilter(Color.parseColor("#1C1C1E"))
             layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
+                dpToPx(18),
+                dpToPx(18),
+                Gravity.CENTER
             )
         }
-        cancelCircle.addView(cancelText)
+        cancelCircle.addView(cancelIcon)
         cancelCircle.setOnClickListener {
             triggerKeyFeedback("DEL")
             stopInKeyboardVoice()
@@ -434,7 +432,7 @@ class SaynInputMethodService : InputMethodService() {
         centerCapsule.addView(voiceStatusDot)
         voiceLiveBar.addView(centerCapsule)
 
-        // 3. Right Circle: Wispr Volt Neon Green Confirm Button [ ✓ ]
+        // 3. Right Circle: Wispr Volt Neon Green Confirm Button [ Confirm ]
         val confirmCircle = FrameLayout(this).apply {
             val bg = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
@@ -447,15 +445,13 @@ class SaynInputMethodService : InputMethodService() {
             layoutParams = LinearLayout.LayoutParams(dpToPx(44), dpToPx(44))
         }
 
-        btnCorrectAndInsert = TextView(this).apply {
-            text = "✓"
-            textSize = 19f
-            setTextColor(Color.parseColor("#111115")) // Contrast black checkmark on volt green
-            typeface = Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER
+        btnCorrectAndInsert = ImageView(this).apply {
+            setImageResource(R.drawable.ic_sayn_check)
+            setColorFilter(Color.parseColor("#111115")) // Contrast black checkmark on volt green
             layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
+                dpToPx(20),
+                dpToPx(20),
+                Gravity.CENTER
             )
         }
         confirmCircle.addView(btnCorrectAndInsert)
@@ -551,19 +547,19 @@ class SaynInputMethodService : InputMethodService() {
         }
 
         suggestionBadge = TextView(this).apply {
-            text = "✨ REFINEMENT SUGGESTION"
+            text = "REFINEMENT SUGGESTION"
             textSize = 10f
             setTextColor(Color.parseColor("#CBFE00"))
             typeface = Typeface.DEFAULT_BOLD
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
 
-        btnDismiss = TextView(this).apply {
-            text = "✕"
-            textSize = 14f
-            setTextColor(Color.parseColor("#8E8E93"))
-            gravity = Gravity.CENTER
-            setPadding(dpToPx(8), 0, dpToPx(4), 0)
+        btnDismiss = ImageView(this).apply {
+            setImageResource(R.drawable.ic_sayn_close)
+            setColorFilter(Color.parseColor("#8E8E93"))
+            layoutParams = LinearLayout.LayoutParams(dpToPx(18), dpToPx(18)).apply {
+                marginEnd = dpToPx(4)
+            }
             setOnClickListener { hideSuggestionArea() }
         }
 
@@ -586,7 +582,12 @@ class SaynInputMethodService : InputMethodService() {
         }
 
         btnReplace = TextView(this).apply {
-            text = "✓ Replace"
+            text = "Replace"
+            val chk = ContextCompat.getDrawable(this@SaynInputMethodService, R.drawable.ic_sayn_check)?.mutate()
+            chk?.setBounds(0, 0, dpToPx(14), dpToPx(14))
+            chk?.setColorFilter(Color.parseColor("#111115"), PorterDuff.Mode.SRC_IN)
+            setCompoundDrawables(chk, null, null, null)
+            compoundDrawablePadding = dpToPx(4)
             textSize = 12f
             setTextColor(Color.parseColor("#111115"))
             typeface = Typeface.DEFAULT_BOLD
@@ -645,7 +646,7 @@ class SaynInputMethodService : InputMethodService() {
 
     private fun showSuggestion(refined: String, mode: String) {
         lastSuggestion = refined
-        suggestionBadge.text = "✨ ${mode.uppercase()} REFINEMENT"
+        suggestionBadge.text = "${mode.uppercase()} REFINEMENT"
         suggestionText.text = refined
         suggestionArea.visibility = View.VISIBLE
         hideVoiceLiveBar()
@@ -691,7 +692,7 @@ class SaynInputMethodService : InputMethodService() {
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // 3. SAYN AI Toolbar (With Purple Sparkle Button [✨] & Mic [🎤])
+    // 3. SAYN AI Toolbar (With Purple Sparkle Button [Sparkle] & Mic [Mic])
     // ─────────────────────────────────────────────────────────────────────────────
 
     private fun buildAiToolbar() {
@@ -756,7 +757,7 @@ class SaynInputMethodService : InputMethodService() {
         pillsScroll.addView(pillsRow)
         aiToolbar.addView(pillsScroll)
 
-        // Right 1: The Purple Sparkle Circle Button [ ✨ ] (Screenshot 1)
+        // Right 1: The Purple Sparkle Circle Button [ Sparkle ] (Screenshot 1)
         val btnSparkle = FrameLayout(this).apply {
             val sBg = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
@@ -783,7 +784,7 @@ class SaynInputMethodService : InputMethodService() {
         }
         aiToolbar.addView(btnSparkle)
 
-        // Right 2: The Voice Dictation Mic Circle Button [ 🎤 ] (Screenshot 1)
+        // Right 2: The Voice Dictation Mic Circle Button [ Mic ] (Screenshot 1)
         val btnVoice = FrameLayout(this).apply {
             val vBg = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
@@ -1012,7 +1013,7 @@ class SaynInputMethodService : InputMethodService() {
 
         fullAiPanelContainer.addView(card)
 
-        // 3. Bottom Navigation Bar: [ ⌨ (Back to Keyboard) ]  • •  [ Accept all ]
+        // 3. Bottom Navigation Bar: [ Back to Keyboard ]  • •  [ Accept all ]
         val bottomBar = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -1127,7 +1128,7 @@ class SaynInputMethodService : InputMethodService() {
             aiCardTitle.text = "• Input Empty"
             aiCardDiffWord.text = "Type some words first"
             aiCardDiffBadge.text = ""
-            aiCardPreview.text = "Tap the keyboard button at bottom left [⌨] to type a message, then tap the purple sparkle [✨] to polish it!"
+            aiCardPreview.text = "Tap the keyboard icon at bottom left to type a message, then tap the AI sparkle icon to polish it."
             return
         }
 
@@ -1195,7 +1196,7 @@ class SaynInputMethodService : InputMethodService() {
         if (refWords.size > origWords.size) {
             return Pair(origWords.lastOrNull() ?: "", "[+${refWords.takeLast(refWords.size - origWords.size).joinToString(" ")}]")
         }
-        return Pair("Refined", "✓")
+        return Pair("Refined", "Polished")
     }
 
     private fun handleAcceptCurrentSuggestion() {
@@ -1693,6 +1694,25 @@ class SaynInputMethodService : InputMethodService() {
                 globeDrawable?.setBounds(0, 0, dpToPx(18), dpToPx(18))
                 globeDrawable?.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
                 setCompoundDrawables(null, globeDrawable, null, null)
+            } else if (key == "EMOJI") {
+                text = ""
+                val emojiDrawable = ContextCompat.getDrawable(this@SaynInputMethodService, R.drawable.ic_sayn_emoji)?.mutate()
+                emojiDrawable?.setBounds(0, 0, dpToPx(19), dpToPx(19))
+                emojiDrawable?.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
+                setCompoundDrawables(null, emojiDrawable, null, null)
+            } else if (key == "DEL") {
+                text = ""
+                val delDrawable = ContextCompat.getDrawable(this@SaynInputMethodService, R.drawable.ic_sayn_backspace)?.mutate()
+                delDrawable?.setBounds(0, 0, dpToPx(19), dpToPx(19))
+                delDrawable?.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
+                setCompoundDrawables(null, delDrawable, null, null)
+            } else if (key == "SHIFT") {
+                text = ""
+                val shiftDrawable = ContextCompat.getDrawable(this@SaynInputMethodService, R.drawable.ic_sayn_shift)?.mutate()
+                val shiftColor = if (isShifted || isCapsLock) Color.BLACK else Color.WHITE
+                shiftDrawable?.setBounds(0, 0, dpToPx(18), dpToPx(18))
+                shiftDrawable?.setColorFilter(shiftColor, PorterDuff.Mode.SRC_IN)
+                setCompoundDrawables(null, shiftDrawable, null, null)
             }
 
             // Authentic tactile Chiclet Backgrounds
@@ -1749,11 +1769,11 @@ class SaynInputMethodService : InputMethodService() {
 
     private fun formatKeyText(key: String): String {
         return when (key) {
-            "SHIFT" -> if (isCapsLock || isShifted) "▲" else "⇧"
-            "DEL" -> "⌫"
+            "SHIFT" -> ""
+            "DEL" -> ""
             "GLOBE" -> ""
             "MIC" -> ""
-            "EMOJI" -> "😊"
+            "EMOJI" -> ""
             "SPACE" -> "space"
             "ENTER" -> {
                 val currentInfo = currentInputEditorInfo

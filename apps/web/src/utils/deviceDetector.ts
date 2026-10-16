@@ -89,7 +89,7 @@ export function detectDevice(): DeviceInfo {
       recommendedFileName: 'SAYN-macOS-Installer.dmg',
       recommendedDownloadUrl: `${GITHUB_RELEASE_BASE}/SAYN-macOS-Installer.dmg`,
       badgeLabel: 'macOS DMG',
-      instructions: 'Open the DMG and drag SAYN to your Applications folder. Global Hotkey: Press Fn key or ⌥ Space.',
+      instructions: 'Open the DMG and drag SAYN to your Applications folder. Global Hotkey: Press Fn key or Option + Space.',
     };
   }
 

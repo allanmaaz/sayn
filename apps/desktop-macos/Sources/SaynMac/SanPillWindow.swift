@@ -169,7 +169,7 @@ struct SanPillView: View {
                 
                 Spacer(minLength: 2)
                 
-                // 4. Minimal Dismiss Button [ ✕ ]
+                // 4. Minimal Dismiss Button [ Close ]
                 Button(action: onCancel) {
                     ZStack {
                         Circle()

@@ -226,7 +226,7 @@ class FloatingBubbleService : Service() {
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // 2. The Wispr 3-Piece Pill View ([ ✕ ] [ ılıll Capsule ] [ ✓ ])
+        // 2. The Wispr 3-Piece Pill View ([ Close ] [ ılıll Capsule ] [ Confirm ])
         // ─────────────────────────────────────────────────────────────────────
         wisprPillView = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -237,7 +237,7 @@ class FloatingBubbleService : Service() {
                 dpToPx(50)
             )
 
-            // A. Cancel / Wrong Circle [ ✕ ]
+            // A. Cancel / Wrong Circle [ Close ]
             val cancelCircle = FrameLayout(this@FloatingBubbleService).apply {
                 val bg = GradientDrawable().apply {
                     shape = GradientDrawable.OVAL
@@ -248,18 +248,16 @@ class FloatingBubbleService : Service() {
                 isClickable = true
                 layoutParams = LinearLayout.LayoutParams(dpToPx(44), dpToPx(44))
 
-                val cancelText = TextView(this@FloatingBubbleService).apply {
-                    text = "✕"
-                    textSize = 15f
-                    setTextColor(Color.parseColor("#E5E5EA"))
-                    typeface = Typeface.DEFAULT_BOLD
-                    gravity = Gravity.CENTER
+                val cancelIcon = ImageView(this@FloatingBubbleService).apply {
+                    setImageResource(R.drawable.ic_sayn_close)
+                    setColorFilter(Color.parseColor("#E5E5EA"))
                     layoutParams = FrameLayout.LayoutParams(
-                        FrameLayout.LayoutParams.MATCH_PARENT,
-                        FrameLayout.LayoutParams.MATCH_PARENT
+                        dpToPx(18),
+                        dpToPx(18),
+                        Gravity.CENTER
                     )
                 }
-                addView(cancelText)
+                addView(cancelIcon)
 
                 setOnClickListener {
                     performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
@@ -312,7 +310,7 @@ class FloatingBubbleService : Service() {
             }
             addView(centerCapsule)
 
-            // C. Confirm / Correct Volt Neon Green Circle [ ✓ ]
+            // C. Confirm / Correct Volt Neon Green Circle [ Confirm ]
             val confirmCircle = FrameLayout(this@FloatingBubbleService).apply {
                 val bg = GradientDrawable().apply {
                     shape = GradientDrawable.OVAL
@@ -323,18 +321,16 @@ class FloatingBubbleService : Service() {
                 isClickable = true
                 layoutParams = LinearLayout.LayoutParams(dpToPx(44), dpToPx(44))
 
-                val confirmText = TextView(this@FloatingBubbleService).apply {
-                    text = "✓"
-                    textSize = 19f
-                    setTextColor(Color.parseColor("#111115")) // Contrast dark checkmark
-                    typeface = Typeface.DEFAULT_BOLD
-                    gravity = Gravity.CENTER
+                val confirmIcon = ImageView(this@FloatingBubbleService).apply {
+                    setImageResource(R.drawable.ic_sayn_check)
+                    setColorFilter(Color.parseColor("#111115")) // Contrast dark checkmark
                     layoutParams = FrameLayout.LayoutParams(
-                        FrameLayout.LayoutParams.MATCH_PARENT,
-                        FrameLayout.LayoutParams.MATCH_PARENT
+                        dpToPx(20),
+                        dpToPx(20),
+                        Gravity.CENTER
                     )
                 }
-                addView(confirmText)
+                addView(confirmIcon)
 
                 setOnClickListener {
                     performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
@@ -511,8 +507,8 @@ class FloatingBubbleService : Service() {
             override fun onBufferReceived(buffer: ByteArray?) {}
 
             override fun onEndOfSpeech() {
-                transcriptText.text = "⚡ SAYN Polishing..."
-                transcriptText.setTextColor(Color.parseColor("#CBFE00"))
+                transcriptText.text = "SAYN Polishing..."
+                transcriptText.setTextColor(Color.parseColor("#F5EBDD"))
             }
 
             override fun onError(error: Int) {
@@ -583,8 +579,8 @@ class FloatingBubbleService : Service() {
         stopSpeechRecognizer()
 
         if (textToInsert.isNotEmpty()) {
-            transcriptText.text = "⚡ SAYN Polishing..."
-            transcriptText.setTextColor(Color.parseColor("#CBFE00"))
+            transcriptText.text = "SAYN Polishing..."
+            transcriptText.setTextColor(Color.parseColor("#F5EBDD"))
 
             CoroutineScope(Dispatchers.Main).launch {
                 val hostPackage = SaynAccessibilityService.instance?.findEditableTargetNode()?.packageName?.toString()
