@@ -82,7 +82,7 @@ const STUDIO_MODES: Record<StudioModeKey, StudioModeConfig> = {
     duration: '00:03',
     rawWords: 17,
     refinedWords: 18,
-    metricBadge: '220 WPM // 0 latency',
+    metricBadge: '220 WPM • 0 latency',
     rawText: 'schedule sync with product design tomorrow 10 am to go over mobile pill window animations and hotkey latency',
     rawHighlightedHtml: (
       <>
@@ -162,7 +162,6 @@ export const LandingPage: React.FC = () => {
   const [manualLaserProg, setManualLaserProg] = useState<number | null>(null);
   const [activeWorkflowStep, setActiveWorkflowStep] = useState<0 | 1 | 2>(0);
   const [typingSimText, setTypingSimText] = useState('Hey team, I revie');
-  const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const { scrollY, scrollProgress } = useScrollAnimation();
   const { actualTheme } = useTheme();
   const isLight = actualTheme === 'light';
@@ -177,12 +176,12 @@ export const LandingPage: React.FC = () => {
   // Chapters & Spine Node dynamic scaling
   const chapterText =
     scrollProgress < 22
-      ? 'CH.01 // ACOUSTIC IGNITION'
+      ? 'CH.01 — ACOUSTIC IGNITION'
       : scrollProgress < 58
-      ? 'CH.02 // NEURAL LASER PRISM'
+      ? 'CH.02 — NEURAL LASER PRISM'
       : scrollProgress < 78
-      ? 'CH.03 // GROQ LPU CONSTELLATION'
-      : 'CH.04 // EPHEMERAL INCINERATOR';
+      ? 'CH.03 — GROQ LPU CONSTELLATION'
+      : 'CH.04 — EPHEMERAL INCINERATOR';
 
   const spineScale =
     scrollProgress < 22
@@ -193,8 +192,26 @@ export const LandingPage: React.FC = () => {
       ? 1.15
       : 0.85;
 
-  // Computed Laser Scrubber progress
-  const scrollLaserProg = Math.min(1, Math.max(0, (scrollProgress - 20) / 36));
+  // Scrollytelling Pinned Track & Laser Progress
+  const prismTrackRef = React.useRef<HTMLElement | null>(null);
+  const [scrollLaserProg, setScrollLaserProg] = useState(0);
+
+  React.useEffect(() => {
+    const onScroll = () => {
+      if (!prismTrackRef.current) return;
+      const rect = prismTrackRef.current.getBoundingClientRect();
+      const stickyOffset = 90;
+      const scrollDistance = rect.height - window.innerHeight;
+      if (scrollDistance <= 0) return;
+      const progress = Math.min(1, Math.max(0, (stickyOffset - rect.top) / scrollDistance));
+      setScrollLaserProg(progress);
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   const prismProg = manualLaserProg !== null ? manualLaserProg : scrollLaserProg;
   const laserLeftPct = 8 + prismProg * 84;
 
@@ -276,23 +293,6 @@ export const LandingPage: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-scroll simulation
-  React.useEffect(() => {
-    if (!isAutoScrolling) return;
-    let animId: number;
-    const step = () => {
-      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-      if (window.scrollY >= maxScroll - 4) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        setIsAutoScrolling(false);
-        return;
-      }
-      window.scrollBy(0, 3.4);
-      animId = requestAnimationFrame(step);
-    };
-    animId = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(animId);
-  }, [isAutoScrolling]);
 
   // Dynamic equalizer soundwave animation (Timer remains fixed on 4 sec as requested)
   React.useEffect(() => {
@@ -946,7 +946,7 @@ export const LandingPage: React.FC = () => {
         >
           {/* Section Header */}
           <span className="text-xs font-bold uppercase tracking-widest text-[#C83E5B] mb-2 block font-mono">
-            CH.03 // HARDWARE-ACCELERATED INFERENCE
+            CH.03 — HARDWARE-ACCELERATED INFERENCE
           </span>
           <h2
             className={`text-3xl sm:text-5xl font-extrabold tracking-tight mb-3 ${
@@ -993,12 +993,12 @@ export const LandingPage: React.FC = () => {
 
             {/* 6 Circuit Nodes in Orbit */}
             {[
-              { label: 'NODE 01 // GROQ WHISPER', angle: 0 },
-              { label: 'NODE 02 // LOCAL SQLITE WAL', angle: 60 },
-              { label: 'NODE 03 // DISFLUENCY PRISM', angle: 120 },
-              { label: 'NODE 04 // 100% FREE FOREVER', angle: 180 },
-              { label: 'NODE 05 // CURSOR INJECTION', angle: 240 },
-              { label: 'NODE 06 // EPHEMERAL BUFFER', angle: 300 },
+              { label: 'NODE 01 — GROQ WHISPER', angle: 0 },
+              { label: 'NODE 02 — LOCAL SQLITE WAL', angle: 60 },
+              { label: 'NODE 03 — DISFLUENCY PRISM', angle: 120 },
+              { label: 'NODE 04 — 100% FREE FOREVER', angle: 180 },
+              { label: 'NODE 05 — CURSOR INJECTION', angle: 240 },
+              { label: 'NODE 06 — EPHEMERAL BUFFER', angle: 300 },
             ].map((node, i) => {
               const rad = (node.angle * Math.PI) / 180;
               const radius = 135;
@@ -1086,11 +1086,12 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* CHAPTER 02: THE NEURAL LASER PRISM (Interactive Scrubber & Token Vaporizer) */}
+      {/* CHAPTER 02: THE NEURAL LASER PRISM (Pinned Scrollytelling Track) */}
       {/* ========================================================================= */}
-      <section id="laser-prism" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 my-16 relative z-10">
-        <div
-          className={`rounded-3xl sm:rounded-[38px] p-8 sm:p-14 border shadow-2xl relative overflow-hidden transition-all ${
+      <section id="laser-prism" ref={prismTrackRef} className="relative h-[250vh] max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 my-8 z-10">
+        <div className="sticky top-20 sm:top-24 min-h-[calc(100vh-6.5rem)] flex flex-col justify-center">
+          <div
+            className={`rounded-3xl sm:rounded-[38px] p-6 sm:p-12 border shadow-2xl relative overflow-hidden transition-all ${
             isLight
               ? 'bg-gradient-to-b from-[#FFFDF9] via-[#FAF4EB] to-[#F5EFE6] border-[#E2D9CD] shadow-[0_20px_50px_rgba(111,16,37,0.08)]'
               : 'bg-gradient-to-b from-[#1C060B] via-[#150408] to-[#100205] border-[#4A1522] shadow-[0_30px_80px_rgba(0,0,0,0.85)]'
@@ -1099,7 +1100,7 @@ export const LandingPage: React.FC = () => {
           {/* Header */}
           <div className="text-center max-w-2xl mx-auto mb-10">
             <span className="text-xs font-bold uppercase tracking-widest text-[#C83E5B] mb-2 block font-mono">
-              CH.02 // REAL-TIME DISFLUENCY SHREDDER
+              CH.02 — REAL-TIME DISFLUENCY SHREDDER
             </span>
             <h2
               className={`text-3xl sm:text-4xl font-extrabold tracking-tight mb-3 ${
@@ -1233,7 +1234,7 @@ export const LandingPage: React.FC = () => {
             >
               <div className="flex items-center space-x-2 text-xs font-bold text-[#C83E5B] mb-1">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <span>BEAM 01 // PROFESSIONAL</span>
+                <span>BEAM 01 — PROFESSIONAL</span>
               </div>
               <p className="text-xs text-[#D6C7B2]">
                 Eliminates conversational hedges, stuttered syllables, and throat clears with precision.
@@ -1251,7 +1252,7 @@ export const LandingPage: React.FC = () => {
             >
               <div className="flex items-center space-x-2 text-xs font-bold text-[#C83E5B] mb-1">
                 <Zap className="w-4 h-4 text-amber-500" />
-                <span>BEAM 02 // CONCISE SHORTEN</span>
+                <span>BEAM 02 — CONCISE SHORTEN</span>
               </div>
               <p className="text-xs text-[#D6C7B2]">
                 Reduces rambling verbal sentences into compact bullets ready for Slack or email.
@@ -1269,7 +1270,7 @@ export const LandingPage: React.FC = () => {
             >
               <div className="flex items-center space-x-2 text-xs font-bold text-[#C83E5B] mb-1">
                 <Sparkles className="w-4 h-4 text-emerald-500" />
-                <span>BEAM 03 // ZERO-CLICK PASTE</span>
+                <span>BEAM 03 — ZERO-CLICK PASTE</span>
               </div>
               <p className="text-xs text-[#D6C7B2]">
                 Synthesizes transformed text directly into the foreground app cursor without Cmd+V.
@@ -1277,6 +1278,7 @@ export const LandingPage: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
       </section>
 
       {/* 2. THREE-PILLAR CAPABILITIES SECTION */}
@@ -1587,9 +1589,9 @@ export const LandingPage: React.FC = () => {
                 {/* Stage Header */}
                 <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#A83249]/20">
                   <span className="text-xs font-bold uppercase tracking-wider text-[#C83E5B]">
-                    {activeWorkflowStep === 0 && 'STEP 01 // CAPTURING VOICE STREAM'}
-                    {activeWorkflowStep === 1 && 'STEP 02 // QUILLBOT & GRAMMARLY REFINEMENT'}
-                    {activeWorkflowStep === 2 && 'STEP 03 // ZERO-CLICK AUTO-PASTE'}
+                    {activeWorkflowStep === 0 && 'STEP 01 — CAPTURING VOICE STREAM'}
+                    {activeWorkflowStep === 1 && 'STEP 02 — GRAMMAR & STYLE REFINEMENT'}
+                    {activeWorkflowStep === 2 && 'STEP 03 — ZERO-CLICK AUTO-PASTE'}
                   </span>
 
                   {/* Mode Pills */}
@@ -1888,7 +1890,7 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <div className="reveal-on-scroll scroll-reveal">
             <span className="text-xs font-bold uppercase tracking-widest text-[#C83E5B] mb-2 block font-mono">
-              CH.04 // ZERO CLOUD RETENTION
+              CH.04 — ZERO CLOUD RETENTION
             </span>
             <div className="w-14 h-14 rounded-2xl bg-[#6F1025]/30 border border-[#A83249]/40 text-[#A83249] flex items-center justify-center mx-auto mb-5 shadow-sm">
               <ShieldCheck className="w-7 h-7" />
@@ -1999,18 +2001,7 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Floating Auto-Scroll Interactive Tour Pill */}
-      <div className="fixed bottom-6 left-6 z-40 hidden sm:flex items-center space-x-3 px-3.5 py-2 rounded-full backdrop-blur-xl border shadow-xl bg-[#1C060B]/90 border-[#C83E5B]/60 text-xs transition-all">
-        <button
-          onClick={() => setIsAutoScrolling(!isAutoScrolling)}
-          className="px-3.5 py-1 rounded-full font-bold bg-[#C83E5B] text-white hover:bg-[#E04A6A] transition-all active:scale-95 shadow-sm"
-        >
-          {isAutoScrolling ? '⏸ Pause Tour' : '▶ Auto-Play Tour'}
-        </button>
-        <span className="text-[11px] text-[#B59CA2] font-mono">
-          Scroll: {Math.round(scrollProgress)}%
-        </span>
-      </div>
+
 
       {/* Smart Device Detection Download Modal */}
       <DownloadModal isOpen={isDownloadOpen} onClose={() => setIsDownloadOpen(false)} />
