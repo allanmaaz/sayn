@@ -6,8 +6,6 @@ import {
   ArrowUp,
   ArrowRight,
   Download,
-  Sun,
-  Moon,
   Sparkles,
   Info,
   HelpCircle,
@@ -23,7 +21,7 @@ export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDownloadOpen, setIsDownloadOpen] = useState(false);
   const { scrollProgress, scrollY } = useScrollAnimation();
-  const { actualTheme, setTheme } = useTheme();
+  const { actualTheme } = useTheme();
 
   const isLight = actualTheme === 'light';
 
@@ -35,9 +33,6 @@ export const Navbar: React.FC = () => {
     { label: 'Privacy', href: '#privacy', icon: ShieldCheck },
   ];
 
-  const toggleTheme = () => {
-    setTheme(isLight ? 'dark' : 'light');
-  };
 
   const handleGetStarted = (e?: React.MouseEvent) => {
     e?.preventDefault();
@@ -118,19 +113,6 @@ export const Navbar: React.FC = () => {
 
             {/* Right Action Buttons */}
             <div className="hidden md:flex items-center space-x-3">
-              {/* Theme Toggle (Light / Dark) */}
-              <button
-                onClick={toggleTheme}
-                aria-label={`Switch to ${isLight ? 'dark' : 'light'} mode`}
-                title={`Switch to ${isLight ? 'dark' : 'light'} mode`}
-                className={`p-2 rounded-full transition-all active:scale-95 ${
-                  isLight
-                    ? 'text-[#6F1025] bg-[#6F1025]/10 hover:bg-[#6F1025]/20 border border-[#E2D9CD]'
-                    : 'text-[#F5EBDD] bg-[#240F16] hover:bg-[#3D1520] border border-[#3D1520]'
-                }`}
-              >
-                {isLight ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-              </button>
 
               {/* Direct 'Get Started' Action Pill */}
               <button
@@ -146,17 +128,8 @@ export const Navbar: React.FC = () => {
               </button>
             </div>
 
-            {/* Mobile Controls (Theme Toggle + Hamburger) */}
-            <div className="flex md:hidden items-center space-x-2">
-              <button
-                onClick={toggleTheme}
-                aria-label="Toggle theme"
-                className={`p-2 rounded-full transition-all ${
-                  isLight ? 'text-[#6F1025] bg-[#6F1025]/10' : 'text-[#F5EBDD] bg-[#240F16]'
-                }`}
-              >
-                {isLight ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-              </button>
+            {/* Mobile Menu Toggle Button */}
+            <div className="flex md:hidden items-center">
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 aria-label="Toggle menu"
