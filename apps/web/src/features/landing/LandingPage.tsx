@@ -295,11 +295,10 @@ export const LandingPage: React.FC = () => {
     return () => cancelAnimationFrame(animId);
   }, [isAutoScrolling]);
 
-  // Audio simulation timer & dynamic equalizer animation
+  // Dynamic equalizer soundwave animation (Timer remains fixed on 4 sec as requested)
   React.useEffect(() => {
     if (!isListening) return;
     const interval = setInterval(() => {
-      setAudioSeconds((s) => (s >= 59 ? 1 : s + 1));
       setBarHeights([
         Math.floor(20 + Math.random() * 40),
         Math.floor(35 + Math.random() * 55),
@@ -317,8 +316,7 @@ export const LandingPage: React.FC = () => {
 
   const handleSelectMode = (key: StudioModeKey) => {
     setActiveStudioMode(key);
-    const dur = parseInt(STUDIO_MODES[key].duration.split(':')[1], 10) || 4;
-    setAudioSeconds(dur);
+    setAudioSeconds(4);
     setIsListening(true);
   };
 
@@ -746,10 +744,10 @@ export const LandingPage: React.FC = () => {
                       })}
                     </div>
 
-                    {/* Center Voice Waveform Card with Live Timer & Soundwave */}
+                    {/* Center Voice Waveform Card with Soundwave (Timer locked at 00:04) */}
                     <div className="col-span-4 rounded-xl bg-[#1C0B12] border border-[#3D1520] p-3 flex flex-col items-center justify-between text-center shadow-inner">
                       <div className="text-[11px] font-mono font-bold text-[#F5EBDD]">
-                        00:{audioSeconds < 10 ? '0' : ''}{audioSeconds}
+                        00:04
                       </div>
 
                       {/* Equalizer Soundwave Bars Reacting Dynamically */}
