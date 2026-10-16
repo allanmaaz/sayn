@@ -210,8 +210,8 @@ class FloatingBubbleService : Service() {
             val bg = GradientDrawable().apply {
                 shape = GradientDrawable.RECTANGLE
                 cornerRadius = dpToPx(16f).toFloat()
-                setColor(Color.parseColor("#A61E1E22")) // Translucent dark frosted glass
-                setStroke(dpToPx(1.2f), Color.parseColor("#44FFFFFF"))
+                setColor(Color.parseColor("#E6180B0F")) // Translucent dark obsidian glass
+                setStroke(dpToPx(1.2f), Color.parseColor("#4DA83249"))
             }
             background = bg
             elevation = dpToPx(8).toFloat()
@@ -219,7 +219,7 @@ class FloatingBubbleService : Service() {
 
             val micIcon = ImageView(this@FloatingBubbleService).apply {
                 setImageResource(R.drawable.ic_sayn_mic)
-                setColorFilter(Color.parseColor("#CBFE00")) // Volt neon green
+                setColorFilter(Color.parseColor("#F5EBDD")) // Warm Cream
                 layoutParams = FrameLayout.LayoutParams(dpToPx(24), dpToPx(24), Gravity.CENTER)
             }
             addView(micIcon)
@@ -241,8 +241,8 @@ class FloatingBubbleService : Service() {
             val cancelCircle = FrameLayout(this@FloatingBubbleService).apply {
                 val bg = GradientDrawable().apply {
                     shape = GradientDrawable.OVAL
-                    setColor(Color.parseColor("#991C1C22"))
-                    setStroke(dpToPx(1f), Color.parseColor("#44FFFFFF"))
+                    setColor(Color.parseColor("#E6240F16"))
+                    setStroke(dpToPx(1f), Color.parseColor("#4DA83249"))
                 }
                 background = bg
                 isClickable = true
@@ -250,7 +250,7 @@ class FloatingBubbleService : Service() {
 
                 val cancelIcon = ImageView(this@FloatingBubbleService).apply {
                     setImageResource(R.drawable.ic_sayn_close)
-                    setColorFilter(Color.parseColor("#E5E5EA"))
+                    setColorFilter(Color.parseColor("#F5EBDD"))
                     layoutParams = FrameLayout.LayoutParams(
                         dpToPx(18),
                         dpToPx(18),
@@ -273,8 +273,8 @@ class FloatingBubbleService : Service() {
                 val bg = GradientDrawable().apply {
                     shape = GradientDrawable.RECTANGLE
                     cornerRadius = dpToPx(23f).toFloat()
-                    setColor(Color.parseColor("#D91E1E24")) // Rich frosted glass
-                    setStroke(dpToPx(1.2f), Color.parseColor("#44FFFFFF"))
+                    setColor(Color.parseColor("#E6180B0F")) // Rich frosted obsidian glass
+                    setStroke(dpToPx(1.2f), Color.parseColor("#4DA83249"))
                 }
                 background = bg
                 setPadding(dpToPx(12), 0, dpToPx(14), 0)
@@ -299,7 +299,7 @@ class FloatingBubbleService : Service() {
                 transcriptText = TextView(this@FloatingBubbleService).apply {
                     text = ""
                     textSize = 13.5f
-                    setTextColor(Color.WHITE)
+                    setTextColor(Color.parseColor("#F5EBDD"))
                     gravity = Gravity.CENTER_VERTICAL
                     isSingleLine = true
                     ellipsize = android.text.TextUtils.TruncateAt.END
@@ -310,12 +310,12 @@ class FloatingBubbleService : Service() {
             }
             addView(centerCapsule)
 
-            // C. Confirm / Correct Volt Neon Green Circle [ Confirm ]
+            // C. Confirm / Correct Warm Cream Circle [ Confirm ]
             val confirmCircle = FrameLayout(this@FloatingBubbleService).apply {
                 val bg = GradientDrawable().apply {
                     shape = GradientDrawable.OVAL
-                    setColor(Color.parseColor("#CBFE00")) // Wispr volt neon green
-                    setStroke(dpToPx(1f), Color.parseColor("#66FFFFFF"))
+                    setColor(Color.parseColor("#F5EBDD")) // Official Warm Cream
+                    setStroke(dpToPx(1f), Color.parseColor("#6F1025"))
                 }
                 background = bg
                 isClickable = true
@@ -323,7 +323,7 @@ class FloatingBubbleService : Service() {
 
                 val confirmIcon = ImageView(this@FloatingBubbleService).apply {
                     setImageResource(R.drawable.ic_sayn_check)
-                    setColorFilter(Color.parseColor("#111115")) // Contrast dark checkmark
+                    setColorFilter(Color.parseColor("#100709")) // Contrast dark checkmark
                     layoutParams = FrameLayout.LayoutParams(
                         dpToPx(20),
                         dpToPx(20),
@@ -355,7 +355,7 @@ class FloatingBubbleService : Service() {
             val bar = View(this).apply {
                 val bg = GradientDrawable().apply {
                     cornerRadius = dpToPx(2).toFloat()
-                    setColor(Color.parseColor("#CBFE00")) // Wispr volt neon green
+                    setColor(Color.parseColor("#A83249")) // Rose-Maroon soundwave
                 }
                 background = bg
                 layoutParams = LinearLayout.LayoutParams(dpToPx(3), dpToPx(10 + (i % 3) * 4)).apply {

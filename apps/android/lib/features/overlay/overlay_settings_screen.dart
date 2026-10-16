@@ -186,7 +186,7 @@ class _OverlaySettingsScreenState extends State<OverlaySettingsScreen> {
                     decoration: BoxDecoration(
                       color: SaynColors.darkSurface,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0x337E57C2)),
+                      border: Border.all(color: SaynColors.darkBorder),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -196,7 +196,7 @@ class _OverlaySettingsScreenState extends State<OverlaySettingsScreen> {
                           children: [
                             Row(
                               children: const [
-                                Icon(Icons.all_inclusive_rounded, color: Color(0xFFB388FF), size: 18),
+                                Icon(Icons.all_inclusive_rounded, color: SaynColors.darkAccent, size: 18),
                                 SizedBox(width: 8),
                                 Text(
                                   'Universal Voice Across Any Keyboard',
@@ -214,7 +214,7 @@ class _OverlaySettingsScreenState extends State<OverlaySettingsScreen> {
                               decoration: BoxDecoration(
                                 color: _hasAccessibilityPermission
                                     ? SaynColors.darkSuccess.withOpacity(0.15)
-                                    : const Color(0x227E57C2),
+                                    : const Color(0x33A83249),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -224,7 +224,7 @@ class _OverlaySettingsScreenState extends State<OverlaySettingsScreen> {
                                   fontWeight: FontWeight.w600,
                                   color: _hasAccessibilityPermission
                                       ? SaynColors.darkSuccess
-                                      : const Color(0xFFB388FF),
+                                      : SaynColors.warmCream,
                                 ),
                               ),
                             ),
@@ -248,7 +248,7 @@ class _OverlaySettingsScreenState extends State<OverlaySettingsScreen> {
                               _checkStatus();
                             },
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Color(0xFF7E57C2)),
+                              side: const BorderSide(color: SaynColors.darkBorder),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -256,7 +256,7 @@ class _OverlaySettingsScreenState extends State<OverlaySettingsScreen> {
                             child: const Text(
                               'Enable in Accessibility Settings',
                               style: TextStyle(
-                                  fontSize: 12, color: Color(0xFFB388FF)),
+                                  fontSize: 12, color: SaynColors.warmCream),
                             ),
                           ),
                         ],

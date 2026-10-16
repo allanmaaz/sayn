@@ -568,21 +568,21 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
                     decoration: BoxDecoration(
                       color: SaynColors.darkSurface,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0x337E57C2)),
+                      border: Border.all(color: SaynColors.darkDivider),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.autorenew_rounded, color: Color(0xFFB388FF), size: 20),
+                            const Icon(Icons.autorenew_rounded, color: SaynColors.roseMaroon, size: 20),
                             const SizedBox(width: 8),
                             const Text(
                               'App Updates & Releases',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.white,
+                                color: SaynColors.warmCream,
                               ),
                             ),
                           ],
@@ -617,18 +617,18 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
                                         ? 'You are on the latest version (v${info.currentVersion})'
                                         : 'Could not connect to update server',
                                   ),
-                                  backgroundColor: const Color(0xFF34C759),
+                                  backgroundColor: SaynColors.darkSuccess,
                                 ),
                               );
                             }
                           },
-                          icon: const Icon(Icons.cloud_download_outlined, size: 16, color: Color(0xFFB388FF)),
+                          icon: const Icon(Icons.cloud_download_outlined, size: 16, color: SaynColors.warmCream),
                           label: const Text(
                             'Check for Updates Now',
-                            style: TextStyle(color: Color(0xFFB388FF), fontSize: 12, fontWeight: FontWeight.w600),
+                            style: TextStyle(color: SaynColors.warmCream, fontSize: 12, fontWeight: FontWeight.w600),
                           ),
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFF7E57C2)),
+                            side: const BorderSide(color: SaynColors.roseMaroon),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           ),

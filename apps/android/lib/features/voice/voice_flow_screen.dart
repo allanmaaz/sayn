@@ -359,7 +359,7 @@ class _VoiceFlowScreenState extends State<VoiceFlowScreen>
                     child: Icon(
                       _isDictating ? Icons.mic : Icons.mic_none_rounded,
                       color: _isDictating
-                          ? const Color(0xFF0D0D12)
+                          ? SaynColors.warmCream
                           : SaynColors.darkAccent,
                       size: 38,
                     ),
@@ -374,7 +374,7 @@ class _VoiceFlowScreenState extends State<VoiceFlowScreen>
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
-              color: _isDictating ? SaynColors.darkAccent : SaynColors.darkText,
+              color: _isDictating ? SaynColors.roseMaroon : SaynColors.darkText,
             ),
           ),
           const SizedBox(height: 6),
@@ -398,7 +398,7 @@ class _VoiceFlowScreenState extends State<VoiceFlowScreen>
                 width: 3.5,
                 height: h,
                 decoration: BoxDecoration(
-                  color: SaynColors.darkAccent,
+                  color: SaynColors.roseMaroon,
                   borderRadius: BorderRadius.circular(2),
                 ),
               );
@@ -439,7 +439,7 @@ class _VoiceFlowScreenState extends State<VoiceFlowScreen>
                     fontSize: 12,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                     color: isSelected
-                        ? const Color(0xFF0D0D12)
+                        ? SaynColors.warmCream
                         : SaynColors.darkSecondary,
                   ),
                   side: BorderSide(
@@ -531,7 +531,7 @@ class _VoiceFlowScreenState extends State<VoiceFlowScreen>
                       height: 14,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Color(0xFF0D0D12),
+                        color: SaynColors.warmCream,
                       ),
                     )
                   : const Icon(Icons.auto_awesome, size: 16),
@@ -544,7 +544,7 @@ class _VoiceFlowScreenState extends State<VoiceFlowScreen>
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: SaynColors.darkAccent,
-                foregroundColor: const Color(0xFF0D0D12),
+                foregroundColor: SaynColors.warmCream,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),

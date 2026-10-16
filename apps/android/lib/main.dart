@@ -110,10 +110,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xEE16161D),
+                color: const Color(0xEE180B0F),
                 borderRadius: BorderRadius.circular(32),
                 border: Border.all(
-                  color: const Color(0xFF2B2B36),
+                  color: SaynColors.darkDivider,
                   width: 1.2,
                 ),
               ),
@@ -149,7 +149,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                               iconData,
                               size: 20,
                               color: isSelected
-                                  ? const Color(0xFF0D0D12)
+                                  ? SaynColors.warmCream
                                   : SaynColors.darkSecondary,
                             ),
                             if (isSelected) ...[
@@ -163,7 +163,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                                     fontSize: 12,
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: 0.3,
-                                    color: Color(0xFF0D0D12),
+                                    color: SaynColors.warmCream,
                                   ),
                                 ),
                               ),

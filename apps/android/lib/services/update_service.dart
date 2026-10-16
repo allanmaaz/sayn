@@ -169,10 +169,10 @@ class _UpdateDialogContentState extends State<_UpdateDialogContent> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFF1C1C1E),
+      backgroundColor: const Color(0xFF180B0F),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: Color(0x33FFFFFF)),
+        side: const BorderSide(color: Color(0xFF3D1520)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(22),
@@ -185,12 +185,13 @@ class _UpdateDialogContentState extends State<_UpdateDialogContent> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0x227E57C2),
+                    color: const Color(0x336F1025),
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF3D1520)),
                   ),
                   child: const Icon(
                     Icons.system_update_rounded,
-                    color: Color(0xFFB388FF),
+                    color: Color(0xFFF5EBDD),
                     size: 26,
                   ),
                 ),
@@ -202,7 +203,7 @@ class _UpdateDialogContentState extends State<_UpdateDialogContent> {
                       const Text(
                         'New Update Available',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: Color(0xFFF5EBDD),
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -211,7 +212,7 @@ class _UpdateDialogContentState extends State<_UpdateDialogContent> {
                       Text(
                         'v${widget.info.latestVersion} (Current: v${widget.info.currentVersion})',
                         style: const TextStyle(
-                          color: Color(0xFF8E8E93),
+                          color: Color(0xFFD6C7B2),
                           fontSize: 12.5,
                         ),
                       ),
@@ -225,8 +226,9 @@ class _UpdateDialogContentState extends State<_UpdateDialogContent> {
               constraints: const BoxConstraints(maxHeight: 140),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF2C2C2E),
+                color: const Color(0xFF240F16),
                 borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF3D1520)),
               ),
               child: SingleChildScrollView(
                 child: Text(
@@ -234,7 +236,7 @@ class _UpdateDialogContentState extends State<_UpdateDialogContent> {
                       ? widget.info.releaseNotes
                       : 'Performance improvements, bug fixes, and latest voice keyboard features.',
                   style: const TextStyle(
-                    color: Color(0xFFE5E5EA),
+                    color: Color(0xFFF5EBDD),
                     fontSize: 12,
                     height: 1.4,
                   ),
@@ -245,8 +247,8 @@ class _UpdateDialogContentState extends State<_UpdateDialogContent> {
             if (_isDownloading) ...[
               LinearProgressIndicator(
                 value: _progress > 0 ? _progress / 100.0 : null,
-                backgroundColor: const Color(0xFF3A3A3C),
-                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF7E57C2)),
+                backgroundColor: const Color(0xFF240F16),
+                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF6F1025)),
                 borderRadius: BorderRadius.circular(6),
                 minHeight: 8,
               ),
@@ -255,7 +257,7 @@ class _UpdateDialogContentState extends State<_UpdateDialogContent> {
                 _statusMessage,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  color: Color(0xFFB388FF),
+                  color: Color(0xFFF5EBDD),
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -274,8 +276,8 @@ class _UpdateDialogContentState extends State<_UpdateDialogContent> {
               ElevatedButton(
                 onPressed: _startUpdate,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF7E57C2),
-                  foregroundColor: Colors.white,
+                  backgroundColor: const Color(0xFF6F1025),
+                  foregroundColor: const Color(0xFFF5EBDD),
                   padding: const EdgeInsets.symmetric(vertical: 13),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

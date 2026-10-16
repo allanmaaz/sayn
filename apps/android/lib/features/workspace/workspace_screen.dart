@@ -252,7 +252,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                       avatar: Icon(
                         s['icon'] as IconData,
                         size: 14,
-                        color: isSelected ? const Color(0xFF0D0D12) : SaynColors.darkAccent,
+                        color: isSelected ? SaynColors.warmCream : SaynColors.darkAccent,
                       ),
                       label: Text(s['label'] as String),
                       selected: isSelected,
@@ -260,7 +260,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                       labelStyle: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: isSelected ? const Color(0xFF0D0D12) : Colors.white,
+                        color: isSelected ? SaynColors.warmCream : Colors.white,
                       ),
                       backgroundColor: SaynColors.darkSurface,
                       side: BorderSide(
@@ -401,7 +401,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                             onPressed: _isPolishing ? null : _runGrammarPolish,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: SaynColors.darkAccent,
-                              foregroundColor: const Color(0xFF0D0D12),
+                              foregroundColor: SaynColors.warmCream,
                               padding: const EdgeInsets.symmetric(vertical: 11),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -414,7 +414,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                                     height: 16,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: Color(0xFF0D0D12),
+                                      color: SaynColors.warmCream,
                                     ),
                                   )
                                 : const Icon(Icons.auto_fix_high_rounded, size: 18),
