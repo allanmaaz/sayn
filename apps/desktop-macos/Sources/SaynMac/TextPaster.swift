@@ -51,28 +51,44 @@ final class TextPaster {
         
         let appRef = AXUIElementCreateApplication(validApp.processIdentifier)
         var focusedElement: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(appRef, kAXFocusedUIElementAttribute as CFString, &focusedElement) == .success,
-              let element = focusedElement else {
-            return false
+        if AXUIElementCopyAttributeValue(appRef, kAXFocusedUIElementAttribute as CFString, &focusedElement) == .success,
+           let element = focusedElement {
+            let axElement = element as! AXUIElement
+            var roleValue: CFTypeRef?
+            if AXUIElementCopyAttributeValue(axElement, kAXRoleAttribute as CFString, &roleValue) == .success,
+               let role = roleValue as? String {
+                let editableRoles = ["AXTextField", "AXTextArea", "AXWebArea", "AXComboBox", "AXSearchField"]
+                if editableRoles.contains(role) { return true }
+            }
+            
+            var isSettable: DarwinBoolean = false
+            if AXUIElementIsAttributeSettable(axElement, kAXValueAttribute as CFString, &isSettable) == .success,
+               isSettable.boolValue {
+                return true
+            }
+            
+            var selectedTextValue: CFTypeRef?
+            if AXUIElementCopyAttributeValue(axElement, kAXSelectedTextAttribute as CFString, &selectedTextValue) == .success {
+                return true
+            }
         }
         
-        let axElement = element as! AXUIElement
-        var roleValue: CFTypeRef?
-        if AXUIElementCopyAttributeValue(axElement, kAXRoleAttribute as CFString, &roleValue) == .success,
-           let role = roleValue as? String {
-            let editableRoles = ["AXTextField", "AXTextArea", "AXWebArea", "AXComboBox", "AXSearchField"]
-            if editableRoles.contains(role) { return true }
-        }
+        // Electron, WebKit, and developer editors often do not report kAXFocusedUIElementAttribute to external processes.
+        // If the user triggered dictation while working in any standard text, browser, IDE, or chat app,
+        // assume an active text focus exists so Cmd+V pastes seamlessly into their cursor position!
+        let bundleId = validApp.bundleIdentifier?.lowercased() ?? ""
+        let appName = validApp.localizedName?.lowercased() ?? ""
+        let textCapableKeywords = [
+            "antigravity", "code", "cursor", "electron", "sublime", "textedit", "notes",
+            "chrome", "safari", "firefox", "brave", "edge", "arc", "slack", "discord",
+            "telegram", "whatsapp", "signal", "messages", "terminal", "iterm", "xcode",
+            "notion", "obsidian", "linear", "word", "pages", "mail", "outlook"
+        ]
         
-        var isSettable: DarwinBoolean = false
-        if AXUIElementIsAttributeSettable(axElement, kAXValueAttribute as CFString, &isSettable) == .success,
-           isSettable.boolValue {
-            return true
-        }
-        
-        var selectedTextValue: CFTypeRef?
-        if AXUIElementCopyAttributeValue(axElement, kAXSelectedTextAttribute as CFString, &selectedTextValue) == .success {
-            return true
+        for kw in textCapableKeywords {
+            if bundleId.contains(kw) || appName.contains(kw) {
+                return true
+            }
         }
         
         return false

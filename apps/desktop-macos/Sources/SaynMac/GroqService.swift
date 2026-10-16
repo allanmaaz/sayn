@@ -202,7 +202,17 @@ final class GroqService {
             }
             
             if let transcript = json["transcript"] as? String {
-                completion(.success(transcript.trimmingCharacters(in: .whitespacesAndNewlines)))
+                let clean = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+                let hallucinations: Set<String> = [
+                    "00:00", "0:00", "You", "You.", "you", "Thank you.", "Thank you",
+                    ".", "..", "...", "MBC", "Subtitles by", "Amara.org", "Thank you for watching.",
+                    "thanks for watching"
+                ]
+                if hallucinations.contains(clean) || clean.allSatisfy({ $0.isPunctuation || $0.isWhitespace }) {
+                    completion(.success(""))
+                    return
+                }
+                completion(.success(clean))
                 return
             }
             

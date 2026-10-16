@@ -240,7 +240,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.hidePill()
             },
             onConfirm: { [weak self] text in
-                self?.commitPill(text: text)
+                guard let self = self else { return }
+                if self.isFallbackCard {
+                    let toPaste = text.isEmpty ? self.currentTranscript : text
+                    let trimmed = toPaste.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmed.isEmpty {
+                        self.pillWindow?.orderOut(nil)
+                        self.isFallbackCard = false
+                        var target = self.targetApp ?? TextPaster.lastExternalApp
+                        if target?.bundleIdentifier == Bundle.main.bundleIdentifier || target == nil {
+                            target = TextPaster.lastExternalApp
+                        }
+                        TextPaster.paste(text: trimmed, targetApp: target)
+                        self.currentTranscript = ""
+                    }
+                } else {
+                    self.commitPill(text: text)
+                }
             },
             onCopyText: { [weak self] _ in
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
@@ -393,28 +409,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let chosen = finalText.isEmpty ? text : finalText
             let trimmed = chosen.trimmingCharacters(in: .whitespacesAndNewlines)
             
-            if !trimmed.isEmpty {
-                // Check if target application has an active editable text box / caret
-                let hasTextbox = TextPaster.hasActiveEditableTextBox(targetApp: appToPasteInto)
-                
-                if hasTextbox {
-                    // Scenario A: Active textbox present -> Auto-paste directly into field!
-                    self.pillWindow?.orderOut(nil)
-                    TextPaster.paste(text: trimmed, targetApp: appToPasteInto)
-                    self.currentTranscript = ""
-                    self.isFallbackCard = false
-                    self.isCommitting = false
-                } else {
-                    // Scenario B: No active textbox present (Wispr Flow behavior) -> Show Fallback HUD Card!
-                    self.currentTranscript = trimmed
-                    self.isFallbackCard = true
-                    self.pillWindow?.showAnimated(isCard: true)
-                    self.isCommitting = false
-                }
-            } else {
+            // Filter out empty, single period, or pure punctuation hallucinations
+            guard !trimmed.isEmpty && trimmed != "." && !trimmed.allSatisfy({ $0.isPunctuation || $0.isWhitespace }) else {
                 self.pillWindow?.orderOut(nil)
                 self.currentTranscript = ""
                 self.isFallbackCard = false
+                self.isCommitting = false
+                return
+            }
+            
+            // 1. Save to persistent real history with audio recording
+            SaynStore.shared.addDictation(
+                text: trimmed,
+                audioURL: URL(fileURLWithPath: "/tmp/sayn_dictation.wav"),
+                duration: 2.5
+            )
+            
+            // 2. Check if target application has an active editable text box / caret
+            let hasTextbox = TextPaster.hasActiveEditableTextBox(targetApp: appToPasteInto)
+            
+            if hasTextbox {
+                // Scenario A: Active textbox present -> Auto-paste directly into field!
+                self.pillWindow?.orderOut(nil)
+                TextPaster.paste(text: trimmed, targetApp: appToPasteInto)
+                self.currentTranscript = ""
+                self.isFallbackCard = false
+                self.isCommitting = false
+            } else {
+                // Scenario B: No active textbox present (Wispr Flow behavior) -> Show Fallback HUD Card!
+                self.currentTranscript = trimmed
+                self.isFallbackCard = true
+                self.pillWindow?.showAnimated(isCard: true)
                 self.isCommitting = false
             }
         }

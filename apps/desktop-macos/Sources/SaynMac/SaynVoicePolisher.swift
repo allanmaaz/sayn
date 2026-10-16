@@ -112,7 +112,7 @@ final class SaynVoicePolisher {
     
     func polishLocally(_ text: String, appBundleId: String? = nil) -> String {
         var result = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !result.isEmpty else { return "" }
+        guard !result.isEmpty, result != ".", !result.allSatisfy({ $0.isPunctuation || $0.isWhitespace }) else { return "" }
         
         // Check for instant snippet expansion
         if let snippet = expandSnippet(from: result) {

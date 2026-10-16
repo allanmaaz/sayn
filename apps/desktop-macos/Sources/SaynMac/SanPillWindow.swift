@@ -103,24 +103,55 @@ struct SanPillView: View {
         .animation(.spring(response: 0.28, dampingFraction: 0.82), value: isFallbackCard)
     }
     
-    // MARK: - 1. Micro Recording Capsule (Wispr Flow State)
-    /// Minimalist 96x30 black capsule with dancing pure-white waveform bars
+    // MARK: - 1. Micro Recording Capsule with Real Equalizer & Tick Mark
     private var microRecordingCapsule: some View {
-        HStack(spacing: 3) {
-            // 9 Dynamic Pure-White Equalizer Bars reacting in real-time
-            ForEach(0..<9, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 1.5)
-                    .fill(Color.white)
-                    .frame(
-                        width: 2.4,
-                        height: CGFloat(max(4, waveformEngine.audioLevels[min(index, waveformEngine.audioLevels.count - 1)] * 18))
-                    )
-                    .animation(.easeOut(duration: 0.08), value: waveformEngine.audioLevels[min(index, waveformEngine.audioLevels.count - 1)])
+        HStack(spacing: 8) {
+            // Cancel (✕) button
+            Button(action: onCancel) {
+                ZStack {
+                    Circle()
+                        .fill(Color.white.opacity(isHoveredClose ? 0.25 : 0.12))
+                        .frame(width: 20, height: 20)
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(Color.white.opacity(0.7))
+                }
             }
+            .buttonStyle(PlainButtonStyle())
+            .onHover { h in isHoveredClose = h }
+            
+            // 9 Dynamic Pure-White Equalizer Bars reacting in real-time
+            HStack(spacing: 3) {
+                ForEach(0..<9, id: \.self) { index in
+                    RoundedRectangle(cornerRadius: 1.5)
+                        .fill(Color.white)
+                        .frame(
+                            width: 2.4,
+                            height: CGFloat(max(4, waveformEngine.audioLevels[min(index, waveformEngine.audioLevels.count - 1)] * 18))
+                        )
+                        .animation(.easeOut(duration: 0.08), value: waveformEngine.audioLevels[min(index, waveformEngine.audioLevels.count - 1)])
+                }
+            }
+            .padding(.horizontal, 4)
+            
+            // Confirm / Tick Mark (✓) button
+            Button(action: {
+                onConfirm(transcriptText)
+            }) {
+                ZStack {
+                    Circle()
+                        .fill(Color(red: 46/255, green: 133/255, blue: 64/255))
+                        .frame(width: 20, height: 20)
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.white)
+                }
+            }
+            .buttonStyle(PlainButtonStyle())
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 7)
-        .frame(width: 96, height: 30)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .frame(height: 32)
         .background(
             Capsule()
                 .fill(Color(red: 10/255, green: 10/255, blue: 12/255).opacity(0.96))
@@ -133,7 +164,7 @@ struct SanPillView: View {
     }
     
     // MARK: - 2. Fallback HUD Card (When No Textbox Focused)
-    /// Floating 380x170 dark card with header, clean transcript, and [ Copy ] button
+    /// Floating 380x170 dark card with header, clean transcript, [ Copy ], and [ ✓ Insert ] buttons
     private var fallbackHUDCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             // Header Bar: Audio Icon + Context Hint + Circular Dismiss [X]
@@ -178,10 +209,11 @@ struct SanPillView: View {
             }
             .frame(maxHeight: 70)
             
-            // Footer: [ Copy ] Button
-            HStack {
+            // Footer: [ Copy ] and [ ✓ Insert ] Tick Mark Buttons
+            HStack(spacing: 10) {
                 Spacer()
                 
+                // Copy Button
                 Button(action: {
                     let pasteboard = NSPasteboard.general
                     pasteboard.clearContents()
@@ -198,18 +230,13 @@ struct SanPillView: View {
                     }
                 }) {
                     HStack(spacing: 6) {
-                        if isCopied {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 11, weight: .bold))
-                            Text("Copied!")
-                                .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        } else {
-                            Text("Copy")
-                                .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        }
+                        Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
+                            .font(.system(size: 11, weight: .bold))
+                        Text(isCopied ? "Copied!" : "Copy")
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
                     }
                     .foregroundColor(.white)
-                    .padding(.horizontal, 18)
+                    .padding(.horizontal, 14)
                     .padding(.vertical, 7)
                     .background(
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -218,6 +245,26 @@ struct SanPillView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
                 .onHover { h in isHoveredCopy = h }
+                
+                // Tick Mark / Insert (✓) Button
+                Button(action: {
+                    onConfirm(transcriptText)
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 11, weight: .bold))
+                        Text("Insert")
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 7)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(Color(red: 46/255, green: 133/255, blue: 64/255))
+                    )
+                }
+                .buttonStyle(PlainButtonStyle())
             }
         }
         .padding(18)

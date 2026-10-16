@@ -88,9 +88,11 @@ enum SaynSettingsTab: String, CaseIterable, Identifiable {
     }
 }
 
-// MARK: - Main SwiftUI Studio View
+// MARK: - Main SwiftUI Studio View with 100% Real Persistent Data
 struct SaynStudioView: View {
     @ObservedObject var waveformEngine: AudioWaveformEngine
+    @ObservedObject var store = SaynStore.shared
+    
     var onToggleDictation: () -> Void
     var onRefineText: (String, @escaping (String) -> Void) -> Void
     
@@ -100,37 +102,22 @@ struct SaynStudioView: View {
     @State private var showSettingsModal: Bool = false
     @State private var activeSettingsTab: SaynSettingsTab = .general
     
-    // User Profile Data
-    @State private var firstName: String = "Mohammed"
-    @State private var lastName: String = "Maaz"
-    @State private var email: String = "allanmaazimdad@gmail.com"
-    
-    // Style Engine State
-    @State private var autoCleanupLevel: String = "Light" // None, Light, Medium
-    @State private var emailTone: String = "Formal"       // Formal, Casual, Excited!
-    @State private var activeStyleSubTab: String = "Auto cleanup"
-    
-    // Transforms State
-    @State private var transformsOptIn: Bool = true
-    @State private var autoApplyTransform: Bool = false
-    @State private var selectedAutoTransform: String = "Polish"
-    
-    // Search & History Feed
+    // Search & Filtering
     @State private var searchHistoryQuery: String = ""
-    @State private var historyItems: [DictationHistoryEntry] = [
-        DictationHistoryEntry(time: "1:42am", text: "What's up? What's going on?", duration: "2.4s"),
-        DictationHistoryEntry(time: "1:37am", text: "and it is still not automatically going inside the text box which I am typing right now", duration: "4.1s"),
-        DictationHistoryEntry(time: "1:36am", text: "testing dictation speed with Cloudflare and Gemini speech engine", duration: "3.2s"),
-        DictationHistoryEntry(time: "1:36am", text: "Hi. I'm a new student here at Sardi.", duration: "1.8s")
-    ]
+    @State private var searchDictionaryQuery: String = ""
+    @State private var isAddingNewWord: Bool = false
+    @State private var newWordText: String = ""
+    @State private var copiedId: UUID? = nil
     
-    // Custom Dictionary Entries
-    @State private var dictionaryWords: [String] = [
-        "Wispr Flow", "lunc ✨", "Sardi ✨", "Zwapy ✨", "Mohammed Maaz", "Mohammed", "btw -> by the way", "allanmaazimdad@gmail.com"
-    ]
+    // Account edit fields
+    @State private var editFirstName: String = ""
+    @State private var editLastName: String = ""
+    @State private var editEmail: String = ""
+    @State private var accountSavedNotice: Bool = false
     
-    // Scratchpad Text
+    // Scratchpad
     @State private var scratchpadText: String = "Dictate or draft freely here. When done, you can apply a Transform or copy directly."
+    @State private var activeStyleSubTab: String = "Auto cleanup"
     
     // Color Palette Tokens
     private let bgCanvas = Color(red: 250/255, green: 249/255, blue: 245/255)
@@ -206,6 +193,11 @@ struct SaynStudioView: View {
             }
         }
         .frame(minWidth: 880, minHeight: 600)
+        .onAppear {
+            editFirstName = store.firstName
+            editLastName = store.lastName
+            editEmail = store.email
+        }
     }
     
     // MARK: - Top Chrome Toolbar
@@ -247,7 +239,7 @@ struct SaynStudioView: View {
             }
             .buttonStyle(PlainButtonStyle())
             
-            // User Avatar Popover Button
+            // User Avatar Popover Button (Real Monogram from store.firstName)
             Button(action: {
                 withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
                     showProfilePopover.toggle()
@@ -258,7 +250,7 @@ struct SaynStudioView: View {
                         .fill(Color(red: 79/255, green: 91/255, blue: 213/255))
                         .frame(width: 28, height: 28)
                     
-                    Text("M")
+                    Text(String(store.firstName.prefix(1)).uppercased())
                         .font(.system(size: 13, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
                 }
@@ -282,16 +274,16 @@ struct SaynStudioView: View {
                     Circle()
                         .fill(Color(red: 79/255, green: 91/255, blue: 213/255))
                         .frame(width: 38, height: 38)
-                    Text("M")
+                    Text(String(store.firstName.prefix(1)).uppercased())
                         .font(.system(size: 16, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
                 }
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("\(firstName) \(lastName)")
+                    Text("\(store.firstName) \(store.lastName)")
                         .font(.system(size: 14, weight: .bold, design: .rounded))
                         .foregroundColor(textDark)
-                    Text(email)
+                    Text(store.email)
                         .font(.system(size: 12, weight: .regular))
                         .foregroundColor(textMuted)
                 }
@@ -353,6 +345,9 @@ struct SaynStudioView: View {
             // Manage Account Link
             Button(action: {
                 showProfilePopover = false
+                editFirstName = store.firstName
+                editLastName = store.lastName
+                editEmail = store.email
                 activeSettingsTab = .account
                 showSettingsModal = true
             }) {
@@ -483,14 +478,14 @@ struct SaynStudioView: View {
         .buttonStyle(PlainButtonStyle())
     }
     
-    // MARK: - 1. Dictation View
+    // MARK: - 1. Dictation View (Connected to Real SaynStore)
     private var dictationFeedView: some View {
         HStack(alignment: .top, spacing: 20) {
             // Main Feed Area
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 20) {
                     // Personalized Welcome Header
-                    Text("Welcome back, \(firstName)")
+                    Text("Welcome back, \(store.firstName)")
                         .font(.system(size: 24, weight: .bold, design: .rounded))
                         .foregroundColor(textDark)
                     
@@ -567,14 +562,35 @@ struct SaynStudioView: View {
                             
                             Spacer()
                             
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 13))
-                                .foregroundColor(textMuted)
+                            HStack(spacing: 6) {
+                                Image(systemName: "magnifyingglass")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(textMuted)
+                                
+                                TextField("Search dictations...", text: $searchHistoryQuery)
+                                    .textFieldStyle(PlainTextFieldStyle())
+                                    .font(.system(size: 12))
+                                    .frame(width: 140)
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(surfaceBeige))
                         }
                         
-                        // Dictation Cards
-                        ForEach(historyItems) { item in
-                            dictationItemRow(item: item)
+                        // Real Dictation Cards from SaynStore
+                        let filteredHistory = store.history.filter {
+                            searchHistoryQuery.isEmpty || $0.text.localizedCaseInsensitiveContains(searchHistoryQuery)
+                        }
+                        
+                        if filteredHistory.isEmpty {
+                            Text("No dictations found. Press Fn or Option+Space to speak!")
+                                .font(.system(size: 13))
+                                .foregroundColor(textMuted)
+                                .padding(.vertical, 20)
+                        } else {
+                            ForEach(filteredHistory) { item in
+                                dictationItemRow(item: item)
+                            }
                         }
                     }
                 }
@@ -582,12 +598,12 @@ struct SaynStudioView: View {
             }
             .frame(maxWidth: .infinity)
             
-            // Right Stats Rail
+            // Right Stats Rail (Real Dynamic Statistics)
             VStack(alignment: .leading, spacing: 16) {
                 // Main Stats Card
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("22.2K")
+                        Text("\(Double(store.totalWordsDictated) / 1000.0, specifier: "%.1f")K")
                             .font(.system(size: 26, weight: .bold, design: .rounded))
                             .foregroundColor(textDark)
                         Text("total words")
@@ -596,7 +612,7 @@ struct SaynStudioView: View {
                     }
                     
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("135")
+                        Text("\(store.averageWPM)")
                             .font(.system(size: 26, weight: .bold, design: .rounded))
                             .foregroundColor(textDark)
                         Text("wpm")
@@ -605,7 +621,7 @@ struct SaynStudioView: View {
                     }
                     
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("11")
+                        Text("\(store.currentDayStreak)")
                             .font(.system(size: 26, weight: .bold, design: .rounded))
                             .foregroundColor(textDark)
                         Text("day streak")
@@ -675,9 +691,10 @@ struct SaynStudioView: View {
         }
     }
     
-    private func dictationItemRow(item: DictationHistoryEntry) -> some View {
+    // MARK: - Dictation Item Row (with REAL Audio Playback, Copy, and Delete)
+    private func dictationItemRow(item: DictationEntry) -> some View {
         HStack(alignment: .center, spacing: 14) {
-            Text(item.time)
+            Text(item.timeFormatted)
                 .font(.system(size: 12, weight: .regular))
                 .foregroundColor(textMuted)
                 .frame(width: 55, alignment: .leading)
@@ -689,38 +706,66 @@ struct SaynStudioView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             
             HStack(spacing: 12) {
-                // Real Vector Actions: Play, Copy, Flag, More
-                Button(action: {}) {
-                    Image(systemName: "play.fill")
+                // REAL Audio Playback Action
+                Button(action: {
+                    store.playAudio(for: item)
+                }) {
+                    Image(systemName: store.playingEntryId == item.id ? "stop.fill" : "play.fill")
                         .font(.system(size: 11))
-                        .foregroundColor(textMuted)
+                        .foregroundColor(store.playingEntryId == item.id ? accentTeal : textMuted)
                 }
                 .buttonStyle(PlainButtonStyle())
                 
+                // REAL Copy Action
                 Button(action: {
                     let pb = NSPasteboard.general
                     pb.clearContents()
                     pb.setString(item.text, forType: .string)
+                    withAnimation { copiedId = item.id }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                        if copiedId == item.id { copiedId = nil }
+                    }
                 }) {
-                    Image(systemName: "doc.on.doc")
+                    Image(systemName: copiedId == item.id ? "checkmark" : "doc.on.doc")
                         .font(.system(size: 12))
-                        .foregroundColor(textMuted)
+                        .foregroundColor(copiedId == item.id ? Color.green : textMuted)
                 }
                 .buttonStyle(PlainButtonStyle())
                 
-                Button(action: {}) {
-                    Image(systemName: "flag")
+                // REAL Toggle Flag Action
+                Button(action: {
+                    store.toggleFlag(id: item.id)
+                }) {
+                    Image(systemName: item.isFlagged ? "flag.fill" : "flag")
                         .font(.system(size: 11))
-                        .foregroundColor(textMuted)
+                        .foregroundColor(item.isFlagged ? accentAmber : textMuted)
                 }
                 .buttonStyle(PlainButtonStyle())
                 
-                Button(action: {}) {
+                // REAL Delete & Actions Menu
+                Menu {
+                    Button("Copy Text") {
+                        let pb = NSPasteboard.general
+                        pb.clearContents()
+                        pb.setString(item.text, forType: .string)
+                    }
+                    Button("Play Audio Recording") {
+                        store.playAudio(for: item)
+                    }
+                    Button("Add to Custom Dictionary") {
+                        store.addDictionaryWord(item.text)
+                    }
+                    Divider()
+                    Button("Delete Entry") {
+                        store.deleteEntry(id: item.id)
+                    }
+                } label: {
                     Image(systemName: "ellipsis")
                         .font(.system(size: 12))
                         .foregroundColor(textMuted)
                 }
-                .buttonStyle(PlainButtonStyle())
+                .menuStyle(BorderlessButtonMenuStyle())
+                .frame(width: 20)
             }
         }
         .padding(.vertical, 12)
@@ -769,7 +814,7 @@ struct SaynStudioView: View {
                 HStack(alignment: .top, spacing: 16) {
                     // Card 1: Speedometer WPM Gauge
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("135")
+                        Text("\(store.averageWPM)")
                             .font(.system(size: 32, weight: .bold, design: .rounded))
                             .foregroundColor(textDark)
                         
@@ -786,7 +831,7 @@ struct SaynStudioView: View {
                                 .rotationEffect(.degrees(180))
                             
                             Circle()
-                                .trim(from: 0.0, to: 0.42)
+                                .trim(from: 0.0, to: CGFloat(min(0.5, Double(store.averageWPM) / 300.0)))
                                 .stroke(accentTeal, style: StrokeStyle(lineWidth: 10, lineCap: .round))
                                 .frame(width: 120, height: 120)
                                 .rotationEffect(.degrees(180))
@@ -843,7 +888,7 @@ struct SaynStudioView: View {
                     // Card 3: Total Words Dictated
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
-                            Text("22,155")
+                            Text("\(store.totalWordsDictated)")
                                 .font(.system(size: 32, weight: .bold, design: .rounded))
                                 .foregroundColor(textDark)
                             Spacer()
@@ -920,7 +965,7 @@ struct SaynStudioView: View {
                     // GitHub-style Streak Heatmap
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
-                            Text("11 day streak")
+                            Text("\(store.currentDayStreak) day streak")
                                 .font(.system(size: 18, weight: .bold, design: .rounded))
                                 .foregroundColor(textDark)
                             Spacer()
@@ -1023,7 +1068,7 @@ struct SaynStudioView: View {
         }
     }
     
-    // MARK: - 3. Dictionary View
+    // MARK: - 3. Dictionary View (Connected to Real SaynStore)
     private var dictionaryView: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 20) {
@@ -1034,8 +1079,10 @@ struct SaynStudioView: View {
                     
                     Spacer()
                     
-                    Button(action: {}) {
-                        Text("Add new")
+                    Button(action: {
+                        withAnimation { isAddingNewWord.toggle() }
+                    }) {
+                        Text(isAddingNewWord ? "Close" : "Add new")
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(.white)
                             .padding(.horizontal, 16)
@@ -1043,6 +1090,35 @@ struct SaynStudioView: View {
                             .background(RoundedRectangle(cornerRadius: 8).fill(Color.black))
                     }
                     .buttonStyle(PlainButtonStyle())
+                }
+                
+                // Add New Word Input Bar
+                if isAddingNewWord {
+                    HStack {
+                        TextField("Enter personal term, name, or jargon...", text: $newWordText)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .font(.system(size: 13))
+                            .padding(8)
+                            .background(RoundedRectangle(cornerRadius: 8).fill(surfaceBeige))
+                        
+                        Button(action: {
+                            if !newWordText.isEmpty {
+                                store.addDictionaryWord(newWordText)
+                                newWordText = ""
+                                isAddingNewWord = false
+                            }
+                        }) {
+                            Text("Save Term")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(RoundedRectangle(cornerRadius: 8).fill(accentTeal))
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                    .padding(12)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(cardWhite))
                 }
                 
                 // Tabs: All, Personal, Shared
@@ -1060,13 +1136,18 @@ struct SaynStudioView: View {
                     
                     Spacer()
                     
-                    HStack(spacing: 12) {
+                    HStack(spacing: 8) {
                         Image(systemName: "magnifyingglass")
-                        Image(systemName: "arrow.up.arrow.down")
-                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .font(.system(size: 11))
+                            .foregroundColor(textMuted)
+                        TextField("Search...", text: $searchDictionaryQuery)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .font(.system(size: 12))
+                            .frame(width: 100)
                     }
-                    .font(.system(size: 12))
-                    .foregroundColor(textMuted)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(surfaceBeige))
                 }
                 .padding(.top, 4)
                 
@@ -1091,20 +1172,26 @@ struct SaynStudioView: View {
                             .foregroundColor(Color.white.opacity(0.85))
                         
                         HStack(spacing: 8) {
-                            Text("+ Add new word")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(.black)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 4)
-                                .background(Capsule().fill(Color.white))
-                            
-                            ForEach(["Wispr Flow", "Samir", "Sara", "Karol", "Spyder"], id: \.self) { chip in
-                                Text(chip)
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundColor(.white)
+                            Button(action: { isAddingNewWord = true }) {
+                                Text("+ Add new word")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundColor(.black)
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 4)
-                                    .background(Capsule().fill(Color.white.opacity(0.18)))
+                                    .background(Capsule().fill(Color.white))
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            
+                            ForEach(["Wispr Flow", "Samir", "Sara", "Karol", "Spyder"], id: \.self) { chip in
+                                Button(action: { store.addDictionaryWord(chip) }) {
+                                    Text(chip)
+                                        .font(.system(size: 11, weight: .medium))
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 4)
+                                        .background(Capsule().fill(Color.white.opacity(0.18)))
+                                }
+                                .buttonStyle(PlainButtonStyle())
                             }
                         }
                         .padding(.top, 4)
@@ -1112,9 +1199,13 @@ struct SaynStudioView: View {
                     .padding(20)
                 }
                 
-                // Dictionary Entries Table
+                // Real Dictionary Entries Table from SaynStore
+                let filteredWords = store.dictionaryWords.filter {
+                    searchDictionaryQuery.isEmpty || $0.localizedCaseInsensitiveContains(searchDictionaryQuery)
+                }
+                
                 VStack(spacing: 0) {
-                    ForEach(dictionaryWords, id: \.self) { word in
+                    ForEach(filteredWords, id: \.self) { word in
                         HStack {
                             Text(word)
                                 .font(.system(size: 14, weight: .medium, design: .rounded))
@@ -1123,14 +1214,31 @@ struct SaynStudioView: View {
                             Spacer()
                             
                             HStack(spacing: 12) {
-                                Image(systemName: "pencil")
-                                    .font(.system(size: 11))
-                                Image(systemName: "trash")
-                                    .font(.system(size: 11))
+                                Button(action: {
+                                    // Set as text snippet or copy
+                                    let pb = NSPasteboard.general
+                                    pb.clearContents()
+                                    pb.setString(word, forType: .string)
+                                }) {
+                                    Image(systemName: "doc.on.doc")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(textMuted)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                
+                                Button(action: {
+                                    store.deleteDictionaryWord(word)
+                                }) {
+                                    Image(systemName: "trash")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(textMuted)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                
                                 Image(systemName: "star")
                                     .font(.system(size: 11))
+                                    .foregroundColor(textMuted.opacity(0.6))
                             }
-                            .foregroundColor(textMuted.opacity(0.7))
                         }
                         .padding(.vertical, 14)
                         .padding(.horizontal, 16)
@@ -1145,7 +1253,7 @@ struct SaynStudioView: View {
         }
     }
     
-    // MARK: - 4. Style Engine View
+    // MARK: - 4. Style Engine View (Connected to SaynStore)
     private var styleView: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 20) {
@@ -1192,38 +1300,41 @@ struct SaynStudioView: View {
                                 .fill(LinearGradient(colors: [Color(red: 40/255, green: 50/255, blue: 50/255), Color(red: 20/255, green: 25/255, blue: 25/255)], startPoint: .topLeading, endPoint: .bottomTrailing))
                         )
                         
-                        // 3 Level Cards: None, Light, Medium
+                        // 3 Level Cards: None, Light, Medium (Saves to SaynStore)
                         HStack(alignment: .top, spacing: 16) {
                             cleanupLevelCard(
                                 title: "None",
                                 subtitle: "Transcribes exactly what you said, including mistakes",
                                 example: "hey joey, we still on for coffee or? I think we maybe should leave earlier to make it there in time there might um be traffic. What are you thinking?",
-                                isSelected: autoCleanupLevel == "None"
+                                isSelected: store.cleanupLevel == "None"
                             ) {
-                                autoCleanupLevel = "None"
+                                store.cleanupLevel = "None"
+                                store.updateConfig()
                             }
                             
                             cleanupLevelCard(
                                 title: "Light",
                                 subtitle: "Cleans up filler words and grammar",
                                 example: "Hey Joey, are we still on for coffee? I think we should leave earlier to make it there in time. There might be traffic. What are you thinking?",
-                                isSelected: autoCleanupLevel == "Light"
+                                isSelected: store.cleanupLevel == "Light"
                             ) {
-                                autoCleanupLevel = "Light"
+                                store.cleanupLevel = "Light"
+                                store.updateConfig()
                             }
                             
                             cleanupLevelCard(
                                 title: "Medium",
                                 subtitle: "Edits for clarity and conciseness",
                                 example: "Hey Joey, are we still on for coffee? We should leave earlier; there might be traffic. What do you think?",
-                                isSelected: autoCleanupLevel == "Medium"
+                                isSelected: store.cleanupLevel == "Medium"
                             ) {
-                                autoCleanupLevel = "Medium"
+                                store.cleanupLevel = "Medium"
+                                store.updateConfig()
                             }
                         }
                     }
                 } else if activeStyleSubTab == "Email" {
-                    // Email Tones Screen
+                    // Email Tones Screen (Saves to SaynStore)
                     VStack(alignment: .leading, spacing: 16) {
                         // Hero Banner with Email Icons
                         HStack {
@@ -1260,28 +1371,31 @@ struct SaynStudioView: View {
                             emailToneCard(
                                 title: "Formal.",
                                 subtitle: "Caps + Punctuation",
-                                greeting: "Hi Alex,\n\nIt was great talking with you today. Looking forward to our next chat.\n\nBest,\nMohammed",
-                                isSelected: emailTone == "Formal"
+                                greeting: "Hi Alex,\n\nIt was great talking with you today. Looking forward to our next chat.\n\nBest,\n\(store.firstName)",
+                                isSelected: store.emailTone == "Formal"
                             ) {
-                                emailTone = "Formal"
+                                store.emailTone = "Formal"
+                                store.updateConfig()
                             }
                             
                             emailToneCard(
                                 title: "Casual",
                                 subtitle: "Caps + Less punctuation",
-                                greeting: "Hi Alex, it was great talking with you today. Looking forward to our next chat.\n\nBest,\nMohammed",
-                                isSelected: emailTone == "Casual"
+                                greeting: "Hi Alex, it was great talking with you today. Looking forward to our next chat.\n\nBest,\n\(store.firstName)",
+                                isSelected: store.emailTone == "Casual"
                             ) {
-                                emailTone = "Casual"
+                                store.emailTone = "Casual"
+                                store.updateConfig()
                             }
                             
                             emailToneCard(
                                 title: "Excited!",
                                 subtitle: "More exclamations",
-                                greeting: "Hi Alex,\n\nIt was great talking with you today. Looking forward to our next chat!\n\nBest,\nMohammed",
-                                isSelected: emailTone == "Excited!"
+                                greeting: "Hi Alex,\n\nIt was great talking with you today. Looking forward to our next chat!\n\nBest,\n\(store.firstName)",
+                                isSelected: store.emailTone == "Excited!"
                             ) {
-                                emailTone = "Excited!"
+                                store.emailTone = "Excited!"
+                                store.updateConfig()
                             }
                         }
                     }
@@ -1365,7 +1479,7 @@ struct SaynStudioView: View {
         .buttonStyle(PlainButtonStyle())
     }
     
-    // MARK: - 5. Transforms View
+    // MARK: - 5. Transforms View (Connected to SaynStore)
     private var transformsView: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 20) {
@@ -1385,8 +1499,9 @@ struct SaynStudioView: View {
                     Spacer()
                     
                     HStack(spacing: 12) {
-                        Toggle("Opt in", isOn: $transformsOptIn)
+                        Toggle("Opt in", isOn: $store.transformsOptIn)
                             .toggleStyle(SwitchToggleStyle())
+                            .onChange(of: store.transformsOptIn) { _ in store.updateConfig() }
                         
                         Text("⌥ O to view changes")
                             .font(.system(size: 11, weight: .medium))
@@ -1436,15 +1551,17 @@ struct SaynStudioView: View {
                     
                     Spacer()
                     
-                    Picker("", selection: $selectedAutoTransform) {
+                    Picker("", selection: $store.selectedAutoTransform) {
                         Text("Polish").tag("Polish")
                         Text("Prompt Engineer").tag("Prompt Engineer")
                         Text("Casual").tag("Casual")
                     }
                     .frame(width: 130)
+                    .onChange(of: store.selectedAutoTransform) { _ in store.updateConfig() }
                     
-                    Toggle("", isOn: $autoApplyTransform)
+                    Toggle("", isOn: $store.autoApplyTransform)
                         .toggleStyle(SwitchToggleStyle())
+                        .onChange(of: store.autoApplyTransform) { _ in store.updateConfig() }
                 }
                 .padding(16)
                 .background(RoundedRectangle(cornerRadius: 12).fill(cardWhite))
@@ -1615,7 +1732,7 @@ struct SaynStudioView: View {
             VStack(spacing: 0) {
                 snippetRow(shortcut: "btw", expansion: "by the way")
                 Divider().background(borderDivider)
-                snippetRow(shortcut: "myemail", expansion: "allanmaazimdad@gmail.com")
+                snippetRow(shortcut: "myemail", expansion: store.email)
                 Divider().background(borderDivider)
                 snippetRow(shortcut: "intro", expansion: "Hi, hope you are having a wonderful day. I wanted to reach out regarding...")
             }
@@ -1909,6 +2026,7 @@ struct SaynStudioView: View {
         }
     }
     
+    // Real Persistent Account Settings
     private var settingsAccountContent: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Account")
@@ -1916,9 +2034,9 @@ struct SaynStudioView: View {
                 .foregroundColor(textDark)
             
             VStack(spacing: 12) {
-                profileField(label: "First name", value: $firstName)
-                profileField(label: "Last name", value: $lastName)
-                profileField(label: "Email", value: $email)
+                profileField(label: "First name", value: $editFirstName)
+                profileField(label: "Last name", value: $editLastName)
+                profileField(label: "Email", value: $editEmail)
                 
                 HStack {
                     Text("Profile picture")
@@ -1928,12 +2046,20 @@ struct SaynStudioView: View {
                         Circle()
                             .fill(Color(red: 79/255, green: 91/255, blue: 213/255))
                             .frame(width: 30, height: 30)
-                        Text("M").font(.system(size: 13, weight: .bold)).foregroundColor(.white)
+                        Text(String(store.firstName.prefix(1)).uppercased())
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(.white)
                     }
                 }
             }
             .padding(14)
             .background(RoundedRectangle(cornerRadius: 12).fill(surfaceBeige))
+            
+            if accountSavedNotice {
+                Text("✓ Changes saved to ~/.sayn/account.json")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(Color.green)
+            }
             
             HStack {
                 Button(action: {}) {
@@ -1953,12 +2079,19 @@ struct SaynStudioView: View {
                 
                 Spacer()
                 
-                Button(action: { showSettingsModal = false }) {
+                Button(action: {
+                    store.updateAccount(firstName: editFirstName, lastName: editLastName, email: editEmail)
+                    accountSavedNotice = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                        accountSavedNotice = false
+                        showSettingsModal = false
+                    }
+                }) {
                     Text("Save")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 16).padding(.vertical, 6)
-                        .background(RoundedRectangle(cornerRadius: 6).fill(Color.gray))
+                        .background(RoundedRectangle(cornerRadius: 6).fill(Color.black))
                 }
                 .buttonStyle(PlainButtonStyle())
             }
@@ -2045,12 +2178,4 @@ struct SaynStudioView: View {
                 .background(RoundedRectangle(cornerRadius: 6).fill(cardWhite))
         }
     }
-}
-
-// Model for Dictation History
-struct DictationHistoryEntry: Identifiable {
-    let id = UUID()
-    let time: String
-    let text: String
-    let duration: String
 }

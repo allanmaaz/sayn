@@ -96,16 +96,16 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
             let linear = max(0.0, (power + 50.0) / 50.0)
             let normalized = min(max(Float(linear), 0.08), 1.0)
             
-            // Voice Activity Detection: user speaking power above -36 dB
-            if power > -36.0 {
+            // Voice Activity Detection: user speaking power above -46 dB
+            if power > -46.0 {
                 self.hasSpokenVoice = true
                 self.lastSpokenTimestamp = Date()
             }
             
-            // Auto-Commit on Silence: if user spoke and then stops speaking for >= 1.6 seconds
+            // Auto-Commit on Silence: if user spoke and then stops speaking for >= 1.8 seconds
             if self.hasSpokenVoice && !self.hasTriggeredSilenceCommit, let lastSpoken = self.lastSpokenTimestamp {
                 let silenceDuration = Date().timeIntervalSince(lastSpoken)
-                if silenceDuration >= 1.6 {
+                if silenceDuration >= 1.8 {
                     self.hasTriggeredSilenceCommit = true
                     DispatchQueue.main.async {
                         self.onSilenceDetected?()
@@ -114,50 +114,12 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
             }
             
             DispatchQueue.main.async {
-                self.audioLevels = (0..<8).map { i in
-                    let variance = Float.random(in: 0.75...1.25)
+                self.audioLevels = (0..<9).map { i in
+                    let variance = Float.random(in: 0.8...1.2)
                     return min(normalized * variance * (0.8 + Float(i % 3) * 0.1), 1.0)
                 }
             }
         }
-        
-        // 3. Optional live streaming speech preview (Apple Speech Framework)
-        startLiveSpeechPreview(onLiveTranscript: onLiveTranscript)
-    }
-    
-    private func startLiveSpeechPreview(onLiveTranscript: @escaping (String) -> Void) {
-        SFSpeechRecognizer.requestAuthorization { _ in }
-        
-        previewAudioEngine = AVAudioEngine()
-        guard let engine = previewAudioEngine else { return }
-        
-        let inputNode = engine.inputNode
-        let busFormat = inputNode.outputFormat(forBus: 0)
-        
-        let request = SFSpeechAudioBufferRecognitionRequest()
-        request.shouldReportPartialResults = true
-        self.recognitionRequest = request
-        
-        recognitionTask = speechRecognizer?.recognitionTask(with: request) { [weak self] result, error in
-            if let result = result {
-                let text = result.bestTranscription.formattedString
-                self?.lastAppleTranscript = text
-                if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    self?.hasSpokenVoice = true
-                    self?.lastSpokenTimestamp = Date()
-                }
-                DispatchQueue.main.async {
-                    onLiveTranscript(text)
-                }
-            }
-        }
-        
-        inputNode.removeTap(onBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: busFormat) { [weak self] buffer, _ in
-            self?.recognitionRequest?.append(buffer)
-        }
-        
-        try? engine.start()
     }
     
     func stopRecording(activeAppBundleId: String? = nil, completion: @escaping (String) -> Void) {
@@ -170,18 +132,24 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
         // 1. Stop audio recorder and metering
         meterTimer?.invalidate()
         meterTimer = nil
+        let duration = audioRecorder?.currentTime ?? 0.0
         audioRecorder?.stop()
         audioRecorder = nil
         isRecording = false
         
-        // 2. Stop speech preview engine
-        previewAudioEngine?.stop()
-        previewAudioEngine?.inputNode.removeTap(onBus: 0)
-        previewAudioEngine = nil
-        recognitionRequest?.endAudio()
-        recognitionTask?.finish()
-        recognitionRequest = nil
-        recognitionTask = nil
+        DispatchQueue.main.async {
+            self.audioLevels = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+            self.isProcessing = true
+        }
+        
+        // If recording was shorter than 0.3s or audio file is too small, skip
+        if duration < 0.3 {
+            DispatchQueue.main.async {
+                self.isProcessing = false
+                completion("")
+            }
+            return
+        }
         
         DispatchQueue.main.async {
             self.audioLevels = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
