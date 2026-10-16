@@ -58,6 +58,8 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
     @Published var dictionaryWords: [String] = []
     @Published var firstName: String = "Mohammed"
     @Published var lastName: String = "Maaz"
+    @Published var phone: String = "+91 98765 43210"
+    @Published var writingRole: String = "Code & Tech"
     @Published var email: String = "allanmaazimdad@gmail.com"
     @Published var cleanupLevel: String = "Light" // None, Light, Medium
     @Published var emailTone: String = "Formal"   // Formal, Casual, Excited!
@@ -271,10 +273,12 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
     }
     
     // MARK: - Account Persistence
-    func updateAccount(firstName: String, lastName: String, email: String) {
+    func updateAccount(firstName: String, lastName: String, phone: String = "", email: String, writingRole: String = "Code & Tech") {
         self.firstName = firstName
         self.lastName = lastName
+        if !phone.isEmpty { self.phone = phone }
         self.email = email
+        self.writingRole = writingRole
         saveAccount()
     }
     
@@ -284,7 +288,9 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
            let json = try? JSONSerialization.jsonObject(with: data) as? [String: String] {
             self.firstName = json["firstName"] ?? "Mohammed"
             self.lastName = json["lastName"] ?? "Maaz"
+            self.phone = json["phone"] ?? "+91 98765 43210"
             self.email = json["email"] ?? "allanmaazimdad@gmail.com"
+            self.writingRole = json["writingRole"] ?? "Code & Tech"
         } else {
             saveAccount()
         }
@@ -294,7 +300,9 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
         let payload: [String: String] = [
             "firstName": firstName,
             "lastName": lastName,
-            "email": email
+            "phone": phone,
+            "email": email,
+            "writingRole": writingRole
         ]
         if let data = try? JSONSerialization.data(withJSONObject: payload, options: .prettyPrinted) {
             try? data.write(to: accountFile, options: .atomic)

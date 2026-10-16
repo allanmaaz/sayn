@@ -112,6 +112,8 @@ struct SaynStudioView: View {
     // Account edit fields
     @State private var editFirstName: String = ""
     @State private var editLastName: String = ""
+    @State private var editPhone: String = ""
+    @State private var editWritingRole: String = ""
     @State private var editEmail: String = ""
     @State private var accountSavedNotice: Bool = false
     
@@ -347,6 +349,8 @@ struct SaynStudioView: View {
                 showProfilePopover = false
                 editFirstName = store.firstName
                 editLastName = store.lastName
+                editPhone = store.phone
+                editWritingRole = store.writingRole
                 editEmail = store.email
                 activeSettingsTab = .account
                 showSettingsModal = true
@@ -2036,6 +2040,8 @@ struct SaynStudioView: View {
             VStack(spacing: 12) {
                 profileField(label: "First name", value: $editFirstName)
                 profileField(label: "Last name", value: $editLastName)
+                profileField(label: "Phone number", value: $editPhone)
+                profileField(label: "Writing focus", value: $editWritingRole)
                 profileField(label: "Email", value: $editEmail)
                 
                 HStack {
@@ -2080,7 +2086,13 @@ struct SaynStudioView: View {
                 Spacer()
                 
                 Button(action: {
-                    store.updateAccount(firstName: editFirstName, lastName: editLastName, email: editEmail)
+                    store.updateAccount(
+                        firstName: editFirstName,
+                        lastName: editLastName,
+                        phone: editPhone,
+                        email: editEmail,
+                        writingRole: editWritingRole
+                    )
                     accountSavedNotice = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                         accountSavedNotice = false
