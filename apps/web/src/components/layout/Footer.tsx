@@ -129,13 +129,16 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
-        {/* Wispr-Flow Inspired Monumental Brand Watermark */}
+        {/* The Sonic Monolith Brand Watermark in Syne */}
         <div
-          className={`text-[17vw] font-black leading-[0.8] text-center tracking-tighter select-none my-4 pointer-events-none transition-all ${
+          className={`font-syne text-[17vw] font-extrabold leading-[0.85] text-center tracking-tighter select-none my-4 pointer-events-none transition-all ${
             isLight
-              ? 'bg-gradient-to-b from-[#6F1025]/20 via-[#A83249]/10 to-transparent bg-clip-text text-transparent'
-              : 'bg-gradient-to-b from-[#C83E5B]/35 via-[#6F1025]/15 to-transparent bg-clip-text text-transparent'
+              ? 'text-transparent bg-gradient-to-b from-[#6F1025]/25 via-[#A83249]/10 to-transparent bg-clip-text'
+              : 'text-transparent bg-gradient-to-b from-[#D9385A]/35 to-[#100205]/5 bg-clip-text'
           }`}
+          style={{
+            WebkitTextStroke: isLight ? '1px rgba(111,16,37,0.35)' : '1.5px rgba(217, 56, 90, 0.45)',
+          }}
         >
           SAYN
         </div>

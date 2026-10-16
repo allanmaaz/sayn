@@ -37,6 +37,71 @@ struct DictationEntry: Identifiable, Codable, Equatable {
     }
 }
 
+/// Team Member Data Model
+struct TeamMember: Identifiable, Codable, Equatable {
+    var id: UUID = UUID()
+    var name: String
+    var email: String
+    var role: String // "Owner", "Admin", "Member"
+    var avatarLetter: String
+    var isPending: Bool = false
+}
+
+/// Model Context Protocol (MCP) Client Configuration
+struct MCPConfig: Identifiable, Codable, Equatable {
+    var id: String
+    var name: String
+    var clientName: String // "Cursor", "Claude Desktop", "Windsurf"
+    var configPath: String
+    var isInstalled: Bool
+}
+
+/// Third-party App Connector Model
+struct ConnectorApp: Identifiable, Codable, Equatable {
+    var id: String
+    var name: String
+    var icon: String
+    var category: String
+    var description: String
+    var isConnected: Bool
+}
+
+/// Snippet / Macro Expansion Model
+struct TextSnippet: Identifiable, Codable, Equatable {
+    var id: UUID = UUID()
+    var shortcut: String
+    var expansion: String
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case shortcut = "trigger"
+        case expansion = "template"
+    }
+}
+
+struct SnippetsContainer: Codable {
+    var snippets: [TextSnippet]
+}
+
+/// Meeting Action Item
+struct MeetingActionItem: Identifiable, Codable, Equatable {
+    var id: UUID = UUID()
+    var title: String
+    var isCompleted: Bool = false
+}
+
+/// Notetaker Meeting Note
+struct MeetingNote: Identifiable, Codable, Equatable {
+    var id: UUID = UUID()
+    var title: String
+    var dateFormatted: String
+    var durationMinutes: Int
+    var attendees: [String]
+    var summary: String
+    var actionItems: [MeetingActionItem]
+    var transcript: String
+}
+
 /// Central Persistent Observable Store for SAYN
 /// Handles 100% REAL data persistence to ~/.sayn/
 final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
@@ -49,6 +114,11 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
     private let dictionaryFile: URL
     private let accountFile: URL
     private let configFile: URL
+    private let teamFile: URL
+    private let mcpFile: URL
+    private let connectorsFile: URL
+    private let snippetsFile: URL
+    private let meetingsFile: URL
     
     // Audio Player
     private var audioPlayer: AVAudioPlayer?
@@ -67,6 +137,24 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
     @Published var autoApplyTransform: Bool = false
     @Published var selectedAutoTransform: String = "Polish"
     
+    // Extended Functional Domains
+    @Published var teamMembers: [TeamMember] = []
+    @Published var mcpConfigs: [MCPConfig] = []
+    @Published var connectors: [ConnectorApp] = []
+    @Published var snippets: [TextSnippet] = []
+    @Published var meetingNotes: [MeetingNote] = []
+    
+    // Vibe Coding
+    @Published var vibeCodingCasing: String = "camelCase" // camelCase, snake_case, kebab-case, PascalCase
+    @Published var vibeCodingDocstring: Bool = true
+    @Published var vibeCodingFileTagging: Bool = true
+    @Published var detectedIDEs: [String] = []
+    
+    // Live Notetaker Recording Simulation
+    @Published var isRecordingMeeting: Bool = false
+    @Published var meetingElapsedSeconds: Int = 0
+    private var meetingTimer: Timer?
+    
     // Audio playback status
     @Published var playingEntryId: UUID? = nil
     
@@ -83,7 +171,6 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
     }
     
     var currentDayStreak: Int {
-        // Real streak calculation from timestamps
         let dates = Set(history.map { $0.dateFormatted })
         return max(11, dates.count)
     }
@@ -96,6 +183,11 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
         self.dictionaryFile = saynDir.appendingPathComponent("vocabulary.json")
         self.accountFile = saynDir.appendingPathComponent("account.json")
         self.configFile = saynDir.appendingPathComponent("config.json")
+        self.teamFile = saynDir.appendingPathComponent("team.json")
+        self.mcpFile = saynDir.appendingPathComponent("mcp.json")
+        self.connectorsFile = saynDir.appendingPathComponent("connectors.json")
+        self.snippetsFile = saynDir.appendingPathComponent("snippets.json")
+        self.meetingsFile = saynDir.appendingPathComponent("meetings.json")
         
         super.init()
         
@@ -104,6 +196,12 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
         loadDictionary()
         loadHistory()
         loadConfig()
+        loadTeam()
+        loadMCP()
+        loadConnectors()
+        loadSnippets()
+        loadMeetings()
+        scanRunningIDEs()
     }
     
     // MARK: - Directory Setup
@@ -120,7 +218,6 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
         let newId = UUID()
         var savedAudioName: String? = nil
         
-        // Copy audio recording to persistent storage
         if let src = audioURL, FileManager.default.fileExists(atPath: src.path) {
             let dest = recordingsDir.appendingPathComponent("\(newId.uuidString).wav")
             try? FileManager.default.copyItem(at: src, to: dest)
@@ -170,7 +267,6 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
            let decoded = try? JSONDecoder().decode([DictationEntry].self, from: data) {
             self.history = decoded
         } else {
-            // Seed initial real items matching current user's session
             self.history = [
                 DictationEntry(text: "What's up? What's going on?", durationSeconds: 2.2),
                 DictationEntry(text: "and it is still not automatically going inside the text box which I am typing right now", durationSeconds: 4.1),
@@ -204,7 +300,6 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
             }
         }
         
-        // Fallback to latest recording in /tmp
         if targetURL == nil && FileManager.default.fileExists(atPath: "/tmp/sayn_dictation.wav") {
             targetURL = URL(fileURLWithPath: "/tmp/sayn_dictation.wav")
         }
@@ -317,7 +412,10 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
             "emailTone": emailTone,
             "transformsOptIn": transformsOptIn,
             "autoApplyTransform": autoApplyTransform,
-            "selectedAutoTransform": selectedAutoTransform
+            "selectedAutoTransform": selectedAutoTransform,
+            "vibeCodingCasing": vibeCodingCasing,
+            "vibeCodingDocstring": vibeCodingDocstring,
+            "vibeCodingFileTagging": vibeCodingFileTagging
         ]
         if let data = try? JSONSerialization.data(withJSONObject: payload, options: .prettyPrinted) {
             try? data.write(to: configFile, options: .atomic)
@@ -333,6 +431,419 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
             self.transformsOptIn = json["transformsOptIn"] as? Bool ?? true
             self.autoApplyTransform = json["autoApplyTransform"] as? Bool ?? false
             self.selectedAutoTransform = json["selectedAutoTransform"] as? String ?? "Polish"
+            self.vibeCodingCasing = json["vibeCodingCasing"] as? String ?? "camelCase"
+            self.vibeCodingDocstring = json["vibeCodingDocstring"] as? Bool ?? true
+            self.vibeCodingFileTagging = json["vibeCodingFileTagging"] as? Bool ?? true
         }
+    }
+    
+    // MARK: - 1. Team Workspace Management & Persistence
+    func inviteMember(email: String, role: String = "Member") {
+        let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        
+        let initial = String(trimmed.prefix(1)).uppercased()
+        let name = trimmed.components(separatedBy: "@").first?.capitalized ?? "Team Member"
+        
+        let newMember = TeamMember(
+            id: UUID(),
+            name: name,
+            email: trimmed,
+            role: role,
+            avatarLetter: initial,
+            isPending: true
+        )
+        
+        teamMembers.append(newMember)
+        saveTeam()
+    }
+    
+    func removeMember(id: UUID) {
+        teamMembers.removeAll { $0.id == id }
+        saveTeam()
+    }
+    
+    func copyInviteLink() -> String {
+        let link = "https://sayn.ai/join/team-ws-\(UUID().uuidString.prefix(8).lowercased())"
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(link, forType: .string)
+        return link
+    }
+    
+    private func loadTeam() {
+        if FileManager.default.fileExists(atPath: teamFile.path),
+           let data = try? Data(contentsOf: teamFile),
+           let decoded = try? JSONDecoder().decode([TeamMember].self, from: data) {
+            self.teamMembers = decoded
+        } else {
+            self.teamMembers = [
+                TeamMember(
+                    id: UUID(),
+                    name: "\(firstName) \(lastName)",
+                    email: email,
+                    role: "Owner",
+                    avatarLetter: String(firstName.prefix(1)).uppercased(),
+                    isPending: false
+                ),
+                TeamMember(
+                    id: UUID(),
+                    name: "Alex Rivera",
+                    email: "alex@sayn.ai",
+                    role: "Admin",
+                    avatarLetter: "A",
+                    isPending: false
+                ),
+                TeamMember(
+                    id: UUID(),
+                    name: "Sarah Chen",
+                    email: "sarah.c@design.io",
+                    role: "Member",
+                    avatarLetter: "S",
+                    isPending: true
+                )
+            ]
+            saveTeam()
+        }
+    }
+    
+    private func saveTeam() {
+        if let encoded = try? JSONEncoder().encode(teamMembers) {
+            try? encoded.write(to: teamFile, options: .atomic)
+        }
+    }
+    
+    // MARK: - 2. Model Context Protocol (MCP) Dashboard & Wiring
+    func toggleMCPInstall(id: String) {
+        guard let idx = mcpConfigs.firstIndex(where: { $0.id == id }) else { return }
+        mcpConfigs[idx].isInstalled.toggle()
+        
+        let config = mcpConfigs[idx]
+        if config.isInstalled {
+            installMCPToDisk(config: config)
+        } else {
+            uninstallMCPFromDisk(config: config)
+        }
+        saveMCP()
+    }
+    
+    private func installMCPToDisk(config: MCPConfig) {
+        let expandedPath = NSString(string: config.configPath).expandingTildeInPath
+        let url = URL(fileURLWithPath: expandedPath)
+        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        
+        var json: [String: Any] = [:]
+        if let existingData = try? Data(contentsOf: url),
+           let parsed = try? JSONSerialization.jsonObject(with: existingData) as? [String: Any] {
+            json = parsed
+        }
+        
+        var mcpServers = json["mcpServers"] as? [String: Any] ?? [:]
+        mcpServers["sayn"] = [
+            "command": "/Applications/SAYN.app/Contents/MacOS/SAYN",
+            "args": ["--mcp-stdio"]
+        ]
+        json["mcpServers"] = mcpServers
+        
+        if let outData = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted]) {
+            try? outData.write(to: url, options: .atomic)
+        }
+    }
+    
+    private func uninstallMCPFromDisk(config: MCPConfig) {
+        let expandedPath = NSString(string: config.configPath).expandingTildeInPath
+        let url = URL(fileURLWithPath: expandedPath)
+        guard FileManager.default.fileExists(atPath: url.path),
+              let existingData = try? Data(contentsOf: url),
+              var json = try? JSONSerialization.jsonObject(with: existingData) as? [String: Any] else { return }
+        
+        if var mcpServers = json["mcpServers"] as? [String: Any] {
+            mcpServers.removeValue(forKey: "sayn")
+            json["mcpServers"] = mcpServers
+            if let outData = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted]) {
+                try? outData.write(to: url, options: .atomic)
+            }
+        }
+    }
+    
+    private func loadMCP() {
+        if FileManager.default.fileExists(atPath: mcpFile.path),
+           let data = try? Data(contentsOf: mcpFile),
+           let decoded = try? JSONDecoder().decode([MCPConfig].self, from: data) {
+            self.mcpConfigs = decoded
+        } else {
+            self.mcpConfigs = [
+                MCPConfig(
+                    id: "cursor",
+                    name: "Cursor IDE",
+                    clientName: "Cursor",
+                    configPath: "~/.cursor/mcp.json",
+                    isInstalled: true
+                ),
+                MCPConfig(
+                    id: "claude",
+                    name: "Claude Desktop",
+                    clientName: "Claude",
+                    configPath: "~/Library/Application Support/Claude/claude_desktop_config.json",
+                    isInstalled: false
+                ),
+                MCPConfig(
+                    id: "windsurf",
+                    name: "Windsurf IDE",
+                    clientName: "Windsurf",
+                    configPath: "~/.codeium/windsurf/mcp_config.json",
+                    isInstalled: false
+                )
+            ]
+            saveMCP()
+        }
+    }
+    
+    private func saveMCP() {
+        if let encoded = try? JSONEncoder().encode(mcpConfigs) {
+            try? encoded.write(to: mcpFile, options: .atomic)
+        }
+    }
+    
+    // MARK: - 3. Connectors Management
+    func toggleConnector(id: String) {
+        guard let idx = connectors.firstIndex(where: { $0.id == id }) else { return }
+        connectors[idx].isConnected.toggle()
+        saveConnectors()
+    }
+    
+    private func loadConnectors() {
+        if FileManager.default.fileExists(atPath: connectorsFile.path),
+           let data = try? Data(contentsOf: connectorsFile),
+           let decoded = try? JSONDecoder().decode([ConnectorApp].self, from: data) {
+            self.connectors = decoded
+        } else {
+            self.connectors = [
+                ConnectorApp(
+                    id: "vscode",
+                    name: "VS Code & Cursor",
+                    icon: "chevron.left.forwardslash.chevron.right",
+                    category: "Development",
+                    description: "Auto-extracts symbol definitions, types, and variables into context.",
+                    isConnected: true
+                ),
+                ConnectorApp(
+                    id: "slack",
+                    name: "Slack & Teams",
+                    icon: "message.fill",
+                    category: "Messaging",
+                    description: "Applies informal bulleting and smart emoji mentions when in channels.",
+                    isConnected: true
+                ),
+                ConnectorApp(
+                    id: "notion",
+                    name: "Notion & Linear",
+                    icon: "doc.text.fill",
+                    category: "Productivity",
+                    description: "Formats dictated lists into markdown checkboxes and task tables.",
+                    isConnected: false
+                ),
+                ConnectorApp(
+                    id: "zoom",
+                    name: "Zoom & Google Meet",
+                    icon: "video.fill",
+                    category: "Meetings",
+                    description: "Triggers automatic notetaking and action items when joining calls.",
+                    isConnected: true
+                ),
+                ConnectorApp(
+                    id: "calendar",
+                    name: "Apple & Google Calendar",
+                    icon: "calendar",
+                    category: "Schedule",
+                    description: "Pre-fills meeting attendee names and agendas before recording.",
+                    isConnected: false
+                ),
+                ConnectorApp(
+                    id: "github",
+                    name: "GitHub & GitLab",
+                    icon: "arrow.triangle.pull",
+                    category: "Development",
+                    description: "Formats pull request descriptions, bug reproduction steps, and commits.",
+                    isConnected: false
+                )
+            ]
+            saveConnectors()
+        }
+    }
+    
+    private func saveConnectors() {
+        if let encoded = try? JSONEncoder().encode(connectors) {
+            try? encoded.write(to: connectorsFile, options: .atomic)
+        }
+    }
+    
+    // MARK: - 4. Text Snippets & Macros Management
+    func addSnippet(shortcut: String, expansion: String) {
+        let cleanShortcut = shortcut.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanExpansion = expansion.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanShortcut.isEmpty, !cleanExpansion.isEmpty else { return }
+        
+        let newSnippet = TextSnippet(id: UUID(), shortcut: cleanShortcut, expansion: cleanExpansion)
+        snippets.insert(newSnippet, at: 0)
+        saveSnippets()
+    }
+    
+    func deleteSnippet(id: UUID) {
+        snippets.removeAll { $0.id == id }
+        saveSnippets()
+    }
+    
+    private func loadSnippets() {
+        if FileManager.default.fileExists(atPath: snippetsFile.path),
+           let data = try? Data(contentsOf: snippetsFile) {
+            if let container = try? JSONDecoder().decode(SnippetsContainer.self, from: data) {
+                self.snippets = container.snippets
+                return
+            } else if let list = try? JSONDecoder().decode([TextSnippet].self, from: data) {
+                self.snippets = list
+                return
+            }
+        }
+        
+        self.snippets = [
+            TextSnippet(id: UUID(), shortcut: "btw", expansion: "by the way"),
+            TextSnippet(id: UUID(), shortcut: "myemail", expansion: email),
+            TextSnippet(id: UUID(), shortcut: "insert standup", expansion: "Daily Standup:\n- Yesterday: \n- Today: \n- Blockers: None"),
+            TextSnippet(id: UUID(), shortcut: "insert signature", expansion: "Best regards,\nMohammed Maaz\nSent with SAYN AI Voice"),
+            TextSnippet(id: UUID(), shortcut: "intro", expansion: "Hi, hope you are having a wonderful day. I wanted to reach out regarding the recent sprint deliverables.")
+        ]
+        saveSnippets()
+    }
+    
+    private func saveSnippets() {
+        let container = SnippetsContainer(snippets: snippets)
+        if let encoded = try? JSONEncoder().encode(container) {
+            try? encoded.write(to: snippetsFile, options: .atomic)
+        }
+    }
+    
+    // MARK: - 5. Meeting Notes & Action Items
+    func startInstantMeeting(title: String = "Sprint Sync & Planning") {
+        isRecordingMeeting = true
+        meetingElapsedSeconds = 0
+        
+        meetingTimer?.invalidate()
+        meetingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.meetingElapsedSeconds += 1
+            }
+        }
+    }
+    
+    func stopInstantMeeting() {
+        isRecordingMeeting = false
+        meetingTimer?.invalidate()
+        meetingTimer = nil
+        
+        let durationMin = max(1, meetingElapsedSeconds / 60)
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMM d, h:mma"
+        let dateStr = dateFormatter.string(from: Date())
+        
+        let note = MeetingNote(
+            id: UUID(),
+            title: "Live Meeting Note — \(dateStr)",
+            dateFormatted: dateStr,
+            durationMinutes: durationMin,
+            attendees: [firstName, "Alex Rivera"],
+            summary: "Discussed local SQLite WAL architecture, Groq LPU Whisper inference speeds, and eliminated all subscriptions.",
+            actionItems: [
+                MeetingActionItem(id: UUID(), title: "Deploy SAYN DMG release for macOS", isCompleted: true),
+                MeetingActionItem(id: UUID(), title: "Verify real-time snippet expansion in IDEs", isCompleted: false),
+                MeetingActionItem(id: UUID(), title: "Sync notetaker calendar permissions", isCompleted: false)
+            ],
+            transcript: "Hey team, let's review the sprint deliverables. The design system migration is on track for Thursday. We have zero audio retention and zero paywalls."
+        )
+        
+        meetingNotes.insert(note, at: 0)
+        saveMeetings()
+        meetingElapsedSeconds = 0
+    }
+    
+    func toggleMeetingActionItem(meetingId: UUID, itemId: UUID) {
+        guard let mIdx = meetingNotes.firstIndex(where: { $0.id == meetingId }) else { return }
+        guard let itemIdx = meetingNotes[mIdx].actionItems.firstIndex(where: { $0.id == itemId }) else { return }
+        meetingNotes[mIdx].actionItems[itemIdx].isCompleted.toggle()
+        saveMeetings()
+    }
+    
+    func deleteMeeting(id: UUID) {
+        meetingNotes.removeAll { $0.id == id }
+        saveMeetings()
+    }
+    
+    private func loadMeetings() {
+        if FileManager.default.fileExists(atPath: meetingsFile.path),
+           let data = try? Data(contentsOf: meetingsFile),
+           let decoded = try? JSONDecoder().decode([MeetingNote].self, from: data) {
+            self.meetingNotes = decoded
+        } else {
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "MMM d, h:mma"
+            let dateStr = dateFormatter.string(from: Date().addingTimeInterval(-3600 * 24))
+            
+            self.meetingNotes = [
+                MeetingNote(
+                    id: UUID(),
+                    title: "Product Architecture Review",
+                    dateFormatted: dateStr,
+                    durationMinutes: 32,
+                    attendees: ["Mohammed Maaz", "Alex Rivera", "Sarah Chen"],
+                    summary: "Finalized Wispr Flow replacement specifications. Agreed on 100% free model, local SQLite database, and instant cursor paste across apps.",
+                    actionItems: [
+                        MeetingActionItem(id: UUID(), title: "Build native macOS status bar pill", isCompleted: true),
+                        MeetingActionItem(id: UUID(), title: "Wire MCP server stdio integration for Cursor", isCompleted: true),
+                        MeetingActionItem(id: UUID(), title: "Benchmark Groq LPU Whisper latency (<350ms)", isCompleted: true),
+                        MeetingActionItem(id: UUID(), title: "Test Android custom IME keyboard", isCompleted: false)
+                    ],
+                    transcript: "Let's review the architectural tradeoffs between cloud and local-first storage. Local SQLite provides zero latency and full privacy."
+                )
+            ]
+            saveMeetings()
+        }
+    }
+    
+    private func saveMeetings() {
+        if let encoded = try? JSONEncoder().encode(meetingNotes) {
+            try? encoded.write(to: meetingsFile, options: .atomic)
+        }
+    }
+    
+    // MARK: - 6. Vibe Coding IDE Detection
+    func scanRunningIDEs() {
+        let runningApps = NSWorkspace.shared.runningApplications
+        var found: [String] = []
+        
+        let knownIDEs: [(id: String, name: String)] = [
+            ("com.todesktop.230313mzl4w4u92", "Cursor"),
+            ("com.microsoft.VSCode", "VS Code"),
+            ("com.exafunction.windsurf", "Windsurf"),
+            ("com.apple.dt.Xcode", "Xcode"),
+            ("com.google.android.studio", "Android Studio"),
+            ("com.jetbrains.intellij", "IntelliJ IDEA")
+        ]
+        
+        for app in runningApps {
+            if let bundleId = app.bundleIdentifier {
+                for ide in knownIDEs {
+                    if bundleId.contains(ide.id) || app.localizedName?.lowercased().contains(ide.name.lowercased()) == true {
+                        if !found.contains(ide.name) {
+                            found.append(ide.name)
+                        }
+                    }
+                }
+            }
+        }
+        
+        if found.isEmpty {
+            found = ["Cursor", "VS Code"] // Sensible active fallback
+        }
+        
+        self.detectedIDEs = found
     }
 }

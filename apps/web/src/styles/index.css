@@ -29,6 +29,24 @@ body {
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
+.font-syne {
+  font-family: 'Syne', sans-serif;
+}
+
+.font-mono-jb {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+@keyframes spinSlow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spinSlow 20s linear infinite;
+}
+
 @keyframes eqPulse {
   0% { transform: scaleY(0.35); }
   100% { transform: scaleY(1.2); }

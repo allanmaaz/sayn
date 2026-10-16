@@ -115,6 +115,23 @@ struct SaynStudioView: View {
     @State private var editEmail: String = ""
     @State private var accountSavedNotice: Bool = false
     
+    // Team edit fields
+    @State private var newTeamEmail: String = ""
+    @State private var newTeamRole: String = "Member"
+    @State private var teamInviteNotice: String? = nil
+    
+    // Snippets edit fields
+    @State private var isAddingSnippet: Bool = false
+    @State private var newSnippetShortcut: String = ""
+    @State private var newSnippetExpansion: String = ""
+    @State private var snippetCopiedId: UUID? = nil
+    
+    // Help & Diagnostics modal state
+    @State private var showHelpModal: Bool = false
+    
+    // Vibe Coding status notice
+    @State private var vibeCodingSetupNotice: String? = nil
+    
     // Scratchpad
     @State private var scratchpadText: String = "Dictate or draft freely here. When done, you can apply a Transform or copy directly."
     @State private var activeStyleSubTab: String = "Auto cleanup"
@@ -129,6 +146,14 @@ struct SaynStudioView: View {
     private let accentCyan = Color(red: 168/255, green: 50/255, blue: 73/255)    // #A83249 Soft Rose-Maroon
     private let accentAmber = Color(red: 143/255, green: 24/255, blue: 53/255)   // #8F1835 Mid Maroon Accent
     private let borderDivider = Color(red: 235/255, green: 232/255, blue: 223/255)
+    
+    private func syncAccountFields() {
+        editFirstName = store.firstName
+        editLastName = store.lastName
+        editPhone = store.phone
+        editWritingRole = store.writingRole
+        editEmail = store.email
+    }
     
     var body: some View {
         ZStack {
@@ -191,12 +216,24 @@ struct SaynStudioView: View {
                 settingsModalView
                     .transition(.scale(scale: 0.95).combined(with: .opacity))
             }
+            
+            // Floating Help & Diagnostics Modal Sheet
+            if showHelpModal {
+                Color.black.opacity(0.35)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation(.easeInOut(duration: 0.16)) {
+                            showHelpModal = false
+                        }
+                    }
+                
+                helpModalView
+                    .transition(.scale(scale: 0.95).combined(with: .opacity))
+            }
         }
         .frame(minWidth: 960, minHeight: 640)
         .onAppear {
-            editFirstName = store.firstName
-            editLastName = store.lastName
-            editEmail = store.email
+            syncAccountFields()
         }
     }
     
@@ -447,10 +484,13 @@ struct SaynStudioView: View {
                     showSettingsModal = true
                 }
                 sidebarUtilityButton(title: "Settings", icon: "gearshape") {
+                    syncAccountFields()
                     activeSettingsTab = .general
                     showSettingsModal = true
                 }
-                sidebarUtilityButton(title: "Help", icon: "questionmark.circle") {}
+                sidebarUtilityButton(title: "Help", icon: "questionmark.circle") {
+                    showHelpModal = true
+                }
             }
             .padding(.bottom, 12)
         }
@@ -1680,111 +1720,289 @@ struct SaynStudioView: View {
     
     // MARK: - 6. Notetaker View
     private var notetakerView: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack {
-                Text("Notetaker")
-                    .font(.system(size: 26, weight: .bold, design: .rounded))
-                    .foregroundColor(textDark)
-                Spacer()
-                Button(action: {}) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "play.circle")
-                        Text("Start tutorial")
-                    }
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(textDark)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(surfaceBeige))
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-            
-            VStack(alignment: .leading, spacing: 14) {
-                Text("Meeting Detection & Transcription")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(textDark)
-                
-                Text("SAYN automatically listens when you enter Zoom, Google Meet, or Teams, generating real-time transcription, summaries, and action items.")
-                    .font(.system(size: 13))
-                    .foregroundColor(textMuted)
-                
-                HStack(spacing: 12) {
-                    Button(action: {}) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "calendar")
-                            Text("Connect Calendar")
-                        }
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(Color.black))
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    
-                    Button(action: {}) {
-                        Text("Import from Otter or Granola")
-                            .font(.system(size: 13, weight: .medium))
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 20) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Notetaker")
+                            .font(.system(size: 26, weight: .bold, design: .rounded))
                             .foregroundColor(textDark)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 8)
-                            .background(RoundedRectangle(cornerRadius: 8).fill(surfaceBeige))
+                        Text("Live meeting transcription, AI executive summaries, and action item checklists.")
+                            .font(.system(size: 13))
+                            .foregroundColor(textMuted)
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    Spacer()
+                    
+                    if store.isRecordingMeeting {
+                        Button(action: {
+                            store.stopInstantMeeting()
+                        }) {
+                            HStack(spacing: 6) {
+                                Circle().fill(Color.red).frame(width: 8, height: 8)
+                                Text("Stop Recording (\(store.meetingElapsedSeconds)s)")
+                            }
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 7)
+                            .background(Capsule().fill(Color.red))
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    } else {
+                        Button(action: {
+                            store.startInstantMeeting()
+                        }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "record.circle.fill")
+                                Text("Start Instant Note")
+                            }
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 7)
+                            .background(Capsule().fill(accentTeal))
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                
+                // Live Waveform Card when recording
+                if store.isRecordingMeeting {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("● LIVE RECORDING IN PROGRESS")
+                                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                .foregroundColor(Color.red)
+                            Spacer()
+                            Text("\(store.meetingElapsedSeconds / 60)m \(store.meetingElapsedSeconds % 60)s")
+                                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                .foregroundColor(textDark)
+                        }
+                        
+                        // Waveform visualizer
+                        HStack(spacing: 3) {
+                            ForEach(0..<32) { i in
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(accentTeal)
+                                    .frame(width: 4, height: CGFloat(10 + (i * 9 + store.meetingElapsedSeconds * 5) % 26))
+                            }
+                        }
+                        .frame(height: 38)
+                        .frame(maxWidth: .infinity)
+                    }
+                    .padding(14)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(cardWhite))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.red.opacity(0.35), lineWidth: 1))
+                }
+                
+                // Past Meeting Notes
+                Text("Meeting Records (\(store.meetingNotes.count))")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(textDark)
+                
+                ForEach(store.meetingNotes) { meeting in
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(meeting.title)
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(textDark)
+                                HStack(spacing: 8) {
+                                    Text(meeting.dateFormatted)
+                                    Text("·")
+                                    Text("\(meeting.durationMinutes) min")
+                                    Text("·")
+                                    Text(meeting.attendees.joined(separator: ", "))
+                                }
+                                .font(.system(size: 11))
+                                .foregroundColor(textMuted)
+                            }
+                            Spacer()
+                            
+                            Button(action: {
+                                store.deleteMeeting(id: meeting.id)
+                            }) {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Color.red.opacity(0.7))
+                                    .padding(6)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        
+                        // Summary
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("EXECUTIVE SUMMARY")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(accentTeal)
+                            Text(meeting.summary)
+                                .font(.system(size: 12))
+                                .foregroundColor(textDark)
+                                .lineSpacing(2)
+                        }
+                        .padding(10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(RoundedRectangle(cornerRadius: 8).fill(surfaceBeige))
+                        
+                        // Action Items with interactive checkboxes
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("ACTION ITEMS")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(textMuted)
+                            
+                            ForEach(meeting.actionItems) { item in
+                                HStack(spacing: 8) {
+                                    Button(action: {
+                                        store.toggleMeetingActionItem(meetingId: meeting.id, itemId: item.id)
+                                    }) {
+                                        Image(systemName: item.isCompleted ? "checkmark.circle.fill" : "circle")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(item.isCompleted ? Color.green : textMuted)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                    
+                                    Text(item.title)
+                                        .font(.system(size: 12))
+                                        .strikethrough(item.isCompleted)
+                                        .foregroundColor(item.isCompleted ? textMuted : textDark)
+                                }
+                            }
+                        }
+                    }
+                    .padding(16)
+                    .background(RoundedRectangle(cornerRadius: 14).fill(cardWhite))
+                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(borderDivider, lineWidth: 1))
                 }
             }
-            .padding(20)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 14).fill(cardWhite))
-            
-            Spacer()
+            .padding(24)
         }
-        .padding(24)
     }
     
     // MARK: - 7. Snippets View
     private var snippetsView: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text("Snippets")
-                .font(.system(size: 26, weight: .bold, design: .rounded))
-                .foregroundColor(textDark)
-            
-            Text("Voice shortcuts that instantly expand into longer templates or phrases.")
-                .font(.system(size: 13))
-                .foregroundColor(textMuted)
-            
-            VStack(spacing: 0) {
-                snippetRow(shortcut: "btw", expansion: "by the way")
-                Divider().background(borderDivider)
-                snippetRow(shortcut: "myemail", expansion: store.email)
-                Divider().background(borderDivider)
-                snippetRow(shortcut: "intro", expansion: "Hi, hope you are having a wonderful day. I wanted to reach out regarding...")
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 20) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Snippets")
+                            .font(.system(size: 26, weight: .bold, design: .rounded))
+                            .foregroundColor(textDark)
+                        Text("Voice shortcuts that instantly expand into longer templates or phrases.")
+                            .font(.system(size: 13))
+                            .foregroundColor(textMuted)
+                    }
+                    Spacer()
+                    Button(action: {
+                        withAnimation { isAddingSnippet.toggle() }
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: isAddingSnippet ? "xmark" : "plus")
+                            Text(isAddingSnippet ? "Cancel" : "Add Snippet")
+                        }
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 7)
+                        .background(Capsule().fill(accentTeal))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                
+                // Add Snippet Form
+                if isAddingSnippet {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Create Voice Snippet")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(textDark)
+                        
+                        TextField("Spoken trigger (e.g. btw or insert standup)", text: $newSnippetShortcut)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .font(.system(size: 13))
+                            .padding(8)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(cardWhite))
+                        
+                        TextEditor(text: $newSnippetExpansion)
+                            .font(.system(size: 12))
+                            .frame(height: 70)
+                            .padding(6)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(cardWhite))
+                        
+                        HStack {
+                            Spacer()
+                            Button(action: {
+                                store.addSnippet(shortcut: newSnippetShortcut, expansion: newSnippetExpansion)
+                                newSnippetShortcut = ""
+                                newSnippetExpansion = ""
+                                isAddingSnippet = false
+                            }) {
+                                Text("Save Snippet")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 6)
+                                    .background(RoundedRectangle(cornerRadius: 6).fill(Color.black))
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                    .padding(14)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(surfaceBeige))
+                }
+                
+                // Snippet List
+                VStack(spacing: 0) {
+                    ForEach(store.snippets) { snippet in
+                        HStack(alignment: .top, spacing: 12) {
+                            Text(snippet.shortcut)
+                                .font(.system(size: 13, weight: .bold, design: .monospaced))
+                                .foregroundColor(accentTeal)
+                                .frame(width: 140, alignment: .leading)
+                            
+                            Text("→")
+                                .foregroundColor(textMuted)
+                            
+                            Text(snippet.expansion)
+                                .font(.system(size: 13))
+                                .foregroundColor(textDark)
+                                .lineLimit(2)
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                NSPasteboard.general.clearContents()
+                                NSPasteboard.general.setString(snippet.expansion, forType: .string)
+                                snippetCopiedId = snippet.id
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                    if snippetCopiedId == snippet.id { snippetCopiedId = nil }
+                                }
+                            }) {
+                                Text(snippetCopiedId == snippet.id ? "Copied ✓" : "Copy")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundColor(textDark)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(RoundedRectangle(cornerRadius: 6).fill(surfaceBeige))
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            
+                            Button(action: {
+                                store.deleteSnippet(id: snippet.id)
+                            }) {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Color.red.opacity(0.7))
+                                    .padding(6)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        .padding(14)
+                        Divider().background(borderDivider)
+                    }
+                }
+                .background(RoundedRectangle(cornerRadius: 12).fill(cardWhite))
             }
-            .background(RoundedRectangle(cornerRadius: 12).fill(cardWhite))
-            
-            Spacer()
+            .padding(24)
         }
-        .padding(24)
-    }
-    
-    private func snippetRow(shortcut: String, expansion: String) -> some View {
-        HStack {
-            Text(shortcut)
-                .font(.system(size: 13, weight: .bold))
-                .foregroundColor(textDark)
-                .frame(width: 100, alignment: .leading)
-            
-            Text("→")
-                .foregroundColor(textMuted)
-            
-            Text(expansion)
-                .font(.system(size: 13, weight: .regular))
-                .foregroundColor(textMuted)
-            
-            Spacer()
-        }
-        .padding(14)
     }
     
     // MARK: - 8. Scratchpad View
@@ -1874,14 +2092,16 @@ struct SaynStudioView: View {
                         settingsNotetakerContent
                     case .vibeCoding:
                         settingsVibeCodingContent
+                    case .connectors:
+                        settingsConnectorsContent
+                    case .mcp:
+                        settingsMCPContent
                     case .account:
                         settingsAccountContent
+                    case .team:
+                        settingsTeamContent
                     case .privacy:
                         settingsPrivacyContent
-                    default:
-                        Text(activeSettingsTab.rawValue)
-                            .font(.system(size: 22, weight: .bold, design: .serif))
-                            .foregroundColor(textDark)
                     }
                 }
                 .padding(24)
@@ -2031,34 +2251,426 @@ struct SaynStudioView: View {
     
     private var settingsVibeCodingContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Vibe coding")
-                .font(.system(size: 22, weight: .bold, design: .serif))
-                .foregroundColor(textDark)
-            
-            VStack(spacing: 12) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Variable recognition (VS Code, Cursor, Windsurf)")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(textDark)
-                        Text("Better understands variables in code. Learn more →")
-                            .font(.system(size: 11))
-                            .foregroundColor(textMuted)
-                    }
-                    Spacer()
-                    Text("Set up")
-                        .font(.system(size: 11, weight: .semibold))
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Vibe Coding")
+                        .font(.system(size: 22, weight: .bold, design: .serif))
                         .foregroundColor(textDark)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(RoundedRectangle(cornerRadius: 6).fill(surfaceBeige))
+                    Text("Optimize voice dictation for programming, symbol names, and IDEs")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(textMuted)
                 }
+                Spacer()
+                Button(action: {
+                    store.scanRunningIDEs()
+                    vibeCodingSetupNotice = "Detected: \(store.detectedIDEs.joined(separator: ", "))"
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                        vibeCodingSetupNotice = nil
+                    }
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                        Text("Rescan IDEs")
+                    }
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(textDark)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(surfaceBeige))
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            
+            if let notice = vibeCodingSetupNotice {
+                Text(notice)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(Color.green)
+            }
+            
+            // Running IDE status
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Active IDE Processes")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(textDark)
                 
-                Divider()
-                
-                settingsToggle(title: "File Tagging in Chat (Cursor & Windsurf)\nTags files in your IDE (like index.tsx)", state: .constant(true))
+                HStack(spacing: 8) {
+                    ForEach(store.detectedIDEs, id: \.self) { ide in
+                        HStack(spacing: 5) {
+                            Circle().fill(Color.green).frame(width: 7, height: 7)
+                            Text(ide)
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(textDark)
+                        }
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 4)
+                        .background(Capsule().fill(cardWhite))
+                    }
+                }
             }
             .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 12).fill(surfaceBeige))
+            
+            // Casing Picker
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Identifier Casing Style")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(textDark)
+                
+                HStack(spacing: 8) {
+                    ForEach(["camelCase", "snake_case", "kebab-case", "PascalCase"], id: \.self) { casing in
+                        Button(action: {
+                            store.vibeCodingCasing = casing
+                            store.updateConfig()
+                        }) {
+                            Text(casing)
+                                .font(.system(size: 12, weight: store.vibeCodingCasing == casing ? .bold : .medium, design: .monospaced))
+                                .foregroundColor(store.vibeCodingCasing == casing ? Color(red: 245/255, green: 235/255, blue: 221/255) : textDark)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(store.vibeCodingCasing == casing ? accentTeal : cardWhite)
+                                )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+            }
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 12).fill(surfaceBeige))
+            
+            // Toggles
+            VStack(spacing: 12) {
+                settingsToggle(title: "Docstring & Comment Wrap\nAuto-formats long spoken sentences into /* */ or /// blocks", state: $store.vibeCodingDocstring)
+                Divider()
+                settingsToggle(title: "File Tagging in Chat (Cursor & Windsurf)\nTags files in your IDE (like index.tsx, SaynStore.swift)", state: $store.vibeCodingFileTagging)
+            }
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 12).fill(surfaceBeige))
+        }
+    }
+    
+    private var settingsConnectorsContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Connectors")
+                    .font(.system(size: 22, weight: .bold, design: .serif))
+                    .foregroundColor(textDark)
+                Text("Integrate SAYN voice and formatting natively with your daily stack")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(textMuted)
+            }
+            
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                ForEach(store.connectors) { app in
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(app.isConnected ? accentTeal.opacity(0.12) : Color.black.opacity(0.05))
+                                    .frame(width: 34, height: 34)
+                                Image(systemName: app.icon)
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundColor(app.isConnected ? accentTeal : textDark)
+                            }
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                store.toggleConnector(id: app.id)
+                            }) {
+                                Text(app.isConnected ? "Connected" : "Connect")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundColor(app.isConnected ? Color.green : textDark)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 3)
+                                    .background(
+                                        Capsule()
+                                            .fill(app.isConnected ? Color.green.opacity(0.12) : cardWhite)
+                                    )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        
+                        Text(app.name)
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(textDark)
+                        
+                        Text(app.description)
+                            .font(.system(size: 11))
+                            .foregroundColor(textMuted)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(12)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(surfaceBeige))
+                }
+            }
+        }
+    }
+    
+    private var settingsMCPContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Model Context Protocol (MCP)")
+                        .font(.system(size: 22, weight: .bold, design: .serif))
+                        .foregroundColor(textDark)
+                    Text("Expose local SAYN speech intelligence to AI coding assistants")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(textMuted)
+                }
+                Spacer()
+                HStack(spacing: 5) {
+                    Circle()
+                        .fill(Color.green)
+                        .frame(width: 8, height: 8)
+                    Text("Server Active (stdio)")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(Color.green)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(Capsule().fill(Color.green.opacity(0.12)))
+            }
+            
+            Text("Compatible Coding Clients")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(textMuted)
+            
+            VStack(spacing: 10) {
+                ForEach(store.mcpConfigs) { config in
+                    HStack(spacing: 12) {
+                        Image(systemName: "puzzlepiece.extension.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(config.isInstalled ? accentTeal : textMuted)
+                            .frame(width: 28)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 6) {
+                                Text(config.name)
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundColor(textDark)
+                                if config.isInstalled {
+                                    Text("Installed")
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundColor(Color.green)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(Capsule().fill(Color.green.opacity(0.12)))
+                                }
+                            }
+                            Text(config.configPath)
+                                .font(.system(size: 11, design: .monospaced))
+                                .foregroundColor(textMuted)
+                        }
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            store.toggleMCPInstall(id: config.id)
+                        }) {
+                            Text(config.isInstalled ? "Configured ✓" : "Install Config")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(config.isInstalled ? textDark : Color(red: 245/255, green: 235/255, blue: 221/255))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 5)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(config.isInstalled ? cardWhite : accentTeal)
+                                )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                    .padding(12)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(surfaceBeige))
+                }
+            }
+            
+            Text("Registered MCP Tools")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(textMuted)
+            
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .top, spacing: 10) {
+                    Text("sayn_dictate")
+                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundColor(accentTeal)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(RoundedRectangle(cornerRadius: 5).fill(accentTeal.opacity(0.12)))
+                    Text("Captures microphone voice stream and injects verbatim text directly into chat or cursor.")
+                        .font(.system(size: 11))
+                        .foregroundColor(textDark)
+                }
+                Divider()
+                HStack(alignment: .top, spacing: 10) {
+                    Text("sayn_refine")
+                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundColor(accentTeal)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(RoundedRectangle(cornerRadius: 5).fill(accentTeal.opacity(0.12)))
+                    Text("Post-processes active code comments or markdown prompts into concise, professional style.")
+                        .font(.system(size: 11))
+                        .foregroundColor(textDark)
+                }
+            }
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 12).fill(surfaceBeige))
+        }
+    }
+    
+    private var settingsTeamContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Team")
+                        .font(.system(size: 22, weight: .bold, design: .serif))
+                        .foregroundColor(textDark)
+                    Text("Lifetime Team Workspace · Unlimited Free Seats")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(textMuted)
+                }
+                Spacer()
+                Button(action: {
+                    _ = store.copyInviteLink()
+                    teamInviteNotice = "Invite link copied to clipboard!"
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                        teamInviteNotice = nil
+                    }
+                }) {
+                    HStack(spacing: 5) {
+                        Image(systemName: "link")
+                        Text("Copy Invite Link")
+                    }
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(RoundedRectangle(cornerRadius: 8).fill(accentTeal))
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            
+            if let notice = teamInviteNotice {
+                Text(notice)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(Color.green)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(Color.green.opacity(0.12)))
+            }
+            
+            // Invite Form
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Invite Team Member")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(textDark)
+                
+                HStack(spacing: 8) {
+                    TextField("colleague@company.com", text: $newTeamEmail)
+                        .textFieldStyle(PlainTextFieldStyle())
+                        .font(.system(size: 13))
+                        .padding(8)
+                        .background(RoundedRectangle(cornerRadius: 6).fill(cardWhite))
+                    
+                    Menu {
+                        Button("Member") { newTeamRole = "Member" }
+                        Button("Admin") { newTeamRole = "Admin" }
+                    } label: {
+                        Text(newTeamRole + " ▾")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(textDark)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(surfaceBeige))
+                    }
+                    
+                    Button(action: {
+                        guard !newTeamEmail.isEmpty else { return }
+                        store.inviteMember(email: newTeamEmail, role: newTeamRole)
+                        newTeamEmail = ""
+                        teamInviteNotice = "Invitation sent successfully!"
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                            teamInviteNotice = nil
+                        }
+                    }) {
+                        Text("Send Invite")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 7)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(Color.black))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 12).fill(surfaceBeige))
+            
+            // Member List
+            Text("Active Workspace Members (\(store.teamMembers.count))")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(textMuted)
+            
+            VStack(spacing: 0) {
+                ForEach(store.teamMembers) { member in
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(accentTeal)
+                                .frame(width: 32, height: 32)
+                            Text(member.avatarLetter)
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 6) {
+                                Text(member.name)
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(textDark)
+                                if member.isPending {
+                                    Text("Pending")
+                                        .font(.system(size: 10, weight: .semibold))
+                                        .foregroundColor(Color.orange)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(Capsule().fill(Color.orange.opacity(0.12)))
+                                }
+                            }
+                            Text(member.email)
+                                .font(.system(size: 11))
+                                .foregroundColor(textMuted)
+                        }
+                        
+                        Spacer()
+                        
+                        Text(member.role)
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(member.role == "Owner" ? accentTeal : textMuted)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(surfaceBeige))
+                        
+                        if member.role != "Owner" {
+                            Button(action: {
+                                store.removeMember(id: member.id)
+                            }) {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(Color.red.opacity(0.8))
+                                    .padding(6)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                    .padding(12)
+                    Divider().background(borderDivider)
+                }
+            }
             .background(RoundedRectangle(cornerRadius: 12).fill(surfaceBeige))
         }
     }
@@ -2225,6 +2837,123 @@ struct SaynStudioView: View {
                 .foregroundColor(textDark)
                 .padding(6)
                 .background(RoundedRectangle(cornerRadius: 6).fill(cardWhite))
+        }
+    }
+    
+    // MARK: - Help & Diagnostics Modal
+    private var helpModalView: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack {
+                HStack(spacing: 8) {
+                    Image(systemName: "questionmark.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(accentTeal)
+                    Text("Help & System Diagnostics")
+                        .font(.system(size: 20, weight: .bold, design: .serif))
+                        .foregroundColor(textDark)
+                }
+                Spacer()
+                Button(action: { showHelpModal = false }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(textMuted)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            
+            // Shortcuts Cheatsheet
+            VStack(alignment: .leading, spacing: 10) {
+                Text("GLOBAL SHORTCUTS")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(textMuted)
+                
+                HStack(spacing: 12) {
+                    helpShortcutBadge(keys: "fn (hold)", label: "Push-to-Talk")
+                    helpShortcutBadge(keys: "⌥ Space", label: "Toggle Dictation")
+                    helpShortcutBadge(keys: "⌥ 1", label: "Professional Tone")
+                    helpShortcutBadge(keys: "⌥ 2", label: "Shorten Text")
+                }
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 12).fill(surfaceBeige))
+            
+            // System Status
+            VStack(alignment: .leading, spacing: 10) {
+                Text("SYSTEM HEALTH")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(textMuted)
+                
+                HStack(spacing: 14) {
+                    helpStatusItem(icon: "checkmark.shield.fill", title: "Accessibility", desc: "Granted", ok: true)
+                    helpStatusItem(icon: "bolt.fill", title: "Groq LPU API", desc: "<320ms latency", ok: true)
+                    helpStatusItem(icon: "mic.fill", title: "Microphone", desc: "Active (48kHz)", ok: true)
+                }
+            }
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 12).fill(surfaceBeige))
+            
+            // Troubleshooting & Support
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Need Support or Found a Bug?")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(textDark)
+                    Text("Join our open community or email allanmaazimdad@gmail.com")
+                        .font(.system(size: 11))
+                        .foregroundColor(textMuted)
+                }
+                Spacer()
+                Button(action: {
+                    if let url = URL(string: "https://sayn.ai/support") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }) {
+                    Text("Open Documentation")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 6)
+                        .background(RoundedRectangle(cornerRadius: 6).fill(accentTeal))
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+        .padding(24)
+        .frame(width: 580)
+        .background(cardWhite)
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(borderDivider, lineWidth: 1))
+        .shadow(color: Color.black.opacity(0.3), radius: 25, x: 0, y: 10)
+    }
+    
+    private func helpShortcutBadge(keys: String, label: String) -> some View {
+        VStack(spacing: 4) {
+            Text(keys)
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .foregroundColor(accentTeal)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(RoundedRectangle(cornerRadius: 6).fill(cardWhite))
+            Text(label)
+                .font(.system(size: 10))
+                .foregroundColor(textDark)
+        }
+    }
+    
+    private func helpStatusItem(icon: String, title: String, desc: String, ok: Bool) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundColor(ok ? Color.green : Color.orange)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(textDark)
+                Text(desc)
+                    .font(.system(size: 10))
+                    .foregroundColor(textMuted)
+            }
         }
     }
 }

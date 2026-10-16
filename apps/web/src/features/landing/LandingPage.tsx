@@ -35,6 +35,8 @@ export const LandingPage: React.FC = () => {
   const [copiedDemo, setCopiedDemo] = useState(false);
   const [isDownloadOpen, setIsDownloadOpen] = useState(false);
   const [device, setDevice] = useState<DeviceInfo | null>(null);
+  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+  const [manualLaserProg, setManualLaserProg] = useState<number | null>(null);
   const [activeWorkflowStep, setActiveWorkflowStep] = useState<0 | 1 | 2>(0);
   const [typingSimText, setTypingSimText] = useState('Hey team, I revie');
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
@@ -42,9 +44,85 @@ export const LandingPage: React.FC = () => {
   const { actualTheme } = useTheme();
   const isLight = actualTheme === 'light';
 
+  // Chapters & Spine Node dynamic scaling
+  const chapterText =
+    scrollProgress < 22
+      ? 'CH.01 // ACOUSTIC IGNITION'
+      : scrollProgress < 58
+      ? 'CH.02 // NEURAL LASER PRISM'
+      : scrollProgress < 78
+      ? 'CH.03 // GROQ LPU CONSTELLATION'
+      : 'CH.04 // EPHEMERAL INCINERATOR';
+
+  const spineScale =
+    scrollProgress < 22
+      ? 1
+      : scrollProgress < 58
+      ? 1.45
+      : scrollProgress < 78
+      ? 1.15
+      : 0.85;
+
+  // Computed Laser Scrubber progress
+  const scrollLaserProg = Math.min(1, Math.max(0, (scrollProgress - 20) / 36));
+  const prismProg = manualLaserProg !== null ? manualLaserProg : scrollLaserProg;
+  const laserLeftPct = 8 + prismProg * 84;
+
   React.useEffect(() => {
     setDevice(detectDevice());
   }, []);
+
+  // Background Crimson Harmonic Wave Canvas
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animId: number;
+    let phase = 0;
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    const renderSonicLoom = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      phase += 0.025;
+      const curScroll = window.scrollY || 0;
+
+      for (let w = 0; w < 3; w++) {
+        ctx.beginPath();
+        ctx.strokeStyle =
+          w === 0
+            ? isLight
+              ? 'rgba(168, 50, 73, 0.22)'
+              : 'rgba(217, 56, 90, 0.24)'
+            : isLight
+            ? 'rgba(111, 16, 37, 0.14)'
+            : 'rgba(94, 19, 36, 0.25)';
+        ctx.lineWidth = w === 0 ? 2 : 1;
+
+        for (let y = 0; y < canvas.height; y += 12) {
+          const amp = 28 + w * 18 + Math.sin((y + curScroll) * 0.005) * 20;
+          const x = canvas.width / 2 + Math.sin(y * 0.012 + phase + w * 1.4 + curScroll * 0.008) * amp;
+          if (y === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+      animId = requestAnimationFrame(renderSonicLoom);
+    };
+    renderSonicLoom();
+
+    return () => {
+      window.removeEventListener('resize', resize);
+      cancelAnimationFrame(animId);
+    };
+  }, [isLight]);
 
   // Typing ticker effect for standard keyboard comparison
   React.useEffect(() => {
@@ -79,7 +157,7 @@ export const LandingPage: React.FC = () => {
         setIsAutoScrolling(false);
         return;
       }
-      window.scrollBy(0, 3.2);
+      window.scrollBy(0, 3.4);
       animId = requestAnimationFrame(step);
     };
     animId = requestAnimationFrame(step);
@@ -96,10 +174,37 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div
-      className={`flex-1 flex flex-col overflow-hidden transition-colors duration-300 ${
-        isLight ? 'bg-[#FAF7F2] text-[#2D0A12]' : 'bg-[#100709] text-[#F5EBDD]'
+      className={`flex-1 flex flex-col relative overflow-hidden transition-colors duration-300 ${
+        isLight ? 'bg-[#FAF7F2] text-[#2D0A12]' : 'bg-[#100205] text-[#F6EFE8]'
       }`}
     >
+      {/* Background Crimson Harmonic Wave Canvas */}
+      <canvas
+        ref={canvasRef}
+        className="fixed inset-0 w-screen h-screen pointer-events-none z-0"
+      />
+
+      {/* Central Traveling Spine Line */}
+      <div
+        className={`fixed top-0 left-1/2 -translate-x-1/2 w-[1px] h-screen pointer-events-none z-[1] transition-opacity duration-300 ${
+          isLight
+            ? 'bg-gradient-to-b from-transparent via-[#A83249]/20 to-transparent'
+            : 'bg-gradient-to-b from-transparent via-[#D9385A]/25 to-transparent'
+        }`}
+      />
+
+      {/* Glowing Sonic Core Node */}
+      <div
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full pointer-events-none z-[2] transition-transform duration-300 ease-out"
+        style={{
+          backgroundColor: isLight ? '#6F1025' : '#F6EFE8',
+          boxShadow: isLight
+            ? '0 0 20px 6px rgba(168,50,73,0.45), 0 0 50px 14px rgba(111,16,37,0.25)'
+            : '0 0 25px 8px #D9385A, 0 0 60px 18px #5E1324',
+          transform: `translate(-50%, -50%) scale(${spineScale})`,
+        }}
+      />
+
       {/* 1. HERO SECTION (Responsive: Mobile iPhone Mockup & Desktop Laptop Showcase) */}
       <section className="relative pt-20 pb-16 sm:pt-24 sm:pb-24 md:pt-28 md:pb-28 overflow-hidden">
         {/* Flowing Crimson/Maroon Silk Wave Ribbons (matching mobile mockup) */}
@@ -601,37 +706,93 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 1C. SPEED COMPARISON: 4X FASTER THAN TYPING */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 my-10 sm:my-14 relative z-10">
+      {/* ========================================================================= */}
+      {/* CHAPTER 03: THE GROQ LPU CONSTELLATION (Orbital Reactor Hub) */}
+      {/* ========================================================================= */}
+      <section id="lpu-constellation" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 my-16 relative z-10">
         <div
           className={`rounded-3xl sm:rounded-[38px] p-8 sm:p-14 text-center border shadow-2xl relative overflow-hidden transition-all ${
             isLight
-              ? 'bg-gradient-to-b from-[#FFFDF9] to-[#FAF4EB] border-[#E2D9CD] shadow-[0_20px_50px_rgba(111,16,37,0.08)]'
-              : 'bg-gradient-to-b from-[#1C060B] to-[#120307] border-[#4A1522] shadow-[0_30px_80px_rgba(0,0,0,0.7)]'
+              ? 'bg-gradient-to-b from-[#FFFDF9] via-[#FAF4EB] to-[#F5EFE6] border-[#E2D9CD] shadow-[0_20px_50px_rgba(111,16,37,0.08)]'
+              : 'bg-gradient-to-b from-[#1C060B] via-[#140508] to-[#100205] border-[#4A1522] shadow-[0_30px_80px_rgba(0,0,0,0.85)]'
           }`}
         >
-          <span className="text-xs font-bold uppercase tracking-widest text-[#A83249] mb-2 block">
-            GROQ WHISPER LPU ENGINE
+          {/* Section Header */}
+          <span className="text-xs font-bold uppercase tracking-widest text-[#C83E5B] mb-2 block font-mono">
+            CH.03 // HARDWARE-ACCELERATED INFERENCE
           </span>
           <h2
             className={`text-3xl sm:text-5xl font-extrabold tracking-tight mb-3 ${
               isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
             }`}
           >
-            4x faster{' '}
+            The Groq LPU{' '}
             <span className="font-serif-instrument italic text-[#C83E5B]">
-              than typing
+              Constellation
             </span>
           </h2>
           <p
-            className={`max-w-xl mx-auto text-sm sm:text-base mb-10 ${
+            className={`max-w-xl mx-auto text-xs sm:text-sm mb-12 ${
               isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
             }`}
           >
-            Turn natural speech into crisp, punctuated text with zero cloud lock-in. Speak at the speed of thought across every app.
+            Sub-400ms time-to-first-token speech synthesis powered by Linear Processing Units and zero subscription barriers.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 text-left">
+          {/* Central Rotating Orbital Reactor Hub */}
+          <div className="relative w-72 h-72 sm:w-88 sm:h-88 mx-auto my-6 flex items-center justify-center">
+            {/* Outer Slow-Spinning Dashed Orbit */}
+            <div
+              className="absolute inset-0 rounded-full border border-dashed border-[#C83E5B]/40 animate-spin-slow pointer-events-none"
+              style={{ animationDuration: '28s' }}
+            />
+
+            {/* Middle Reverse Ring */}
+            <div
+              className="absolute inset-8 rounded-full border border-[#6F1025]/50 animate-spin-slow pointer-events-none"
+              style={{ animationDuration: '18s', animationDirection: 'reverse' }}
+            />
+
+            {/* Glowing Core Reactor */}
+            <div className="relative w-36 h-36 rounded-full bg-gradient-to-br from-[#260910] to-[#120307] border-2 border-[#C83E5B] shadow-[0_0_40px_rgba(200,62,91,0.5)] flex flex-col items-center justify-center p-4 z-10">
+              <Zap className="w-6 h-6 text-[#C83E5B] mb-1 animate-pulse" />
+              <div className="font-mono text-xs font-black text-[#F5EBDD] tracking-wider">
+                LPU CORE
+              </div>
+              <div className="font-mono text-[10px] text-emerald-400 font-bold mt-0.5">
+                318ms LATENCY
+              </div>
+            </div>
+
+            {/* 6 Circuit Nodes in Orbit */}
+            {[
+              { label: 'NODE 01 // GROQ WHISPER', angle: 0 },
+              { label: 'NODE 02 // LOCAL SQLITE WAL', angle: 60 },
+              { label: 'NODE 03 // DISFLUENCY PRISM', angle: 120 },
+              { label: 'NODE 04 // 100% FREE FOREVER', angle: 180 },
+              { label: 'NODE 05 // CURSOR INJECTION', angle: 240 },
+              { label: 'NODE 06 // EPHEMERAL BUFFER', angle: 300 },
+            ].map((node, i) => {
+              const rad = (node.angle * Math.PI) / 180;
+              const radius = 135;
+              const x = Math.cos(rad) * radius;
+              const y = Math.sin(rad) * radius;
+              return (
+                <div
+                  key={i}
+                  className="absolute px-2.5 py-1 rounded-full text-[9px] font-mono font-bold bg-[#1C060B]/90 border border-[#C83E5B]/50 text-[#F5EBDD] shadow-md transition-transform hover:scale-110 whitespace-nowrap hidden sm:block"
+                  style={{
+                    transform: `translate(${x}px, ${y}px)`,
+                  }}
+                >
+                  {node.label}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Speed Comparison Cards Below */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 text-left mt-10">
             {/* Standard Keyboard (45 wpm) */}
             <div
               className={`md:col-span-4 p-7 rounded-2xl sm:rounded-3xl border flex flex-col justify-between min-h-[220px] transition-all ${
@@ -692,6 +853,200 @@ export const LandingPage: React.FC = () => {
                   Speak naturally, paraphrase word-by-word, adjust tone, and auto-paste into any active chatbot or editor instantly.
                 </p>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* CHAPTER 02: THE NEURAL LASER PRISM (Interactive Scrubber & Token Vaporizer) */}
+      {/* ========================================================================= */}
+      <section id="laser-prism" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 my-16 relative z-10">
+        <div
+          className={`rounded-3xl sm:rounded-[38px] p-8 sm:p-14 border shadow-2xl relative overflow-hidden transition-all ${
+            isLight
+              ? 'bg-gradient-to-b from-[#FFFDF9] via-[#FAF4EB] to-[#F5EFE6] border-[#E2D9CD] shadow-[0_20px_50px_rgba(111,16,37,0.08)]'
+              : 'bg-gradient-to-b from-[#1C060B] via-[#150408] to-[#100205] border-[#4A1522] shadow-[0_30px_80px_rgba(0,0,0,0.85)]'
+          }`}
+        >
+          {/* Header */}
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#C83E5B] mb-2 block font-mono">
+              CH.02 // REAL-TIME DISFLUENCY SHREDDER
+            </span>
+            <h2
+              className={`text-3xl sm:text-4xl font-extrabold tracking-tight mb-3 ${
+                isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
+              }`}
+            >
+              The Neural{' '}
+              <span className="font-serif-instrument italic text-[#C83E5B]">
+                Laser Prism
+              </span>
+            </h2>
+            <p
+              className={`text-xs sm:text-sm ${
+                isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
+              }`}
+            >
+              Drag the laser scrubber below to watch filler tokens vaporize into crisp, executive prose in real time.
+            </p>
+          </div>
+
+          {/* Scrubber Stage */}
+          <div
+            className={`relative p-8 sm:p-10 rounded-2xl sm:rounded-3xl border select-none transition-all ${
+              isLight
+                ? 'bg-white border-[#E2D9CD] shadow-inner'
+                : 'bg-[#100205] border-[#3D1520] shadow-inner'
+            }`}
+          >
+            {/* The Vertical Crimson Laser Line */}
+            <div
+              className="absolute top-0 bottom-0 w-[2px] pointer-events-none transition-all duration-75 ease-out z-20"
+              style={{
+                left: `${laserLeftPct}%`,
+                background: 'linear-gradient(to bottom, #FF4D73, #C83E5B, #6F1025)',
+                boxShadow: '0 0 16px 3px rgba(200, 62, 91, 0.8), 0 0 30px 6px rgba(200, 62, 91, 0.4)',
+              }}
+            >
+              <div className="absolute -top-3 -translate-x-1/2 left-1/2 px-2 py-0.5 rounded-full bg-[#C83E5B] text-white text-[10px] font-mono font-bold whitespace-nowrap shadow-md">
+                LASER {Math.round(prismProg * 100)}%
+              </div>
+            </div>
+
+            {/* Kinetic Sentence with Vaporizing Filler Tokens */}
+            <div
+              className={`font-serif-instrument text-2xl sm:text-3xl md:text-4xl leading-relaxed text-center sm:text-left transition-all relative z-10 ${
+                isLight ? 'text-[#2D0A12]' : 'text-[#F5EFE6]'
+              }`}
+            >
+              “Hey team,{' '}
+              <span
+                className={`inline-block transition-all duration-300 ${
+                  prismProg > 0.2
+                    ? 'line-through text-[#C83E5B] opacity-20 scale-90 blur-[1px]'
+                    : 'text-[#C83E5B] opacity-90'
+                }`}
+              >
+                um like
+              </span>{' '}
+              I reviewed the latest sprint deliverables.{' '}
+              <span
+                className={`inline-block transition-all duration-300 ${
+                  prismProg > 0.4
+                    ? 'line-through text-[#C83E5B] opacity-20 scale-90 blur-[1px]'
+                    : 'text-[#C83E5B] opacity-90'
+                }`}
+              >
+                You know,
+              </span>{' '}
+              the design system migration is{' '}
+              <span
+                className={`inline-block transition-all duration-300 ${
+                  prismProg > 0.6
+                    ? 'line-through text-[#C83E5B] opacity-20 scale-90 blur-[1px]'
+                    : 'text-[#C83E5B] opacity-90'
+                }`}
+              >
+                basically
+              </span>{' '}
+              on track for Thursday.{' '}
+              <span
+                className={`inline-block transition-all duration-300 ${
+                  prismProg > 0.8
+                    ? 'line-through text-[#C83E5B] opacity-20 scale-90 blur-[1px]'
+                    : 'text-[#C83E5B] opacity-90'
+                }`}
+              >
+                uh actually
+              </span>{' '}
+              Zero paywalls or word limits.”
+            </div>
+
+            {/* Slider Control Bar */}
+            <div className="mt-8 pt-6 border-t border-[#3D1520]/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="w-full sm:w-2/3 flex items-center space-x-4">
+                <span className="text-[11px] font-mono text-[#A89F91] whitespace-nowrap">
+                  RAW SPEECH
+                </span>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={prismProg}
+                  onChange={(e) => setManualLaserProg(parseFloat(e.target.value))}
+                  className="w-full accent-[#C83E5B] cursor-ew-resize h-1.5 bg-[#3D1520] rounded-lg"
+                />
+                <span className="text-[11px] font-mono text-[#C83E5B] font-bold whitespace-nowrap">
+                  REFINED
+                </span>
+              </div>
+
+              <button
+                onClick={() => setManualLaserProg(manualLaserProg === 1 ? 0 : 1)}
+                className="px-4 py-1.5 rounded-full text-xs font-bold bg-[#C83E5B]/20 text-[#C83E5B] border border-[#C83E5B]/40 hover:bg-[#C83E5B] hover:text-white transition-all active:scale-95 whitespace-nowrap"
+              >
+                {prismProg > 0.85 ? 'Reset Raw' : 'Snap Refined ✨'}
+              </button>
+            </div>
+          </div>
+
+          {/* Three Refracted Beams */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+            <div
+              className={`p-4 rounded-xl border text-left transition-all ${
+                prismProg > 0.25
+                  ? isLight
+                    ? 'bg-white border-[#6F1025] shadow-md'
+                    : 'bg-[#1C060B] border-[#C83E5B] shadow-[0_4px_20px_rgba(200,62,91,0.2)]'
+                  : 'opacity-40 border-[#3D1520]'
+              }`}
+            >
+              <div className="flex items-center space-x-2 text-xs font-bold text-[#C83E5B] mb-1">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                <span>BEAM 01 // PROFESSIONAL</span>
+              </div>
+              <p className="text-xs text-[#D6C7B2]">
+                Eliminates conversational hedges, stuttered syllables, and throat clears with precision.
+              </p>
+            </div>
+
+            <div
+              className={`p-4 rounded-xl border text-left transition-all ${
+                prismProg > 0.55
+                  ? isLight
+                    ? 'bg-white border-[#6F1025] shadow-md'
+                    : 'bg-[#1C060B] border-[#C83E5B] shadow-[0_4px_20px_rgba(200,62,91,0.2)]'
+                  : 'opacity-40 border-[#3D1520]'
+              }`}
+            >
+              <div className="flex items-center space-x-2 text-xs font-bold text-[#C83E5B] mb-1">
+                <Zap className="w-4 h-4 text-amber-500" />
+                <span>BEAM 02 // CONCISE SHORTEN</span>
+              </div>
+              <p className="text-xs text-[#D6C7B2]">
+                Reduces rambling verbal sentences into compact bullets ready for Slack or email.
+              </p>
+            </div>
+
+            <div
+              className={`p-4 rounded-xl border text-left transition-all ${
+                prismProg > 0.85
+                  ? isLight
+                    ? 'bg-white border-[#6F1025] shadow-md'
+                    : 'bg-[#1C060B] border-[#C83E5B] shadow-[0_4px_20px_rgba(200,62,91,0.2)]'
+                  : 'opacity-40 border-[#3D1520]'
+              }`}
+            >
+              <div className="flex items-center space-x-2 text-xs font-bold text-[#C83E5B] mb-1">
+                <Sparkles className="w-4 h-4 text-emerald-500" />
+                <span>BEAM 03 // ZERO-CLICK PASTE</span>
+              </div>
+              <p className="text-xs text-[#D6C7B2]">
+                Synthesizes transformed text directly into the foreground app cursor without Cmd+V.
+              </p>
             </div>
           </div>
         </div>
@@ -1299,36 +1654,83 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 4. PRIVACY SECTION */}
+      {/* ========================================================================= */}
+      {/* CHAPTER 04: THE EPHEMERAL INCINERATOR VAULT (Zero Audio Retention) */}
+      {/* ========================================================================= */}
       <section id="privacy" className="py-24 border-t border-[#3D1520] bg-[#14080D]/80 relative overflow-hidden">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <div className="reveal-on-scroll scroll-reveal">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#C83E5B] mb-2 block font-mono">
+              CH.04 // ZERO CLOUD RETENTION
+            </span>
             <div className="w-14 h-14 rounded-2xl bg-[#6F1025]/30 border border-[#A83249]/40 text-[#A83249] flex items-center justify-center mx-auto mb-5 shadow-sm">
               <ShieldCheck className="w-7 h-7" />
             </div>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#F5EBDD] mb-4">
-              Your Privacy Is Fundamental
+              The Ephemeral{' '}
+              <span className="font-serif-instrument italic text-[#C83E5B]">
+                Incinerator Vault
+              </span>
             </h2>
             <p className="text-sm sm:text-base text-[#D6C7B2] leading-relaxed max-w-2xl mx-auto mb-10">
-              SAYN processes text strictly for the requested transformation. We do not retain audio recordings after transcription, we do not log passwords or keystrokes, and you have full control over your writing history.
+              SAYN processes voice streams ephemerally. Audio recordings never touch permanent disk caches or cloud servers. The moment your transcript is rendered, the RAM buffer is completely wiped.
             </p>
+
+            {/* Live Buffer Shredder Visualization Bar */}
+            <div
+              className={`p-6 rounded-2xl border mb-12 text-left transition-all ${
+                isLight
+                  ? 'bg-white border-[#E2D9CD] shadow-sm'
+                  : 'bg-[#1C060B] border-[#4A1522] shadow-[0_10px_30px_rgba(0,0,0,0.6)]'
+              }`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <span className="text-[11px] font-mono font-bold text-[#C83E5B] flex items-center space-x-1.5">
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                  <span>LIVE MEMORY SHREDDER GAUGE</span>
+                </span>
+                <span className="text-[10px] font-mono text-emerald-400 font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                  RAM FLUSH: 100% COMPLETE (0.00 KB LEAK)
+                </span>
+              </div>
+
+              {/* Progress bar stream */}
+              <div className="relative w-full h-3 rounded-full bg-[#100205] overflow-hidden border border-[#3D1520]">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-[#C83E5B] to-transparent animate-pulse"
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 mt-4 text-center font-mono text-[10px] text-[#A89F91]">
+                <div className="p-2 rounded bg-black/30 border border-[#3D1520]">
+                  1. MIC CAPTURE (PCM 48kHz)
+                </div>
+                <div className="p-2 rounded bg-black/30 border border-[#3D1520]">
+                  2. GROQ LPU INFERENCE
+                </div>
+                <div className="p-2 rounded bg-[#6F1025]/30 border border-[#C83E5B]/40 text-[#F5EBDD] font-bold">
+                  3. MEMORY INCINERATED 🔥
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 text-left max-w-3xl mx-auto text-xs">
             <div className="reveal-on-scroll scroll-reveal reveal-delay-1 p-5 rounded-xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249]/60 transition-all">
               <div className="flex items-center space-x-2 font-bold text-[#F5EBDD] mb-1.5">
                 <CheckCircle2 className="w-4 h-4 text-[#30D158]" />
-                <span>No Audio Retention</span>
+                <span>Zero Audio Retention</span>
               </div>
-              <p className="text-[#D6C7B2] leading-relaxed">Voice streams are ephemeral and discarded immediately after transcription.</p>
+              <p className="text-[#D6C7B2] leading-relaxed">Voice streams are ephemeral and destroyed immediately after transcription.</p>
             </div>
 
             <div className="reveal-on-scroll scroll-reveal reveal-delay-2 p-5 rounded-xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249]/60 transition-all">
               <div className="flex items-center space-x-2 font-bold text-[#F5EBDD] mb-1.5">
                 <CheckCircle2 className="w-4 h-4 text-[#30D158]" />
-                <span>History Controls</span>
+                <span>Local SQLite WAL</span>
               </div>
-              <p className="text-[#D6C7B2] leading-relaxed">Enable, disable, or purge your writing history anytime with one click.</p>
+              <p className="text-[#D6C7B2] leading-relaxed">Your writing history is encrypted locally on your SSD. Zero cloud sync or tracking.</p>
             </div>
 
             <div className="reveal-on-scroll scroll-reveal reveal-delay-3 p-5 rounded-xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249]/60 transition-all">
