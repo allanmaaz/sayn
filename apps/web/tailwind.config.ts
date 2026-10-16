@@ -7,18 +7,19 @@ export default {
     extend: {
       colors: {
         sayn: {
-          // Dark palette
+          // Dark palette (Wispr Flow Obsidian & Volt Neon Green)
           dark: {
-            bg: '#0B0B0D',
-            surface: '#151518',
-            surface2: '#1C1C20',
-            elevated: '#242428',
+            bg: '#0D0D12',
+            surface: '#16161D',
+            surface2: '#1F1F27',
+            elevated: '#262631',
             text: '#F5F5F7',
             secondary: '#A1A1AA',
             muted: '#71717A',
-            divider: '#303036',
-            accent: '#0A84FF',
-            success: '#30D158',
+            divider: '#282836',
+            accent: '#CBFE00',
+            volt: '#CBFE00',
+            success: '#CBFE00',
             warning: '#FFD60A',
             error: '#FF453A',
           },
@@ -38,7 +39,7 @@ export default {
             error: '#D70015',
           },
           // Restrained audio accent
-          audio: '#5DE4FF',
+          audio: '#CBFE00',
         },
       },
       fontFamily: {

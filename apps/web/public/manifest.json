@@ -1,0 +1,19 @@
+{
+  "name": "SAYN — Voice & Smart Writing Studio",
+  "short_name": "SAYN",
+  "description": "Say it. Refine it. Send it. Unlimited 0ms AI writing, QuillBot paraphrasing, and Grammarly real-time proofreading.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D0D12",
+  "theme_color": "#0D0D12",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"]
+}

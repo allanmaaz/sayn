@@ -152,6 +152,45 @@ export const WRITING_MODES: Record<WritingMode, WritingModeMetadata> = {
   }
 };
 
+// QuillBot & Grammarly Structured Data Definitions
+export type SynonymIntensity = 0 | 1 | 2 | 3 | 4; // 0=Strict/Min, 1=Low, 2=Medium, 3=High, 4=Max
+
+export interface WordAlternative {
+  wordIndex: number;
+  originalWord: string;
+  paraphrasedWord: string;
+  synonyms: string[];
+}
+
+export type GrammarlyPillar = 'correctness' | 'clarity' | 'engagement' | 'delivery';
+
+export interface GrammarIssue {
+  id: string;
+  pillar: GrammarlyPillar;
+  title: string;
+  explanation: string;
+  startOffset: number;
+  endOffset: number;
+  originalText: string;
+  suggestedReplacement: string;
+}
+
+export interface DocumentScoreMetrics {
+  overallScore: number; // 0 - 100
+  readabilityScore: number; // Flesch Reading Ease (0 - 100)
+  gradeLevel: string; // e.g. "8th Grade", "College", "Expert"
+  readingTimeMinutes: number;
+  wordCount: number;
+  characterCount: number;
+  sentenceCount: number;
+  issuesCount: {
+    correctness: number;
+    clarity: number;
+    engagement: number;
+    delivery: number;
+  };
+}
+
 // API Request & Response Schemas
 export interface RefineRequest {
   text: string;
@@ -160,6 +199,10 @@ export interface RefineRequest {
   targetLanguage?: string;
   customInstruction?: string;
   preserveFormatting?: boolean;
+  synonymLevel?: SynonymIntensity;
+  freezeWords?: string[];
+  includeGrammarIssues?: boolean;
+  includeAlternatives?: boolean;
 }
 
 export interface RefineResponse {
@@ -167,6 +210,7 @@ export interface RefineResponse {
   refinedText: string;
   mode: WritingMode;
   tone?: WritingTone;
+  synonymLevel?: SynonymIntensity;
   stats: {
     originalWords: number;
     originalChars: number;
@@ -176,6 +220,9 @@ export interface RefineResponse {
   };
   provider: string;
   model: string;
+  alternatives?: WordAlternative[];
+  issues?: GrammarIssue[];
+  metrics?: DocumentScoreMetrics;
 }
 
 export interface TranscribeRequest {

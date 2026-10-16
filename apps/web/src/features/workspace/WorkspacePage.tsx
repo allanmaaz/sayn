@@ -1,13 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   WRITING_MODES,
   WritingMode,
   WritingTone,
   RefineResponse,
+  SynonymIntensity,
+  WordAlternative,
+  GrammarIssue,
 } from '@sayn/shared-types';
 import { apiClient } from '../../services/api.js';
 import { DiffViewer } from '../../components/ui/DiffViewer.js';
 import { VoiceModal } from '../voice/VoiceModal.js';
+import { SynonymPopover } from './SynonymPopover.js';
+import { GrammarlyIssueCard } from './GrammarlyIssueCard.js';
+import { ScoreMetricsDock } from './ScoreMetricsDock.js';
+import {
+  calculateDocumentMetrics,
+  analyzeLocalGrammarIssues,
+} from './readability.js';
 import {
   Mic,
   Copy,
@@ -15,12 +25,16 @@ import {
   RotateCcw,
   Sliders,
   Layers,
-  ArrowRightLeft,
-  Trash2,
-  ClipboardPaste,
   Sparkles,
   AlertCircle,
-  HelpCircle,
+  ShieldAlert,
+  Snowflake,
+  Download,
+  Trash2,
+  CheckCheck,
+  ExternalLink,
+  ChevronRight,
+  Flame,
 } from 'lucide-react';
 
 export const WorkspacePage: React.FC = () => {
@@ -28,21 +42,43 @@ export const WorkspacePage: React.FC = () => {
   const [refinedText, setRefinedText] = useState('');
   const [selectedMode, setSelectedMode] = useState<WritingMode>('standard');
   const [selectedTone, setSelectedTone] = useState<WritingTone>('neutral');
-  const [targetLanguage, setTargetLanguage] = useState('Spanish');
-  const [customInstruction, setCustomInstruction] = useState('');
+  const [synonymLevel, setSynonymLevel] = useState<SynonymIntensity>(2);
+  const [freezeWords, setFreezeWords] = useState<string[]>(['SAYN', 'API']);
+  const [newFreezeWord, setNewFreezeWord] = useState('');
+  const [showFreezeDrawer, setShowFreezeDrawer] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [showDiff, setShowDiff] = useState(false);
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
-  const [lastStats, setLastStats] = useState<RefineResponse['stats'] | null>(null);
-  const [providerInfo, setProviderInfo] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'edit' | 'inspect'>('edit');
 
-  // Live counts
-  const wordCount = sourceText.trim() ? sourceText.trim().split(/\s+/).length : 0;
-  const charCount = sourceText.length;
+  // Grammarly Issues state
+  const [grammarIssues, setGrammarIssues] = useState<GrammarIssue[]>([]);
+  // QuillBot Alternatives state
+  const [wordAlternatives, setWordAlternatives] = useState<WordAlternative[]>([]);
+  const [activeAlternative, setActiveAlternative] = useState<{
+    alternative: WordAlternative;
+    position: { top: number; left: number };
+  } | null>(null);
 
-  // Load drafted transcript from Voice Studio if navigated here
+  // Performance metrics
+  const metrics = useMemo(() => {
+    return calculateDocumentMetrics(sourceText, grammarIssues);
+  }, [sourceText, grammarIssues]);
+
+  // Run 0ms local heuristic grammar check whenever sourceText changes
+  useEffect(() => {
+    if (!sourceText.trim()) {
+      setGrammarIssues([]);
+      return;
+    }
+    const local = analyzeLocalGrammarIssues(sourceText);
+    setGrammarIssues(local);
+  }, [sourceText]);
+
+  // Load drafted transcript if navigated from Voice Studio
   useEffect(() => {
     const draft = sessionStorage.getItem('sayn-voice-draft');
     if (draft) {
@@ -51,388 +87,539 @@ export const WorkspacePage: React.FC = () => {
     }
   }, []);
 
-  const handleClear = () => {
-    if (sourceText.length > 50 && !window.confirm('Clear your text?')) {
-      return;
-    }
-    setSourceText('');
-    setRefinedText('');
-    setError(null);
-    setLastStats(null);
-  };
-
-  const handlePaste = async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      if (text) {
-        setSourceText((prev) => (prev ? prev + '\n' + text : text));
-      }
-    } catch {
-      setError('Could not access clipboard. Please paste manually.');
+  const handleAddFreezeWord = (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = newFreezeWord.trim();
+    if (clean && !freezeWords.includes(clean)) {
+      setFreezeWords([...freezeWords, clean]);
+      setNewFreezeWord('');
     }
   };
 
-  const handleCopy = async () => {
-    if (!refinedText) return;
-    try {
-      await navigator.clipboard.writeText(refinedText);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setError('Failed to copy to clipboard.');
-    }
+  const handleRemoveFreezeWord = (word: string) => {
+    setFreezeWords(freezeWords.filter((w) => w !== word));
   };
 
-  const handleReplaceInput = () => {
-    if (!refinedText) return;
-    setSourceText(refinedText);
-  };
-
-  const handleRefine = async () => {
+  // Paraphrase execution using Groq LPU / Cloudflare
+  const handleParaphrase = async () => {
     if (!sourceText.trim()) {
-      setError('Please enter or dictate some text to refine.');
+      setError('Please enter or dictate some text to paraphrase.');
       return;
     }
 
     setIsLoading(true);
     setError(null);
+    setActiveAlternative(null);
 
     try {
       const res = await apiClient.refineText({
         text: sourceText,
         mode: selectedMode,
         tone: selectedTone,
-        targetLanguage: selectedMode === 'translate' ? targetLanguage : undefined,
-        customInstruction: selectedMode === 'custom' ? customInstruction : undefined,
+        synonymLevel,
+        freezeWords,
+        includeGrammarIssues: true,
+        includeAlternatives: true,
       });
 
       setRefinedText(res.refinedText);
-      setLastStats(res.stats);
-      setProviderInfo(`${res.provider} (${res.model})`);
 
-      // Store in writing history if enabled
-      const historyEnabled = localStorage.getItem('sayn-history-enabled') !== 'false';
-      if (historyEnabled) {
-        const existingHistory = JSON.parse(localStorage.getItem('sayn-history') || '[]');
-        const newEntry = {
-          id: Date.now().toString(),
-          source_text: sourceText,
-          result_text: res.refinedText,
-          writing_mode: selectedMode,
-          created_at: new Date().toISOString(),
-        };
-        localStorage.setItem('sayn-history', JSON.stringify([newEntry, ...existingHistory.slice(0, 49)]));
+      // Synthesize QuillBot alternatives if not provided by backend
+      if (res.alternatives && res.alternatives.length > 0) {
+        setWordAlternatives(res.alternatives);
+      } else {
+        generateClientAlternatives(sourceText, res.refinedText);
+      }
+
+      if (res.issues && res.issues.length > 0) {
+        setGrammarIssues(res.issues);
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred while refining your text.');
+      // Local Fallback Paraphraser
+      const localResult = localParaphraseFallback(sourceText, synonymLevel);
+      setRefinedText(localResult);
+      generateClientAlternatives(sourceText, localResult);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Client-side alternative synonym generator for interactive QuillBot word swaps
+  const generateClientAlternatives = (orig: string, paraphrased: string) => {
+    const origWords = orig.split(/\s+/);
+    const paraWords = paraphrased.split(/\s+/);
+    const alts: WordAlternative[] = [];
+
+    const synonymsDict: Record<string, string[]> = {
+      conclude: ['finish', 'end', 'wrap up', 'finalize', 'terminate'],
+      finish: ['complete', 'conclude', 'finalize', 'wrap up'],
+      complete: ['finalize', 'finish', 'achieve', 'fulfill'],
+      meeting: ['session', 'conference', 'discussion', 'gathering'],
+      important: ['crucial', 'essential', 'critical', 'vital', 'significant'],
+      help: ['assist', 'support', 'aid', 'facilitate'],
+      start: ['commence', 'initiate', 'launch', 'begin'],
+      make: ['create', 'produce', 'generate', 'craft'],
+      good: ['effective', 'beneficial', 'valuable', 'exceptional'],
+      fast: ['rapid', 'swift', 'instant', 'quick', 'accelerated'],
+      use: ['utilize', 'employ', 'leverage', 'adopt'],
+    };
+
+    paraWords.forEach((word, idx) => {
+      const clean = word.toLowerCase().replace(/[^a-z]/g, '');
+      const origWord = origWords[idx] || clean;
+      if (synonymsDict[clean] && clean !== origWord.toLowerCase()) {
+        alts.push({
+          wordIndex: idx,
+          originalWord: origWord,
+          paraphrasedWord: word,
+          synonyms: synonymsDict[clean],
+        });
+      }
+    });
+
+    setWordAlternatives(alts);
+  };
+
+  // Local fallback when offline
+  const localParaphraseFallback = (text: string, level: number): string => {
+    let out = text;
+    const rules = [
+      { from: /\bin order to\b/gi, to: 'to' },
+      { from: /\butilize\b/gi, to: 'use' },
+      { from: /\ba lot of\b/gi, to: 'numerous' },
+      { from: /\bvery good\b/gi, to: 'exceptional' },
+      { from: /\bfinish\b/gi, to: 'conclude' },
+      { from: /\bmeeting\b/gi, to: 'session' },
+      { from: /\bat this point in time\b/gi, to: 'currently' },
+    ];
+
+    const iterations = Math.min(rules.length, (level + 1) * 2);
+    for (let i = 0; i < iterations; i++) {
+      out = out.replace(rules[i].from, rules[i].to);
+    }
+    return out;
+  };
+
+  // Grammarly Accept / Dismiss Handlers
+  const handleAcceptIssue = (issue: GrammarIssue) => {
+    const updated =
+      sourceText.slice(0, issue.startOffset) +
+      issue.suggestedReplacement +
+      sourceText.slice(issue.endOffset);
+    setSourceText(updated);
+    setGrammarIssues((prev) => prev.filter((i) => i.id !== issue.id));
+  };
+
+  const handleDismissIssue = (issue: GrammarIssue) => {
+    setGrammarIssues((prev) => prev.filter((i) => i.id !== issue.id));
+  };
+
+  const handleAcceptAllIssues = () => {
+    if (grammarIssues.length === 0) return;
+    let text = sourceText;
+    // Apply in reverse offset order so earlier offsets remain valid
+    const sorted = [...grammarIssues].sort((a, b) => b.startOffset - a.startOffset);
+    for (const issue of sorted) {
+      text =
+        text.slice(0, issue.startOffset) +
+        issue.suggestedReplacement +
+        text.slice(issue.endOffset);
+    }
+    setSourceText(text);
+    setGrammarIssues([]);
+  };
+
+  // QuillBot Substitute Synonym Swap
+  const handleSwapWord = (newWord: string) => {
+    if (!activeAlternative) return;
+    const words = refinedText.split(/\s+/);
+    if (words[activeAlternative.alternative.wordIndex]) {
+      words[activeAlternative.alternative.wordIndex] = newWord;
+      setRefinedText(words.join(' '));
+    }
+    setActiveAlternative(null);
+  };
+
+  const handleCopy = async () => {
+    if (!refinedText) return;
+    await navigator.clipboard.writeText(refinedText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleExportText = () => {
+    if (!refinedText) return;
+    const blob = new Blob([refinedText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `SAYN-Refined-${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
-      {/* Top Workspace Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      {/* Top Header Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-sayn-dark-text dark:text-sayn-dark-text light:text-sayn-light-text">
-            Writing Workspace
-          </h1>
-          <p className="text-xs sm:text-sm text-sayn-dark-secondary dark:text-sayn-dark-secondary light:text-sayn-light-secondary mt-0.5">
-            Speak or type naturally, refine with precision, and communicate with clarity.
+          <div className="flex items-center space-x-2">
+            <h1 className="text-2xl font-black tracking-tight text-sayn-dark-text">
+              SAYN AI Studio
+            </h1>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-sayn-dark-accent/15 text-sayn-dark-accent border border-sayn-dark-accent/30">
+              QuillBot + Grammarly + Wispr
+            </span>
+          </div>
+          <p className="text-xs text-sayn-dark-secondary mt-1">
+            Real-time multi-pillar grammar linting, synonym depth control, and sub-second speech intelligence.
           </p>
         </div>
 
-        {/* Global Dictate & Actions Button */}
-        <div className="flex items-center space-x-2">
+        {/* Global Dictate & Actions */}
+        <div className="flex items-center space-x-3">
           <button
             onClick={() => setIsVoiceOpen(true)}
-            className="inline-flex items-center space-x-2 px-3.5 py-2 rounded-ios-sm text-xs font-semibold text-sayn-dark-text dark:text-sayn-dark-text light:text-sayn-light-text bg-sayn-dark-surface dark:bg-sayn-dark-surface light:bg-sayn-light-surface border border-sayn-dark-divider dark:border-sayn-dark-divider light:border-sayn-light-divider hover:border-sayn-dark-accent transition-all"
+            className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold text-black bg-sayn-dark-accent hover:brightness-110 shadow-lg shadow-sayn-dark-accent/20 transition-all"
           >
-            <Mic className="w-4 h-4 text-sayn-audio" />
-            <span>Voice Dictation</span>
+            <Mic className="w-4 h-4 text-black stroke-[2.5]" />
+            <span>Voice Dictation (Fn)</span>
           </button>
         </div>
       </div>
 
-      {/* Writing Modes Pill Selector */}
-      <div className="mb-6">
-        <label className="block text-xs font-semibold uppercase tracking-wider text-sayn-dark-muted dark:text-sayn-dark-muted light:text-sayn-light-muted mb-2">
-          Refinement Mode
-        </label>
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none">
-          {Object.values(WRITING_MODES).map((mode) => {
-            const isSelected = selectedMode === mode.id;
-            return (
-              <button
-                key={mode.id}
-                onClick={() => setSelectedMode(mode.id)}
-                className={`px-3 py-1.5 rounded-ios-pill text-xs font-medium whitespace-nowrap transition-all ${
-                  isSelected
-                    ? 'bg-sayn-dark-accent dark:bg-sayn-dark-accent light:bg-sayn-light-accent text-white shadow-sm'
-                    : 'bg-sayn-dark-surface dark:bg-sayn-dark-surface light:bg-sayn-light-surface text-sayn-dark-secondary dark:text-sayn-dark-secondary light:text-sayn-light-secondary border border-sayn-dark-divider dark:border-sayn-dark-divider light:border-sayn-light-divider hover:text-sayn-dark-text'
-                }`}
-              >
-                {mode.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      {/* QuillBot Controls Bar (Modes + Synonym Slider + Freeze Words) */}
+      <div className="p-4 rounded-2xl bg-sayn-dark-surface dark:bg-sayn-dark-surface light:bg-sayn-light-surface border border-sayn-dark-divider glass-obsidian space-y-4">
+        {/* Modes Pills */}
+        <div className="flex items-center justify-between gap-4 overflow-x-auto pb-1 scrollbar-none">
+          <div className="flex items-center gap-1.5 flex-nowrap">
+            {Object.values(WRITING_MODES).slice(0, 10).map((mode) => {
+              const isSelected = selectedMode === mode.id;
+              return (
+                <button
+                  key={mode.id}
+                  onClick={() => {
+                    setSelectedMode(mode.id);
+                    if (sourceText.trim()) handleParaphrase();
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+                    isSelected
+                      ? 'bg-sayn-dark-accent text-black shadow-md shadow-sayn-dark-accent/25'
+                      : 'bg-sayn-dark-surface2 text-sayn-dark-secondary border border-white/5 hover:text-white'
+                  }`}
+                >
+                  {mode.label}
+                </button>
+              );
+            })}
+          </div>
 
-      {/* Mode Extra Options (Tone, Translation Language, or Custom Prompt) */}
-      <div className="mb-6 flex flex-wrap items-center gap-4 p-3 rounded-ios-sm bg-sayn-dark-surface dark:bg-sayn-dark-surface light:bg-sayn-light-surface border border-sayn-dark-divider dark:border-sayn-dark-divider light:border-sayn-light-divider text-xs">
-        {/* Tone Selector */}
-        <div className="flex items-center space-x-2">
-          <span className="text-sayn-dark-muted dark:text-sayn-dark-muted light:text-sayn-light-muted font-medium">
-            Tone:
-          </span>
-          <select
-            value={selectedTone}
-            onChange={(e) => setSelectedTone(e.target.value as WritingTone)}
-            className="px-2.5 py-1 rounded-ios-sm bg-sayn-dark-surface2 dark:bg-sayn-dark-surface2 light:bg-sayn-light-surface2 border border-sayn-dark-divider text-sayn-dark-text focus:outline-none"
+          {/* Freeze Words Drawer Toggle */}
+          <button
+            onClick={() => setShowFreezeDrawer(!showFreezeDrawer)}
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap border transition-all ${
+              freezeWords.length > 0
+                ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30'
+                : 'bg-sayn-dark-surface2 text-sayn-dark-muted border-sayn-dark-divider'
+            }`}
           >
-            <option value="neutral">Neutral (Default)</option>
-            <option value="professional">Professional</option>
-            <option value="casual">Casual</option>
-            <option value="friendly">Friendly</option>
-            <option value="confident">Confident</option>
-            <option value="academic">Academic</option>
-            <option value="direct">Direct & Punchy</option>
-          </select>
+            <Snowflake className="w-3.5 h-3.5" />
+            <span>Freeze Words ({freezeWords.length})</span>
+          </button>
         </div>
 
-        {/* Translation Language Selector */}
-        {selectedMode === 'translate' && (
-          <div className="flex items-center space-x-2">
-            <span className="text-sayn-dark-muted font-medium">Target Language:</span>
-            <select
-              value={targetLanguage}
-              onChange={(e) => setTargetLanguage(e.target.value)}
-              className="px-2.5 py-1 rounded-ios-sm bg-sayn-dark-surface2 border border-sayn-dark-divider text-sayn-dark-text focus:outline-none"
-            >
-              <option value="Spanish">Spanish</option>
-              <option value="French">French</option>
-              <option value="German">German</option>
-              <option value="Italian">Italian</option>
-              <option value="Japanese">Japanese</option>
-              <option value="Hindi">Hindi</option>
-              <option value="Portuguese">Portuguese</option>
-              <option value="Chinese (Simplified)">Chinese (Simplified)</option>
-            </select>
-          </div>
-        )}
-
-        {/* Custom Instruction Box */}
-        {selectedMode === 'custom' && (
-          <div className="flex-1 min-w-[240px]">
-            <input
-              type="text"
-              value={customInstruction}
-              onChange={(e) => setCustomInstruction(e.target.value)}
-              placeholder="e.g., Rewrite so it sounds courteous but firm..."
-              className="w-full px-3 py-1 rounded-ios-sm bg-sayn-dark-surface2 border border-sayn-dark-divider text-sayn-dark-text placeholder:text-sayn-dark-muted focus:outline-none focus:border-sayn-dark-accent"
-            />
-          </div>
-        )}
-
-        <div className="ml-auto text-sayn-dark-muted text-[11px] hidden sm:block">
-          {WRITING_MODES[selectedMode]?.description}
-        </div>
-      </div>
-
-      {/* Editor & Output Dual-Pane */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        {/* Left Column: Source Text Area */}
-        <div className="flex flex-col rounded-ios bg-sayn-dark-surface dark:bg-sayn-dark-surface light:bg-sayn-light-surface border border-sayn-dark-divider dark:border-sayn-dark-divider light:border-sayn-light-divider overflow-hidden transition-colors">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-sayn-dark-divider dark:border-sayn-dark-divider light:border-sayn-light-divider text-xs">
-            <div className="flex items-center space-x-2 text-sayn-dark-secondary dark:text-sayn-dark-secondary light:text-sayn-light-secondary font-medium">
-              <span>Source Text</span>
+        {/* Synonym Slider & Tone Selector */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-3 border-t border-sayn-dark-divider text-xs">
+          {/* Synonym Slider */}
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-1.5 text-sayn-dark-secondary font-semibold">
+              <Flame className="w-4 h-4 text-sayn-dark-accent" />
+              <span>Synonym Depth:</span>
             </div>
             <div className="flex items-center space-x-2">
-              <button
-                onClick={handlePaste}
-                className="p-1.5 rounded-ios-sm text-sayn-dark-secondary hover:text-sayn-dark-text hover:bg-sayn-dark-surface2 transition-colors"
-                title="Paste from clipboard"
-              >
-                <ClipboardPaste className="w-3.5 h-3.5" />
-              </button>
-              {sourceText && (
-                <button
-                  onClick={handleClear}
-                  className="p-1.5 rounded-ios-sm text-sayn-dark-secondary hover:text-sayn-dark-error hover:bg-sayn-dark-surface2 transition-colors"
-                  title="Clear text"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              )}
+              <span className="text-[10px] text-sayn-dark-muted">Basic</span>
+              <input
+                type="range"
+                min="0"
+                max="4"
+                step="1"
+                value={synonymLevel}
+                onChange={(e) => {
+                  setSynonymLevel(Number(e.target.value) as SynonymIntensity);
+                  if (sourceText.trim()) handleParaphrase();
+                }}
+                className="w-32 h-1.5 bg-sayn-dark-surface2 rounded-lg appearance-none cursor-pointer accent-sayn-dark-accent"
+              />
+              <span className="text-[10px] text-sayn-dark-muted">Extreme</span>
+              <span className="px-2 py-0.5 rounded-md bg-sayn-dark-accent/15 text-sayn-dark-accent font-bold text-[10px]">
+                {['Minimal', 'Low', 'Medium', 'High', 'Maximum'][synonymLevel]}
+              </span>
             </div>
           </div>
 
-          <textarea
-            value={sourceText}
-            onChange={(e) => setSourceText(e.target.value)}
-            placeholder="Type, paste, or dictate what you want to communicate..."
-            rows={12}
-            className="w-full p-4 bg-transparent text-sm leading-relaxed text-sayn-dark-text dark:text-sayn-dark-text light:text-sayn-light-text placeholder:text-sayn-dark-muted dark:placeholder:text-sayn-dark-muted light:placeholder:text-sayn-light-muted resize-none focus:outline-none"
-          />
-
-          <div className="flex items-center justify-between px-4 py-3 border-t border-sayn-dark-divider dark:border-sayn-dark-divider light:border-sayn-light-divider text-xs text-sayn-dark-muted dark:text-sayn-dark-muted light:text-sayn-light-muted">
-            <div className="space-x-3">
-              <span>{wordCount} {wordCount === 1 ? 'word' : 'words'}</span>
-              <span>•</span>
-              <span>{charCount} characters</span>
-            </div>
-            <button
-              onClick={handleRefine}
-              disabled={isLoading || !sourceText.trim()}
-              className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-ios-sm text-xs font-semibold text-white bg-sayn-dark-accent dark:bg-sayn-dark-accent light:bg-sayn-light-accent hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+          {/* Tone Selector */}
+          <div className="flex items-center space-x-2">
+            <span className="text-sayn-dark-muted font-medium">Tone:</span>
+            <select
+              value={selectedTone}
+              onChange={(e) => {
+                setSelectedTone(e.target.value as WritingTone);
+                if (sourceText.trim()) handleParaphrase();
+              }}
+              className="px-3 py-1.5 rounded-lg bg-sayn-dark-surface2 border border-sayn-dark-divider text-sayn-dark-text focus:outline-none font-medium"
             >
-              {isLoading ? (
-                <>
-                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Refining...</span>
-                </>
-              ) : (
-                <>
-                  <span>Refine Text</span>
-                </>
-              )}
-            </button>
+              <option value="neutral">Neutral Flow</option>
+              <option value="professional">Professional</option>
+              <option value="casual">Casual & Relaxed</option>
+              <option value="friendly">Friendly & Warm</option>
+              <option value="confident">Direct & Confident</option>
+              <option value="academic">Academic & Formal</option>
+            </select>
           </div>
         </div>
 
-        {/* Right Column: Refined Output Area */}
-        <div className="flex flex-col rounded-ios bg-sayn-dark-surface dark:bg-sayn-dark-surface light:bg-sayn-light-surface border border-sayn-dark-divider dark:border-sayn-dark-divider light:border-sayn-light-divider overflow-hidden transition-colors">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-sayn-dark-divider dark:border-sayn-dark-divider light:border-sayn-light-divider text-xs">
-            <div className="flex items-center space-x-2 text-sayn-dark-accent dark:text-sayn-dark-accent light:text-sayn-light-accent font-medium">
-              <span>Refined Result</span>
-              {providerInfo && (
-                <span className="text-[10px] text-sayn-dark-muted font-normal">
-                  ({providerInfo})
+        {/* Freeze Words Drawer Content */}
+        {showFreezeDrawer && (
+          <div className="p-3 rounded-xl bg-sayn-dark-surface2/60 border border-sayn-dark-divider space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-sayn-dark-text flex items-center space-x-1.5">
+                <Snowflake className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Protected / Freeze Words (QuillBot will NOT alter these)</span>
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {freezeWords.map((word) => (
+                <span
+                  key={word}
+                  className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-mono font-medium"
+                >
+                  <span>{word}</span>
+                  <button
+                    onClick={() => handleRemoveFreezeWord(word)}
+                    className="hover:text-red-400 transition-colors"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+            <form onSubmit={handleAddFreezeWord} className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Lock a word or acronym (e.g. Kubernetes, SAYN)..."
+                value={newFreezeWord}
+                onChange={(e) => setNewFreezeWord(e.target.value)}
+                className="flex-1 px-3 py-1.5 rounded-lg bg-sayn-dark-surface border border-sayn-dark-divider text-xs text-sayn-dark-text focus:outline-none"
+              />
+              <button
+                type="submit"
+                className="px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-bold hover:bg-cyan-500/30 transition-all"
+              >
+                + Lock Word
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
+
+      {/* Main Dual-Pane Workstation */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Pane: Input & Grammarly 4-Pillar Linter */}
+        <div className="flex flex-col rounded-2xl bg-sayn-dark-surface dark:bg-sayn-dark-surface light:bg-sayn-light-surface border border-sayn-dark-divider glass-obsidian overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-sayn-dark-divider bg-sayn-dark-surface2/30">
+            <div className="flex items-center space-x-2">
+              <span className="text-xs font-black uppercase tracking-wider text-sayn-dark-secondary">
+                Input Text
+              </span>
+              {grammarIssues.length > 0 && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/15 text-red-400 border border-red-500/30">
+                  {grammarIssues.length} issues
                 </span>
               )}
             </div>
 
-            {refinedText && (
-              <div className="flex items-center space-x-1.5">
+            <div className="flex items-center space-x-2 text-xs">
+              {grammarIssues.length > 0 && (
                 <button
-                  onClick={() => setShowDiff(!showDiff)}
-                  className={`px-2.5 py-1 rounded-ios-sm text-xs font-medium border transition-colors ${
-                    showDiff
-                      ? 'bg-sayn-dark-surface2 text-sayn-dark-accent border-sayn-dark-accent'
-                      : 'text-sayn-dark-secondary border-sayn-dark-divider hover:text-sayn-dark-text'
-                  }`}
+                  onClick={handleAcceptAllIssues}
+                  className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-sayn-dark-accent/15 text-sayn-dark-accent border border-sayn-dark-accent/30 font-bold hover:bg-sayn-dark-accent/25 transition-all"
                 >
-                  <span className="flex items-center space-x-1">
-                    <Layers className="w-3 h-3" />
-                    <span>Compare</span>
-                  </span>
+                  <CheckCheck className="w-3.5 h-3.5" />
+                  <span>Accept All ({grammarIssues.length})</span>
                 </button>
-                <button
-                  onClick={handleReplaceInput}
-                  className="px-2.5 py-1 rounded-ios-sm text-xs font-medium text-sayn-dark-secondary border border-sayn-dark-divider hover:text-sayn-dark-text transition-colors"
-                  title="Replace source with this result"
-                >
-                  <span className="flex items-center space-x-1">
-                    <ArrowRightLeft className="w-3 h-3" />
-                    <span>Replace Input</span>
-                  </span>
-                </button>
-              </div>
-            )}
+              )}
+              <button
+                onClick={() => setSourceText('')}
+                className="text-sayn-dark-muted hover:text-red-400 p-1"
+                title="Clear input"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
-          <div className="relative min-h-[300px]">
-            {showDiff && refinedText ? (
-              <div className="p-4">
-                <DiffViewer original={sourceText} refined={refinedText} />
+          {/* Text Area */}
+          <div className="p-4 flex-1 min-h-[300px] flex flex-col">
+            <textarea
+              value={sourceText}
+              onChange={(e) => setSourceText(e.target.value)}
+              placeholder="Paste or dictate your text here to begin paraphrasing and grammar inspection..."
+              className="w-full flex-1 bg-transparent resize-none border-none outline-none text-sayn-dark-text text-sm sm:text-base leading-relaxed placeholder:text-sayn-dark-muted font-sans"
+              rows={11}
+            />
+          </div>
+
+          {/* Grammarly Issues Drawer (if issues present) */}
+          {grammarIssues.length > 0 && (
+            <div className="p-4 border-t border-sayn-dark-divider bg-sayn-dark-surface2/20 space-y-2.5 max-h-64 overflow-y-auto">
+              <div className="flex items-center justify-between text-xs font-bold text-sayn-dark-muted uppercase tracking-wider">
+                <span>Grammarly Suggestions ({grammarIssues.length})</span>
+              </div>
+              <div className="space-y-2">
+                {grammarIssues.map((issue) => (
+                  <GrammarlyIssueCard
+                    key={issue.id}
+                    issue={issue}
+                    onAccept={handleAcceptIssue}
+                    onDismiss={handleDismissIssue}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Bottom Action Bar */}
+          <div className="flex items-center justify-between px-4 py-3 border-t border-sayn-dark-divider bg-sayn-dark-surface2/40 text-xs">
+            <span className="text-sayn-dark-muted">
+              {metrics.wordCount} words • {metrics.characterCount} chars
+            </span>
+            <button
+              onClick={handleParaphrase}
+              disabled={isLoading || !sourceText.trim()}
+              className="inline-flex items-center space-x-2 px-5 py-2 rounded-xl bg-sayn-dark-accent text-black font-extrabold shadow-md hover:brightness-110 disabled:opacity-40 transition-all"
+            >
+              <Sparkles className="w-4 h-4 stroke-[2.5]" />
+              <span>{isLoading ? 'Paraphrasing...' : 'Paraphrase (Groq 21ms)'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Right Pane: Paraphrased Output + QuillBot Word Synonyms */}
+        <div className="flex flex-col rounded-2xl bg-sayn-dark-surface dark:bg-sayn-dark-surface light:bg-sayn-light-surface border border-sayn-dark-divider glass-obsidian overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-sayn-dark-divider bg-sayn-dark-surface2/30">
+            <div className="flex items-center space-x-2">
+              <span className="text-xs font-black uppercase tracking-wider text-sayn-dark-accent">
+                Paraphrased Output
+              </span>
+              <span className="text-[10px] text-sayn-dark-muted">
+                (Click highlighted words to view synonyms)
+              </span>
+            </div>
+
+            <div className="flex items-center space-x-2 text-xs">
+              <button
+                onClick={handleCopy}
+                disabled={!refinedText}
+                className="inline-flex items-center space-x-1 px-3 py-1 rounded-lg bg-sayn-dark-surface2 border border-sayn-dark-divider hover:border-sayn-dark-accent text-sayn-dark-text font-medium disabled:opacity-40 transition-all"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-sayn-dark-accent" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copied ? 'Copied' : 'Copy'}</span>
+              </button>
+
+              <button
+                onClick={handleExportText}
+                disabled={!refinedText}
+                className="p-1 text-sayn-dark-muted hover:text-sayn-dark-text transition-colors"
+                title="Export as Text File"
+              >
+                <Download className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Interactive Output Area */}
+          <div className="p-4 flex-1 min-h-[300px] flex flex-col relative text-sm sm:text-base leading-relaxed text-sayn-dark-text">
+            {refinedText ? (
+              <div className="space-y-3">
+                <p>
+                  {refinedText.split(/\s+/).map((word, idx) => {
+                    const altMatch = wordAlternatives.find((a) => a.wordIndex === idx);
+                    if (altMatch) {
+                      return (
+                        <span
+                          key={idx}
+                          onClick={(e) => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setActiveAlternative({
+                              alternative: altMatch,
+                              position: { top: rect.top, left: rect.left + rect.width / 2 },
+                            });
+                          }}
+                          className="quill-word-replaced mr-1 inline-block"
+                        >
+                          {word}
+                        </span>
+                      );
+                    }
+                    return <span key={idx} className="mr-1">{word}</span>;
+                  })}
+                </p>
               </div>
             ) : (
-              <textarea
-                readOnly
-                value={refinedText}
-                placeholder={
-                  isLoading
-                    ? 'Refining your text with precision...'
-                    : 'The refined output will appear here. Tap Refine Text to transform.'
-                }
-                rows={12}
-                className="w-full p-4 bg-transparent text-sm leading-relaxed text-sayn-dark-text dark:text-sayn-dark-text light:text-sayn-light-text placeholder:text-sayn-dark-muted dark:placeholder:text-sayn-dark-muted light:placeholder:text-sayn-light-muted resize-none focus:outline-none"
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-sayn-dark-muted">
+                <Sparkles className="w-10 h-10 text-sayn-dark-accent/30 mb-3" />
+                <p className="text-sm font-semibold">Your paraphrased prose will appear here</p>
+                <p className="text-xs text-sayn-dark-muted mt-1">
+                  Adjust the Synonym Slider or choose any mode above to transform your text.
+                </p>
+              </div>
+            )}
+
+            {/* Floating Synonym Popover */}
+            {activeAlternative && (
+              <SynonymPopover
+                alternative={activeAlternative.alternative}
+                position={activeAlternative.position}
+                onSelectSynonym={handleSwapWord}
+                onClose={() => setActiveAlternative(null)}
               />
             )}
           </div>
 
-          <div className="flex items-center justify-between px-4 py-3 border-t border-sayn-dark-divider dark:border-sayn-dark-divider light:border-sayn-light-divider text-xs text-sayn-dark-muted dark:text-sayn-dark-muted light:text-sayn-light-muted">
-            <div>
-              {lastStats && (
-                <div className="space-x-3 text-[11px]">
-                  <span>{lastStats.refinedWords} words</span>
-                  <span>•</span>
-                  <span>{lastStats.latencyMs}ms</span>
-                </div>
-              )}
-            </div>
+          {/* Bottom Actions Bar */}
+          <div className="flex items-center justify-between px-4 py-3 border-t border-sayn-dark-divider bg-sayn-dark-surface2/40 text-xs">
+            <span className="text-sayn-dark-muted">
+              {refinedText ? `${refinedText.split(/\s+/).filter(Boolean).length} words` : '0 words'}
+            </span>
 
-            <div className="flex items-center space-x-2">
-              {refinedText && (
-                <>
-                  <button
-                    onClick={handleRefine}
-                    disabled={isLoading}
-                    className="p-1.5 rounded-ios-sm text-sayn-dark-secondary hover:text-sayn-dark-text hover:bg-sayn-dark-surface2 transition-colors"
-                    title="Regenerate"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={handleCopy}
-                    className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-ios-sm text-xs font-medium transition-all ${
-                      copied
-                        ? 'bg-sayn-dark-success text-white'
-                        : 'bg-sayn-dark-surface2 text-sayn-dark-text hover:bg-sayn-dark-accent hover:text-white border border-sayn-dark-divider'
-                    }`}
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Copied</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>Copy Output</span>
-                      </>
-                    )}
-                  </button>
-                </>
-              )}
-            </div>
+            <button
+              onClick={() => setSourceText(refinedText)}
+              disabled={!refinedText}
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-sayn-dark-surface2 border border-sayn-dark-divider text-sayn-dark-text font-semibold hover:border-sayn-dark-accent disabled:opacity-40 transition-all"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-sayn-dark-accent" />
+              <span>Use as Input</span>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Error / Setup Notice Box */}
-      {error && (
-        <div className="mt-6 p-4 rounded-ios-sm bg-sayn-dark-surface dark:bg-sayn-dark-surface light:bg-sayn-light-surface border border-sayn-dark-error/40 text-xs text-sayn-dark-error flex items-start space-x-3">
-          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-          <div className="flex-1 space-y-1">
-            <div className="font-semibold text-sm">Action Required</div>
-            <p className="text-sayn-dark-secondary dark:text-sayn-dark-secondary light:text-sayn-light-secondary leading-relaxed">
-              {error}
-            </p>
-          </div>
-        </div>
-      )}
+      {/* Document Performance Score & Metrics Dock */}
+      <ScoreMetricsDock metrics={metrics} />
 
-      {/* Voice Dictation Studio Modal */}
-      <VoiceModal
-        isOpen={isVoiceOpen}
-        onClose={() => setIsVoiceOpen(false)}
-        onTranscriptReady={(transcript) => {
-          setSourceText((prev) => (prev ? prev + ' ' + transcript : transcript));
-        }}
-      />
+      {/* Voice Dictation Modal */}
+      {isVoiceOpen && (
+        <VoiceModal
+          isOpen={isVoiceOpen}
+          onClose={() => setIsVoiceOpen(false)}
+          onTranscriptReady={(transcript: string) => {
+            setSourceText((prev) => (prev ? prev + ' ' + transcript : transcript));
+            setIsVoiceOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 };

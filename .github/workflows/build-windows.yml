@@ -1,0 +1,69 @@
+name: Build SAYN Windows Desktop
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    name: Build Windows Desktop Installer (.exe & Portable)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Monorepo Dependencies
+        run: npm ci
+
+      - name: Build Shared Types
+        run: |
+          cd packages/shared-types
+          npm run build
+
+      - name: Build Web Application
+        run: |
+          cd apps/web
+          npm run build
+
+      - name: Stage Web Build for Windows Desktop
+        shell: bash
+        run: |
+          mkdir -p apps/desktop-windows/dist
+          cp -r apps/web/dist/* apps/desktop-windows/dist/
+
+      - name: Install Desktop Windows Dependencies
+        shell: bash
+        run: |
+          cd apps/desktop-windows
+          npm install
+
+      - name: Build Windows Executables (NSIS & Portable)
+        shell: bash
+        run: |
+          cd apps/desktop-windows
+          npx electron-builder --win nsis portable --x64
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sayn-windows-x64
+          path: release/windows/*.exe
+
+      - name: Attach Windows Exe to Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        with:
+          tag_name: v1.0.9
+          files: release/windows/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

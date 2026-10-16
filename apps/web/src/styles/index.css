@@ -38,6 +38,63 @@ html.light ::-webkit-scrollbar-thumb {
   background: #D2D2D7;
 }
 
+/* Grammarly 4-Pillar Underline Linting */
+.wavy-correctness {
+  text-decoration: underline wavy #FF453A 1.8px;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.wavy-clarity {
+  text-decoration: underline wavy #0A84FF 1.8px;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.wavy-engagement {
+  text-decoration: underline wavy #30D158 1.8px;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.wavy-delivery {
+  text-decoration: underline wavy #BF5AF2 1.8px;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+/* QuillBot Word-by-Word Synonym Chips */
+.quill-word-replaced {
+  color: #CBFE00;
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(203, 254, 0, 0.12);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.quill-word-replaced:hover {
+  background: rgba(203, 254, 0, 0.28);
+  box-shadow: 0 0 10px rgba(203, 254, 0, 0.3);
+}
+
+.quill-word-structural {
+  color: #5DE4FF;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(93, 228, 255, 0.1);
+  cursor: pointer;
+}
+
+/* Liquid Obsidian Frosted Glass */
+.glass-obsidian {
+  background: rgba(22, 22, 29, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 ::-webkit-scrollbar-thumb:hover {
   background: #505058;
 }

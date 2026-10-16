@@ -13,6 +13,8 @@ class SaynApiClient {
     String? tone,
     String? targetLanguage,
     String? customInstruction,
+    int? synonymIntensity,
+    List<String>? freezeWords,
   }) async {
     final uri = Uri.parse('$baseUrl/api/v1/ai/refine');
     final headers = {
@@ -26,6 +28,8 @@ class SaynApiClient {
       if (tone != null) 'tone': tone,
       if (targetLanguage != null) 'targetLanguage': targetLanguage,
       if (customInstruction != null) 'customInstruction': customInstruction,
+      if (synonymIntensity != null) 'synonymIntensity': synonymIntensity,
+      if (freezeWords != null && freezeWords.isNotEmpty) 'freezeWords': freezeWords,
     });
 
     final response = await http.post(uri, headers: headers, body: body);

@@ -1,0 +1,37 @@
+name: Build SAYN macOS DMG
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-dmg:
+    name: Build macOS DMG Installer
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build macOS DMG
+        run: |
+          chmod +x apps/desktop-macos/make-dmg.sh
+          ./apps/desktop-macos/make-dmg.sh
+
+      - name: Upload DMG Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sayn-macos-dmg
+          path: release/SAYN-macOS-Installer.dmg
+
+      - name: Attach DMG to Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        with:
+          tag_name: v1.0.9
+          files: release/SAYN-macOS-Installer.dmg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
