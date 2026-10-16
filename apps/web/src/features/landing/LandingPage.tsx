@@ -24,12 +24,14 @@ import {
 } from 'lucide-react';
 import { detectDevice, DeviceInfo } from '../../utils/deviceDetector.js';
 import { DownloadModal } from '../../components/download/DownloadModal.js';
+import { useScrollAnimation } from '../../hooks/useScrollAnimation.js';
 
 export const LandingPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'refine' | 'voice' | 'overlay'>('refine');
   const [copiedDemo, setCopiedDemo] = useState(false);
   const [isDownloadOpen, setIsDownloadOpen] = useState(false);
   const [device, setDevice] = useState<DeviceInfo | null>(null);
+  const { scrollY } = useScrollAnimation();
 
   React.useEffect(() => {
     setDevice(detectDevice());
@@ -47,10 +49,19 @@ export const LandingPage: React.FC = () => {
     <div className="flex-1 flex flex-col bg-[#100709] text-[#F5EBDD] overflow-hidden">
       {/* 1. HERO SECTION (Matching SAYN Landing Page Mockup) */}
       <section className="relative pt-12 pb-20 md:pt-20 md:pb-28 overflow-hidden">
-        {/* Ambient Maroon Specular Lighting Glows */}
-        <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-[#6F1025]/25 rounded-full blur-[140px] pointer-events-none" />
-        <div className="absolute bottom-10 right-10 w-[600px] h-[600px] bg-[#A83249]/20 rounded-full blur-[160px] pointer-events-none" />
-        <div className="absolute top-1/2 right-1/4 w-[400px] h-[400px] bg-[#6F1025]/15 rounded-full blur-[120px] pointer-events-none" />
+        {/* Ambient Maroon Specular Lighting Glows with Scroll Parallax */}
+        <div
+          className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-[#6F1025]/25 rounded-full blur-[140px] pointer-events-none transition-transform duration-100 ease-out"
+          style={{ transform: `translate(-50%, calc(-50% + ${scrollY * 0.12}px))` }}
+        />
+        <div
+          className="absolute bottom-10 right-10 w-[600px] h-[600px] bg-[#A83249]/20 rounded-full blur-[160px] pointer-events-none transition-transform duration-100 ease-out"
+          style={{ transform: `translateY(${-scrollY * 0.15}px)` }}
+        />
+        <div
+          className="absolute top-1/2 right-1/4 w-[400px] h-[400px] bg-[#6F1025]/15 rounded-full blur-[120px] pointer-events-none transition-transform duration-100 ease-out"
+          style={{ transform: `translateY(${scrollY * 0.08}px)` }}
+        />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
@@ -125,8 +136,13 @@ export const LandingPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Right Hero Column: 3D Laptop Studio Showcase */}
-            <div className="lg:col-span-6 relative">
+            {/* Right Hero Column: 3D Laptop Studio Showcase with Scroll Tilt */}
+            <div
+              className="lg:col-span-6 relative transition-transform duration-200 ease-out"
+              style={{
+                transform: `perspective(1000px) rotateX(${Math.max(-4, Math.min(8, (scrollY - 100) * 0.02))}deg) translateY(${Math.min(30, scrollY * 0.06)}px)`,
+              }}
+            >
               {/* Laptop Chassis Outer Frame */}
               <div className="relative mx-auto max-w-[560px] rounded-t-[20px] bg-[#1D0C13] border-4 border-[#3D1520] shadow-[0_24px_60px_rgba(111,16,37,0.45)] overflow-hidden">
                 {/* Screen Top Bezel with Camera Dot */}
@@ -247,9 +263,12 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 2. THREE-PILLAR CAPABILITIES SECTION */}
-      <section id="features" className="py-24 border-t border-[#3D1520] bg-[#14080D]/80 relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
+      <section id="features" className="py-24 border-t border-[#3D1520] bg-[#14080D]/80 relative overflow-hidden">
+        {/* Subtle ambient section glow */}
+        <div className="absolute top-0 right-1/3 w-[500px] h-[500px] bg-[#6F1025]/10 rounded-full blur-[150px] pointer-events-none scroll-parallax-glow" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center max-w-3xl mx-auto mb-16 reveal-on-scroll scroll-reveal">
             <span className="text-xs font-bold uppercase tracking-widest text-[#A83249] mb-2 block">
               Core Architecture
             </span>
@@ -263,8 +282,8 @@ export const LandingPage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Card 1: Voice to Text */}
-            <div className="p-7 rounded-2xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249]/60 transition-all shadow-sm group">
-              <div className="w-12 h-12 rounded-xl bg-[#6F1025]/30 border border-[#A83249]/40 flex items-center justify-center text-[#F5EBDD] mb-5 group-hover:scale-105 transition-transform">
+            <div className="reveal-on-scroll scroll-reveal reveal-delay-1 p-7 rounded-2xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249]/80 hover:shadow-[0_8px_30px_rgba(111,16,37,0.3)] transition-all duration-300 group">
+              <div className="w-12 h-12 rounded-xl bg-[#6F1025]/30 border border-[#A83249]/40 flex items-center justify-center text-[#F5EBDD] mb-5 group-hover:scale-110 transition-transform">
                 <Mic className="w-6 h-6 text-[#A83249]" />
               </div>
               <h3 className="text-lg font-bold text-[#F5EBDD] mb-2">Voice to Text</h3>
@@ -274,8 +293,8 @@ export const LandingPage: React.FC = () => {
             </div>
 
             {/* Card 2: AI Writing Assistant */}
-            <div className="p-7 rounded-2xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249]/60 transition-all shadow-sm group">
-              <div className="w-12 h-12 rounded-xl bg-[#6F1025]/30 border border-[#A83249]/40 flex items-center justify-center text-[#F5EBDD] mb-5 group-hover:scale-105 transition-transform">
+            <div className="reveal-on-scroll scroll-reveal reveal-delay-2 p-7 rounded-2xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249]/80 hover:shadow-[0_8px_30px_rgba(111,16,37,0.3)] transition-all duration-300 group">
+              <div className="w-12 h-12 rounded-xl bg-[#6F1025]/30 border border-[#A83249]/40 flex items-center justify-center text-[#F5EBDD] mb-5 group-hover:scale-110 transition-transform">
                 <PenTool className="w-6 h-6 text-[#A83249]" />
               </div>
               <h3 className="text-lg font-bold text-[#F5EBDD] mb-2">QuillBot & Grammarly Refinement</h3>
@@ -285,8 +304,8 @@ export const LandingPage: React.FC = () => {
             </div>
 
             {/* Card 3: Floating Assistant */}
-            <div className="p-7 rounded-2xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249]/60 transition-all shadow-sm group">
-              <div className="w-12 h-12 rounded-xl bg-[#6F1025]/30 border border-[#A83249]/40 flex items-center justify-center text-[#F5EBDD] mb-5 group-hover:scale-105 transition-transform">
+            <div className="reveal-on-scroll scroll-reveal reveal-delay-3 p-7 rounded-2xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249]/80 hover:shadow-[0_8px_30px_rgba(111,16,37,0.3)] transition-all duration-300 group">
+              <div className="w-12 h-12 rounded-xl bg-[#6F1025]/30 border border-[#A83249]/40 flex items-center justify-center text-[#F5EBDD] mb-5 group-hover:scale-110 transition-transform">
                 <Layers className="w-6 h-6 text-[#A83249]" />
               </div>
               <h3 className="text-lg font-bold text-[#F5EBDD] mb-2">Desktop & Mobile Assistant</h3>
@@ -296,8 +315,8 @@ export const LandingPage: React.FC = () => {
             </div>
 
             {/* Card 4: Smart Keyboard */}
-            <div className="p-7 rounded-2xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249]/60 transition-all shadow-sm group">
-              <div className="w-12 h-12 rounded-xl bg-[#6F1025]/30 border border-[#A83249]/40 flex items-center justify-center text-[#F5EBDD] mb-5 group-hover:scale-105 transition-transform">
+            <div className="reveal-on-scroll scroll-reveal reveal-delay-4 p-7 rounded-2xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249]/80 hover:shadow-[0_8px_30px_rgba(111,16,37,0.3)] transition-all duration-300 group">
+              <div className="w-12 h-12 rounded-xl bg-[#6F1025]/30 border border-[#A83249]/40 flex items-center justify-center text-[#F5EBDD] mb-5 group-hover:scale-110 transition-transform">
                 <Keyboard className="w-6 h-6 text-[#A83249]" />
               </div>
               <h3 className="text-lg font-bold text-[#F5EBDD] mb-2">Android Smart Keyboard</h3>
@@ -307,8 +326,8 @@ export const LandingPage: React.FC = () => {
             </div>
 
             {/* Card 5: Cross Platform */}
-            <div className="p-7 rounded-2xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249]/60 transition-all shadow-sm group">
-              <div className="w-12 h-12 rounded-xl bg-[#6F1025]/30 border border-[#A83249]/40 flex items-center justify-center text-[#F5EBDD] mb-5 group-hover:scale-105 transition-transform">
+            <div className="reveal-on-scroll scroll-reveal reveal-delay-5 p-7 rounded-2xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249]/80 hover:shadow-[0_8px_30px_rgba(111,16,37,0.3)] transition-all duration-300 group">
+              <div className="w-12 h-12 rounded-xl bg-[#6F1025]/30 border border-[#A83249]/40 flex items-center justify-center text-[#F5EBDD] mb-5 group-hover:scale-110 transition-transform">
                 <Laptop className="w-6 h-6 text-[#A83249]" />
               </div>
               <h3 className="text-lg font-bold text-[#F5EBDD] mb-2">Universal Compatibility</h3>
@@ -318,8 +337,8 @@ export const LandingPage: React.FC = () => {
             </div>
 
             {/* Card 6: Privacy by Design */}
-            <div className="p-7 rounded-2xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249]/60 transition-all shadow-sm group">
-              <div className="w-12 h-12 rounded-xl bg-[#6F1025]/30 border border-[#A83249]/40 flex items-center justify-center text-[#F5EBDD] mb-5 group-hover:scale-105 transition-transform">
+            <div className="reveal-on-scroll scroll-reveal reveal-delay-6 p-7 rounded-2xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249]/80 hover:shadow-[0_8px_30px_rgba(111,16,37,0.3)] transition-all duration-300 group">
+              <div className="w-12 h-12 rounded-xl bg-[#6F1025]/30 border border-[#A83249]/40 flex items-center justify-center text-[#F5EBDD] mb-5 group-hover:scale-110 transition-transform">
                 <ShieldCheck className="w-6 h-6 text-[#A83249]" />
               </div>
               <h3 className="text-lg font-bold text-[#F5EBDD] mb-2">100% Free & Unlimited</h3>
@@ -332,9 +351,9 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 3. HOW IT WORKS SECTION */}
-      <section id="how-it-works" className="py-24 border-t border-[#3D1520] bg-[#100709]">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
+      <section id="how-it-works" className="py-24 border-t border-[#3D1520] bg-[#100709] relative overflow-hidden">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center max-w-2xl mx-auto mb-16 reveal-on-scroll scroll-reveal">
             <span className="text-xs font-bold uppercase tracking-widest text-[#A83249] mb-2 block">
               Workflow
             </span>
@@ -347,18 +366,18 @@ export const LandingPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="flex flex-col items-center text-center p-7 rounded-2xl bg-[#1C0B12] border border-[#3D1520]">
-              <div className="w-11 h-11 rounded-full bg-[#6F1025] text-[#F5EBDD] font-mono text-sm font-bold flex items-center justify-center mb-5 shadow-md">
+            <div className="reveal-on-scroll scroll-reveal reveal-delay-1 flex flex-col items-center text-center p-7 rounded-2xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249]/80 transition-all duration-300">
+              <div className="w-11 h-11 rounded-full bg-[#6F1025] text-[#F5EBDD] font-mono text-sm font-bold flex items-center justify-center mb-5 shadow-[0_0_15px_rgba(111,16,37,0.6)]">
                 1
               </div>
               <h3 className="font-bold text-base text-[#F5EBDD] mb-2">Speak or Type</h3>
               <p className="text-xs sm:text-sm text-[#D6C7B2] leading-relaxed">
-                Record your voice with Fn or Alt+Space, or paste a rough thought without worrying about phrasing or punctuation.
+                Record your voice with Fn or Option+Space, or paste a rough thought without worrying about phrasing or punctuation.
               </p>
             </div>
 
-            <div className="flex flex-col items-center text-center p-7 rounded-2xl bg-[#1C0B12] border border-[#3D1520]">
-              <div className="w-11 h-11 rounded-full bg-[#6F1025] text-[#F5EBDD] font-mono text-sm font-bold flex items-center justify-center mb-5 shadow-md">
+            <div className="reveal-on-scroll scroll-reveal reveal-delay-2 flex flex-col items-center text-center p-7 rounded-2xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249]/80 transition-all duration-300">
+              <div className="w-11 h-11 rounded-full bg-[#6F1025] text-[#F5EBDD] font-mono text-sm font-bold flex items-center justify-center mb-5 shadow-[0_0_15px_rgba(111,16,37,0.6)]">
                 2
               </div>
               <h3 className="font-bold text-base text-[#F5EBDD] mb-2">Choose Refinement</h3>
@@ -367,8 +386,8 @@ export const LandingPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex flex-col items-center text-center p-7 rounded-2xl bg-[#1C0B12] border border-[#3D1520]">
-              <div className="w-11 h-11 rounded-full bg-[#6F1025] text-[#F5EBDD] font-mono text-sm font-bold flex items-center justify-center mb-5 shadow-md">
+            <div className="reveal-on-scroll scroll-reveal reveal-delay-3 flex flex-col items-center text-center p-7 rounded-2xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249]/80 transition-all duration-300">
+              <div className="w-11 h-11 rounded-full bg-[#6F1025] text-[#F5EBDD] font-mono text-sm font-bold flex items-center justify-center mb-5 shadow-[0_0_15px_rgba(111,16,37,0.6)]">
                 3
               </div>
               <h3 className="font-bold text-base text-[#F5EBDD] mb-2">Auto-Paste Anywhere</h3>
@@ -381,20 +400,22 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 4. PRIVACY SECTION */}
-      <section id="privacy" className="py-24 border-t border-[#3D1520] bg-[#14080D]/80">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-[#6F1025]/30 border border-[#A83249]/40 text-[#A83249] flex items-center justify-center mx-auto mb-5 shadow-sm">
-            <ShieldCheck className="w-7 h-7" />
+      <section id="privacy" className="py-24 border-t border-[#3D1520] bg-[#14080D]/80 relative overflow-hidden">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          <div className="reveal-on-scroll scroll-reveal">
+            <div className="w-14 h-14 rounded-2xl bg-[#6F1025]/30 border border-[#A83249]/40 text-[#A83249] flex items-center justify-center mx-auto mb-5 shadow-sm">
+              <ShieldCheck className="w-7 h-7" />
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#F5EBDD] mb-4">
+              Your Privacy Is Fundamental
+            </h2>
+            <p className="text-sm sm:text-base text-[#D6C7B2] leading-relaxed max-w-2xl mx-auto mb-10">
+              SAYN processes text strictly for the requested transformation. We do not retain audio recordings after transcription, we do not log passwords or keystrokes, and you have full control over your writing history.
+            </p>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#F5EBDD] mb-4">
-            Your Privacy Is Fundamental
-          </h2>
-          <p className="text-sm sm:text-base text-[#D6C7B2] leading-relaxed max-w-2xl mx-auto mb-10">
-            SAYN processes text strictly for the requested transformation. We do not retain audio recordings after transcription, we do not log passwords or keystrokes, and you have full control over your writing history.
-          </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 text-left max-w-3xl mx-auto text-xs">
-            <div className="p-5 rounded-xl bg-[#1C0B12] border border-[#3D1520]">
+            <div className="reveal-on-scroll scroll-reveal reveal-delay-1 p-5 rounded-xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249]/60 transition-all">
               <div className="flex items-center space-x-2 font-bold text-[#F5EBDD] mb-1.5">
                 <CheckCircle2 className="w-4 h-4 text-[#30D158]" />
                 <span>No Audio Retention</span>
@@ -402,7 +423,7 @@ export const LandingPage: React.FC = () => {
               <p className="text-[#D6C7B2] leading-relaxed">Voice streams are ephemeral and discarded immediately after transcription.</p>
             </div>
 
-            <div className="p-5 rounded-xl bg-[#1C0B12] border border-[#3D1520]">
+            <div className="reveal-on-scroll scroll-reveal reveal-delay-2 p-5 rounded-xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249]/60 transition-all">
               <div className="flex items-center space-x-2 font-bold text-[#F5EBDD] mb-1.5">
                 <CheckCircle2 className="w-4 h-4 text-[#30D158]" />
                 <span>History Controls</span>
@@ -410,7 +431,7 @@ export const LandingPage: React.FC = () => {
               <p className="text-[#D6C7B2] leading-relaxed">Enable, disable, or purge your writing history anytime with one click.</p>
             </div>
 
-            <div className="p-5 rounded-xl bg-[#1C0B12] border border-[#3D1520]">
+            <div className="reveal-on-scroll scroll-reveal reveal-delay-3 p-5 rounded-xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249]/60 transition-all">
               <div className="flex items-center space-x-2 font-bold text-[#F5EBDD] mb-1.5">
                 <CheckCircle2 className="w-4 h-4 text-[#30D158]" />
                 <span>Sensitive Field Guard</span>
@@ -422,8 +443,8 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 5. FINAL CALL TO ACTION */}
-      <section className="py-24 border-t border-[#3D1520] bg-gradient-to-b from-[#100709] to-[#1C0B12] text-center">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-24 border-t border-[#3D1520] bg-gradient-to-b from-[#100709] to-[#1C0B12] text-center relative overflow-hidden">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 reveal-on-scroll scroll-reveal">
           <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-[#F5EBDD] mb-4">
             Write less. Say more.
           </h2>
@@ -433,14 +454,14 @@ export const LandingPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
               onClick={() => setIsDownloadOpen(true)}
-              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2.5 px-8 py-4 rounded-full font-bold text-sm bg-[#F5EBDD] text-[#100709] hover:bg-[#FAF4EB] active:scale-95 transition-all shadow-[0_4px_24px_rgba(245,235,221,0.25)]"
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2.5 px-8 py-4 rounded-full font-bold text-sm bg-[#F5EBDD] text-[#100709] hover:bg-[#FAF4EB] active:scale-95 transition-all shadow-[0_4px_24px_rgba(245,235,221,0.25)] hover:shadow-[0_8px_32px_rgba(245,235,221,0.35)]"
             >
               <Download className="w-4 h-4 stroke-[2.5]" />
               <span>Download for {device?.osName || 'Your Device'}</span>
             </button>
             <Link
               to="/workspace"
-              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-8 py-4 rounded-full font-semibold text-sm text-[#F5EBDD] bg-[#100709] border border-[#A83249] hover:bg-[#6F1025]/30 transition-all"
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-8 py-4 rounded-full font-semibold text-sm text-[#F5EBDD] bg-[#100709] border border-[#A83249] hover:bg-[#6F1025]/30 hover:border-[#F5EBDD]/40 transition-all"
             >
               <span>Start Using Web Studio</span>
               <ArrowRight className="w-4 h-4" />

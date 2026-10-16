@@ -13,11 +13,13 @@ import {
   X,
   User as UserIcon,
   ArrowRight,
+  ArrowUp,
   Download,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.js';
 import { useTheme } from '../../context/ThemeContext.js';
 import { DownloadModal } from '../download/DownloadModal.js';
+import { useScrollAnimation } from '../../hooks/useScrollAnimation.js';
 import saynLogo from '../../assets/logo.png';
 
 export const Navbar: React.FC = () => {
@@ -26,6 +28,7 @@ export const Navbar: React.FC = () => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDownloadOpen, setIsDownloadOpen] = useState(false);
+  const { scrollProgress, scrollY } = useScrollAnimation();
 
   const toggleTheme = () => {
     setTheme(actualTheme === 'dark' ? 'light' : 'dark');
@@ -52,8 +55,18 @@ export const Navbar: React.FC = () => {
       ];
 
   return (
-    <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#100709]/90 border-b border-[#3D1520]/60 transition-colors duration-150">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
+    <>
+      <header className={`sticky top-0 z-40 transition-all duration-300 ${
+        scrollY > 20
+          ? 'backdrop-blur-2xl bg-[#100709]/95 border-b border-[#A83249]/40 shadow-[0_4px_30px_rgba(111,16,37,0.25)]'
+          : 'backdrop-blur-xl bg-[#100709]/90 border-b border-[#3D1520]/60'
+      }`}>
+        {/* Dynamic Hairline Scroll Progress Bar */}
+        <div
+          className="absolute bottom-0 left-0 h-[2.5px] bg-gradient-to-r from-[#6F1025] via-[#A83249] to-[#F5EBDD] transition-all duration-75 ease-out shadow-[0_0_12px_rgba(168,50,73,0.9)] z-50 pointer-events-none"
+          style={{ width: `${scrollProgress}%` }}
+        />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
         {/* Brand Logo & Wordmark */}
         <Link to="/" className="flex items-center space-x-3 group">
           <img src={saynLogo} alt="SAYN Logo" className="w-9 h-9 rounded-xl shadow-md transition-transform group-hover:scale-105" />
@@ -248,5 +261,18 @@ export const Navbar: React.FC = () => {
       {/* Smart Device Detection Download Modal */}
       <DownloadModal isOpen={isDownloadOpen} onClose={() => setIsDownloadOpen(false)} />
     </header>
+
+    {/* Floating Scroll-to-Top Button with Smooth Blur & Glow */}
+    {scrollY > 400 && (
+      <button
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        className="fixed bottom-6 right-6 z-40 w-11 h-11 rounded-full bg-[#180B0F]/90 border border-[#A83249]/50 text-[#F5EBDD] backdrop-blur-md shadow-[0_8px_24px_rgba(111,16,37,0.4)] flex items-center justify-center hover:bg-[#6F1025] hover:scale-105 active:scale-95 transition-all animate-in fade-in zoom-in-90 duration-200"
+        title="Scroll to Top"
+        aria-label="Scroll to Top"
+      >
+        <ArrowUp className="w-5 h-5" />
+      </button>
+    )}
+  </>
   );
 };

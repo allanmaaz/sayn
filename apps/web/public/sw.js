@@ -1,5 +1,5 @@
 // SAYN Service Worker for Offline Resilience and PWA Standalone Support
-const CACHE_NAME = 'sayn-v2-official-emblem';
+const CACHE_NAME = 'sayn-v3-scroll-effects';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
