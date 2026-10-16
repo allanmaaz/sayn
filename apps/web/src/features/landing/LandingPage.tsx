@@ -35,13 +35,56 @@ export const LandingPage: React.FC = () => {
   const [copiedDemo, setCopiedDemo] = useState(false);
   const [isDownloadOpen, setIsDownloadOpen] = useState(false);
   const [device, setDevice] = useState<DeviceInfo | null>(null);
-  const { scrollY } = useScrollAnimation();
+  const [activeWorkflowStep, setActiveWorkflowStep] = useState<0 | 1 | 2>(0);
+  const [typingSimText, setTypingSimText] = useState('Hey team, I revie');
+  const [isAutoScrolling, setIsAutoScrolling] = useState(false);
+  const { scrollY, scrollProgress } = useScrollAnimation();
   const { actualTheme } = useTheme();
   const isLight = actualTheme === 'light';
 
   React.useEffect(() => {
     setDevice(detectDevice());
   }, []);
+
+  // Typing ticker effect for standard keyboard comparison
+  React.useEffect(() => {
+    const fullText = 'Hey team, I reviewed the sprint deliverables...';
+    let index = 14;
+    let forward = true;
+    const interval = setInterval(() => {
+      if (forward) {
+        index++;
+        if (index >= fullText.length) {
+          forward = false;
+        }
+      } else {
+        index -= 2;
+        if (index <= 12) {
+          forward = true;
+        }
+      }
+      setTypingSimText(fullText.slice(0, index));
+    }, 120);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Auto-scroll simulation
+  React.useEffect(() => {
+    if (!isAutoScrolling) return;
+    let animId: number;
+    const step = () => {
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      if (window.scrollY >= maxScroll - 4) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setIsAutoScrolling(false);
+        return;
+      }
+      window.scrollBy(0, 3.2);
+      animId = requestAnimationFrame(step);
+    };
+    animId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(animId);
+  }, [isAutoScrolling]);
 
   const handleCopyDemo = () => {
     navigator.clipboard.writeText(
@@ -162,7 +205,7 @@ export const LandingPage: React.FC = () => {
             <h1 className="text-5xl font-extrabold tracking-tight text-[#F5EBDD] leading-[1.05] mb-5">
               Your voice.<br />
               Your words.<br />
-              <span className="text-[#A83249]">Better.</span>
+              <span className="font-serif-instrument italic text-[#C83E5B] text-[1.12em] block sm:inline">Better.</span>
             </h1>
 
             {/* Subtitle */}
@@ -320,7 +363,7 @@ export const LandingPage: React.FC = () => {
               <h1 className="text-6xl lg:text-7xl font-extrabold tracking-tight text-[#F5EBDD] leading-[1.06] mb-6">
                 Your voice.<br />
                 Your words.<br />
-                <span className="text-[#A83249]">Better.</span>
+                <span className="font-serif-instrument italic text-[#C83E5B] text-[1.12em] block">Better.</span>
               </h1>
 
               {/* Supporting Copy */}
@@ -499,6 +542,155 @@ export const LandingPage: React.FC = () => {
               {/* Laptop Keyboard Base & Hinge */}
               <div className="mx-auto max-w-[620px] h-3 bg-gradient-to-b from-[#2E141D] to-[#14080D] rounded-b-[14px] shadow-2xl border-t border-[#3D1520]/80 relative">
                 <div className="w-20 h-1 bg-[#100709] rounded-b-sm mx-auto" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Scroll-Driven SVG Speech Transformation Ribbon Under Hero */}
+        <div className="relative w-full max-w-6xl mx-auto pt-10 pb-4 px-4 overflow-visible">
+          <div className="flex justify-center mb-3">
+            <div
+              className={`inline-flex items-center space-x-2.5 px-5 py-2 rounded-full border shadow-lg backdrop-blur-xl text-xs font-semibold ${
+                isLight
+                  ? 'bg-white/95 border-[#E2D9CD] text-[#2D0A12] shadow-[0_4px_20px_rgba(111,16,37,0.1)]'
+                  : 'bg-[#1C060B]/90 border-[#C83E5B]/50 text-[#F5EBDD] shadow-[0_0_30px_rgba(200,62,91,0.35)]'
+              }`}
+            >
+              <span className="flex items-center space-x-1 text-[#A83249]">
+                <span className="w-1 h-3 bg-[#A83249] rounded-full animate-pulse" />
+                <span className="w-1 h-4 bg-[#F5EBDD] rounded-full animate-pulse delay-75" />
+                <span className="w-1 h-2 bg-[#A83249] rounded-full animate-pulse delay-150" />
+              </span>
+              <span>SAYN Live Voice Stream</span>
+            </div>
+          </div>
+
+          <div className="relative w-full h-[115px] overflow-visible select-none">
+            <svg viewBox="0 0 1200 120" className="w-full h-full overflow-visible">
+              <defs>
+                <path id="rawSpeechPath" d="M -80,95 C 180,105 350,25 600,65" />
+                <path id="refinedSpeechPath" d="M 600,65 C 850,105 1020,25 1280,35" />
+              </defs>
+              <path
+                d="M -80,95 C 180,105 350,25 600,65"
+                fill="none"
+                stroke={isLight ? '#E2D9CD' : '#4A1522'}
+                strokeWidth="1.5"
+                strokeDasharray="5,5"
+              />
+              <path
+                d="M 600,65 C 850,105 1020,25 1280,35"
+                fill="none"
+                stroke={isLight ? '#F0E2D4' : '#5E1324'}
+                strokeWidth="24"
+                strokeLinecap="round"
+              />
+              <text fill={isLight ? '#7A6B63' : '#B59CA2'} fontSize="13" fontStyle="italic">
+                <textPath href="#rawSpeechPath" startOffset={`${-15 + ((scrollY * 0.08) % 40)}%`}>
+                  uh hey team so I was looking at the sprint stuff and I think the design migration is good for Thursday...
+                </textPath>
+              </text>
+              <text fill={isLight ? '#2D0A12' : '#F5EFE6'} fontSize="13" fontWeight="700">
+                <textPath href="#refinedSpeechPath" startOffset={`${Math.max(0, 25 - ((scrollY * 0.04) % 30))}%`}>
+                  "Hey team, I reviewed the latest sprint deliverables. The design system migration is on track for Thursday."
+                </textPath>
+              </text>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      {/* 1C. SPEED COMPARISON: 4X FASTER THAN TYPING */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 my-10 sm:my-14 relative z-10">
+        <div
+          className={`rounded-3xl sm:rounded-[38px] p-8 sm:p-14 text-center border shadow-2xl relative overflow-hidden transition-all ${
+            isLight
+              ? 'bg-gradient-to-b from-[#FFFDF9] to-[#FAF4EB] border-[#E2D9CD] shadow-[0_20px_50px_rgba(111,16,37,0.08)]'
+              : 'bg-gradient-to-b from-[#1C060B] to-[#120307] border-[#4A1522] shadow-[0_30px_80px_rgba(0,0,0,0.7)]'
+          }`}
+        >
+          <span className="text-xs font-bold uppercase tracking-widest text-[#A83249] mb-2 block">
+            GROQ WHISPER LPU ENGINE
+          </span>
+          <h2
+            className={`text-3xl sm:text-5xl font-extrabold tracking-tight mb-3 ${
+              isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
+            }`}
+          >
+            4x faster{' '}
+            <span className="font-serif-instrument italic text-[#C83E5B]">
+              than typing
+            </span>
+          </h2>
+          <p
+            className={`max-w-xl mx-auto text-sm sm:text-base mb-10 ${
+              isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
+            }`}
+          >
+            Turn natural speech into crisp, punctuated text with zero cloud lock-in. Speak at the speed of thought across every app.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 text-left">
+            {/* Standard Keyboard (45 wpm) */}
+            <div
+              className={`md:col-span-4 p-7 rounded-2xl sm:rounded-3xl border flex flex-col justify-between min-h-[220px] transition-all ${
+                isLight
+                  ? 'bg-white border-[#E2D9CD]'
+                  : 'bg-[#100709] border-[#3D1520]'
+              }`}
+            >
+              <div>
+                <div className="text-xs font-medium text-[#A89F91] mb-1">Standard Keyboard</div>
+                <div className="font-serif-instrument text-4xl sm:text-5xl font-normal leading-none text-[#A83249]">
+                  45 <span className="text-xl font-sans text-[#A89F91]">wpm</span>
+                </div>
+              </div>
+              <div className="mt-6 font-mono text-xs sm:text-sm text-[#D6C7B2] border-r-2 border-[#A83249] pr-1 py-1 overflow-hidden whitespace-nowrap">
+                {typingSimText}
+              </div>
+            </div>
+
+            {/* SAYN Voice Dictation (220 wpm) */}
+            <div
+              className={`md:col-span-8 p-7 rounded-2xl sm:rounded-3xl border flex flex-col justify-between min-h-[220px] relative overflow-hidden transition-all ${
+                isLight
+                  ? 'bg-gradient-to-br from-[#FFF5F7] via-[#FFFFFF] to-[#FAF0F2] border-[#C83E5B]/40 shadow-[0_10px_30px_rgba(200,62,91,0.12)]'
+                  : 'bg-gradient-to-br from-[#260910] via-[#1C060B] to-[#120307] border-[#C83E5B]/60 shadow-[0_15px_40px_rgba(200,62,91,0.22)]'
+              }`}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="text-xs font-bold text-[#A83249] mb-1 tracking-wide">
+                    SAYN Voice Dictation
+                  </div>
+                  <div
+                    className={`font-serif-instrument text-4xl sm:text-5xl font-normal leading-none ${
+                      isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
+                    }`}
+                  >
+                    220 <span className="text-xl font-sans text-[#C83E5B] font-bold">wpm</span>
+                  </div>
+                </div>
+                <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-[#A83249]/20 border border-[#A83249]/40 text-[#A83249] text-xs font-bold">
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>⚡ Real-Time LPU</span>
+                </span>
+              </div>
+
+              {/* Text streamer */}
+              <div className="mt-4 pt-4 border-t border-[#A83249]/20">
+                <div className="flex items-center space-x-2 text-xs font-medium text-[#C83E5B] mb-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Instant Audio-to-Cursor Injection</span>
+                </div>
+                <p
+                  className={`text-xs sm:text-sm leading-relaxed font-medium ${
+                    isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
+                  }`}
+                >
+                  Speak naturally, paraphrase word-by-word, adjust tone, and auto-paste into any active chatbot or editor instantly.
+                </p>
               </div>
             </div>
           </div>
@@ -703,50 +895,213 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 3. HOW IT WORKS SECTION */}
-      <section id="how-it-works" className="py-24 border-t border-[#3D1520] bg-[#100709] relative overflow-hidden">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      {/* 3. INTERACTIVE 3-STEP WORKFLOW SECTION */}
+      <section
+        id="how-it-works"
+        className={`py-24 border-t relative overflow-hidden transition-colors ${
+          isLight ? 'border-[#E2D9CD] bg-[#FDFBF7]' : 'border-[#3D1520] bg-[#100709]'
+        }`}
+      >
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-2xl mx-auto mb-16 reveal-on-scroll scroll-reveal">
             <span className="text-xs font-bold uppercase tracking-widest text-[#A83249] mb-2 block">
               Workflow
             </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#F5EBDD] mb-3">
+            <h2
+              className={`text-3xl sm:text-4xl font-extrabold tracking-tight mb-3 ${
+                isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
+              }`}
+            >
               How It Works
             </h2>
-            <p className="text-sm text-[#D6C7B2]">
+            <p
+              className={`text-sm ${
+                isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
+              }`}
+            >
               A frictionless three-step process to elevate any communication in seconds.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="reveal-on-scroll scroll-reveal reveal-delay-1 flex flex-col items-center text-center p-7 rounded-2xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249]/80 transition-all duration-300">
-              <div className="w-11 h-11 rounded-full bg-[#6F1025] text-[#F5EBDD] font-mono text-sm font-bold flex items-center justify-center mb-5 shadow-[0_0_15px_rgba(111,16,37,0.6)]">
-                1
-              </div>
-              <h3 className="font-bold text-base text-[#F5EBDD] mb-2">Speak or Type</h3>
-              <p className="text-xs sm:text-sm text-[#D6C7B2] leading-relaxed">
-                Record your voice with Fn or Option+Space, or paste a rough thought without worrying about phrasing or punctuation.
-              </p>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+            {/* Left: 3 Interactive Step Cards */}
+            <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
+              {[
+                {
+                  step: 0,
+                  num: '1',
+                  title: 'Speak or Type',
+                  desc: 'Record your voice with Fn or Option+Space, or paste a rough thought without worrying about phrasing or punctuation.',
+                },
+                {
+                  step: 1,
+                  num: '2',
+                  title: 'Choose Refinement',
+                  desc: 'Select your desired mode and style—Natural, Fluent, Professional, Prompt Mode, or Live Translation.',
+                },
+                {
+                  step: 2,
+                  num: '3',
+                  title: 'Auto-Paste Anywhere',
+                  desc: 'The refined text automatically injects into your active chatbot, email, or editor. Zero manual Cmd+V required.',
+                },
+              ].map((item) => {
+                const isActive = activeWorkflowStep === item.step;
+                return (
+                  <div
+                    key={item.num}
+                    onClick={() => setActiveWorkflowStep(item.step as 0 | 1 | 2)}
+                    className={`cursor-pointer p-6 rounded-2xl border transition-all duration-300 text-left ${
+                      isActive
+                        ? isLight
+                          ? 'bg-white border-[#6F1025] shadow-lg translate-x-1.5'
+                          : 'bg-[#1C060B] border-[#C83E5B] shadow-[0_12px_30px_rgba(200,62,91,0.18)] translate-x-1.5'
+                        : isLight
+                          ? 'bg-white/60 border-[#E2D9CD] opacity-60 hover:opacity-90'
+                          : 'bg-[#14080D]/60 border-[#3D1520] opacity-50 hover:opacity-85'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3 mb-2">
+                      <div
+                        className={`w-7 h-7 rounded-full font-mono text-xs font-bold flex items-center justify-center transition-colors ${
+                          isActive
+                            ? 'bg-[#A83249] text-white shadow-sm'
+                            : isLight
+                              ? 'bg-[#E2D9CD] text-[#5C4D44]'
+                              : 'bg-[#3D1520] text-[#D6C7B2]'
+                        }`}
+                      >
+                        {item.num}
+                      </div>
+                      <h3
+                        className={`font-bold text-base ${
+                          isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
+                        }`}
+                      >
+                        {item.title}
+                      </h3>
+                    </div>
+                    <p
+                      className={`text-xs sm:text-sm leading-relaxed pl-10 ${
+                        isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
+                      }`}
+                    >
+                      {item.desc}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
 
-            <div className="reveal-on-scroll scroll-reveal reveal-delay-2 flex flex-col items-center text-center p-7 rounded-2xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249]/80 transition-all duration-300">
-              <div className="w-11 h-11 rounded-full bg-[#6F1025] text-[#F5EBDD] font-mono text-sm font-bold flex items-center justify-center mb-5 shadow-[0_0_15px_rgba(111,16,37,0.6)]">
-                2
-              </div>
-              <h3 className="font-bold text-base text-[#F5EBDD] mb-2">Choose Refinement</h3>
-              <p className="text-xs sm:text-sm text-[#D6C7B2] leading-relaxed">
-                Select your desired mode and style—Natural, Fluent, Professional, Prompt Mode, or Live Translation.
-              </p>
-            </div>
+            {/* Right: The Morphing Live Stage Card */}
+            <div className="lg:col-span-7">
+              <div
+                className={`h-full min-h-[380px] rounded-3xl p-7 sm:p-9 border flex flex-col justify-between shadow-2xl relative transition-all ${
+                  isLight
+                    ? 'bg-gradient-to-br from-white via-[#FAF7F2] to-[#F5EFE6] border-[#6F1025]/30 shadow-[0_20px_50px_rgba(111,16,37,0.09)]'
+                    : 'bg-gradient-to-br from-[#260910] via-[#1C060B] to-[#120307] border-[#C83E5B]/50 shadow-[0_25px_70px_rgba(0,0,0,0.75)]'
+                }`}
+              >
+                {/* Stage Header */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#A83249]/20">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#C83E5B]">
+                    {activeWorkflowStep === 0 && 'STEP 01 // CAPTURING VOICE STREAM'}
+                    {activeWorkflowStep === 1 && 'STEP 02 // QUILLBOT & GRAMMARLY REFINEMENT'}
+                    {activeWorkflowStep === 2 && 'STEP 03 // ZERO-CLICK AUTO-PASTE'}
+                  </span>
 
-            <div className="reveal-on-scroll scroll-reveal reveal-delay-3 flex flex-col items-center text-center p-7 rounded-2xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249]/80 transition-all duration-300">
-              <div className="w-11 h-11 rounded-full bg-[#6F1025] text-[#F5EBDD] font-mono text-sm font-bold flex items-center justify-center mb-5 shadow-[0_0_15px_rgba(111,16,37,0.6)]">
-                3
+                  {/* Mode Pills */}
+                  <div className="flex items-center space-x-1.5 text-xs">
+                    {(['Raw Input', 'Professional', 'Auto-Paste'] as const).map((label, idx) => (
+                      <button
+                        key={label}
+                        onClick={() => setActiveWorkflowStep(idx as 0 | 1 | 2)}
+                        className={`px-3 py-1 rounded-full font-medium transition-all ${
+                          activeWorkflowStep === idx
+                            ? 'bg-[#C83E5B] text-white shadow-sm'
+                            : isLight
+                              ? 'bg-white text-[#5C4D44] border border-[#E2D9CD]'
+                              : 'bg-[#100709] text-[#B59CA2] border border-[#3D1520]'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Stage Dynamic Body Content */}
+                <div
+                  className={`my-6 p-6 rounded-2xl border min-h-[160px] flex flex-col justify-between transition-all ${
+                    isLight
+                      ? 'bg-white border-[#E2D9CD] shadow-inner'
+                      : 'bg-[#100709] border-[#3D1520] shadow-inner'
+                  }`}
+                >
+                  {activeWorkflowStep === 0 && (
+                    <div className="text-sm sm:text-base leading-relaxed">
+                      "Um,{' '}
+                      <span className="line-through text-[#C83E5B] opacity-75">
+                        like
+                      </span>{' '}
+                      can you let the team know the launch is{' '}
+                      <span className="line-through text-[#C83E5B] opacity-75">
+                        uh basically
+                      </span>{' '}
+                      slipping to Thursday? We still need design system sign-off."
+                    </div>
+                  )}
+
+                  {activeWorkflowStep === 1 && (
+                    <div
+                      className={`text-sm sm:text-base leading-relaxed ${
+                        isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
+                      }`}
+                    >
+                      "Hey team, I reviewed the latest sprint deliverables. The design system migration is on track for completion this Thursday."
+                    </div>
+                  )}
+
+                  {activeWorkflowStep === 2 && (
+                    <div>
+                      <div className="text-[11px] font-mono text-[#A89F91] mb-2 flex items-center space-x-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span>Slack — #product-engineering</span>
+                      </div>
+                      <div
+                        className={`text-sm sm:text-base leading-relaxed font-medium ${
+                          isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
+                        }`}
+                      >
+                        "Hey team, I reviewed the latest sprint deliverables. The design system migration is on track for completion this Thursday."
+                        <span className="inline-block w-1.5 h-4 ml-1 bg-[#C83E5B] animate-pulse align-middle" />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="pt-4 mt-4 border-t border-[#A83249]/20 flex items-center justify-between text-xs">
+                    <span className="text-[#C83E5B] font-semibold">
+                      {activeWorkflowStep === 0 && '🎙️ Fn Key Held (00:04)'}
+                      {activeWorkflowStep === 1 && '✨ Mode: Professional & Fluent'}
+                      {activeWorkflowStep === 2 && '✔ Injected into active cursor'}
+                    </span>
+                    <span className="text-emerald-500 font-bold">
+                      {activeWorkflowStep === 0 && 'Groq Whisper LPU Active'}
+                      {activeWorkflowStep === 1 && 'Clarity Optimized'}
+                      {activeWorkflowStep === 2 && 'Zero Cmd+V Required'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Stage Hint */}
+                <div
+                  className={`text-center text-xs ${
+                    isLight ? 'text-[#706E6B]' : 'text-[#B59CA2]'
+                  }`}
+                >
+                  Click steps or pills above to preview how SAYN transforms and auto-pastes your message.
+                </div>
               </div>
-              <h3 className="font-bold text-base text-[#F5EBDD] mb-2">Auto-Paste Anywhere</h3>
-              <p className="text-xs sm:text-sm text-[#D6C7B2] leading-relaxed">
-                The refined text automatically injects into your active chatbot, email, or editor. Zero manual Cmd+V required.
-              </p>
             </div>
           </div>
         </div>
@@ -1014,6 +1369,19 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Floating Auto-Scroll Interactive Tour Pill */}
+      <div className="fixed bottom-6 left-6 z-40 hidden sm:flex items-center space-x-3 px-3.5 py-2 rounded-full backdrop-blur-xl border shadow-xl bg-[#1C060B]/90 border-[#C83E5B]/60 text-xs transition-all">
+        <button
+          onClick={() => setIsAutoScrolling(!isAutoScrolling)}
+          className="px-3.5 py-1 rounded-full font-bold bg-[#C83E5B] text-white hover:bg-[#E04A6A] transition-all active:scale-95 shadow-sm"
+        >
+          {isAutoScrolling ? '⏸ Pause Tour' : '▶ Auto-Play Tour'}
+        </button>
+        <span className="text-[11px] text-[#B59CA2] font-mono">
+          Scroll: {Math.round(scrollProgress)}%
+        </span>
+      </div>
 
       {/* Smart Device Detection Download Modal */}
       <DownloadModal isOpen={isDownloadOpen} onClose={() => setIsDownloadOpen(false)} />

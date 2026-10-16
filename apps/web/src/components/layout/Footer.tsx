@@ -1,24 +1,42 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import saynLogo from '../../assets/logo.png';
+import { useTheme } from '../../context/ThemeContext.js';
 
 export const Footer: React.FC = () => {
+  const { actualTheme } = useTheme();
+  const isLight = actualTheme === 'light';
+
   return (
-    <footer className="border-t border-[#3D1520] bg-[#100709] py-14 transition-colors duration-150">
+    <footer
+      className={`border-t transition-colors duration-150 pt-16 pb-8 overflow-hidden ${
+        isLight
+          ? 'border-[#E2D9CD] bg-[#FAF7F2]'
+          : 'border-[#3D1520] bg-[#100709]'
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Brand Info */}
           <div className="space-y-3">
             <div className="flex items-center space-x-2.5">
               <img src={saynLogo} alt="SAYN" className="w-7 h-7 rounded-lg shadow-sm" />
-              <span className="font-bold text-[#F5EBDD] text-lg tracking-wide">
+              <span
+                className={`font-bold text-lg tracking-wide ${
+                  isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
+                }`}
+              >
                 SAYN
               </span>
             </div>
             <p className="text-sm font-semibold text-[#A83249]">
               Say it. Refine it. Send it.
             </p>
-            <p className="text-xs text-[#D6C7B2] leading-relaxed">
+            <p
+              className={`text-xs leading-relaxed ${
+                isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
+              }`}
+            >
               Speak naturally, refine your writing with precision AI, and communicate better across Mac, Windows, Android, and Web.
             </p>
           </div>
@@ -28,21 +46,40 @@ export const Footer: React.FC = () => {
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#A83249] mb-3">
               Product
             </h4>
-            <ul className="space-y-2 text-sm text-[#D6C7B2]">
+            <ul
+              className={`space-y-2 text-sm ${
+                isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
+              }`}
+            >
               <li>
-                <Link to="/workspace" className="hover:text-[#F5EBDD] transition-colors">
-                  AI Writing Studio
-                </Link>
+                <a
+                  href="#features"
+                  className={`transition-colors ${
+                    isLight ? 'hover:text-[#2D0A12]' : 'hover:text-[#F5EBDD]'
+                  }`}
+                >
+                  AI Writing Capabilities
+                </a>
               </li>
               <li>
-                <Link to="/voice" className="hover:text-[#F5EBDD] transition-colors">
-                  Voice Dictation
-                </Link>
+                <a
+                  href="#how-it-works"
+                  className={`transition-colors ${
+                    isLight ? 'hover:text-[#2D0A12]' : 'hover:text-[#F5EBDD]'
+                  }`}
+                >
+                  Voice Dictation & Workflow
+                </a>
               </li>
               <li>
-                <Link to="/download" className="hover:text-[#F5EBDD] transition-colors">
+                <a
+                  href="#download"
+                  className={`transition-colors ${
+                    isLight ? 'hover:text-[#2D0A12]' : 'hover:text-[#F5EBDD]'
+                  }`}
+                >
                   Desktop & Mobile Apps
-                </Link>
+                </a>
               </li>
             </ul>
           </div>
@@ -52,7 +89,11 @@ export const Footer: React.FC = () => {
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#A83249] mb-3">
               Modes & Features
             </h4>
-            <ul className="space-y-2 text-sm text-[#D6C7B2]">
+            <ul
+              className={`space-y-2 text-sm ${
+                isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
+              }`}
+            >
               <li>Prompt Mode & AI Commands</li>
               <li>Live Translation Mode</li>
               <li>Per-App Smart Adaptation</li>
@@ -66,9 +107,18 @@ export const Footer: React.FC = () => {
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#A83249] mb-3">
               Security & Privacy
             </h4>
-            <ul className="space-y-2 text-sm text-[#D6C7B2]">
+            <ul
+              className={`space-y-2 text-sm ${
+                isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
+              }`}
+            >
               <li>
-                <a href="#privacy" className="hover:text-[#F5EBDD] transition-colors">
+                <a
+                  href="#privacy"
+                  className={`transition-colors ${
+                    isLight ? 'hover:text-[#2D0A12]' : 'hover:text-[#F5EBDD]'
+                  }`}
+                >
                   Privacy Policy
                 </a>
               </li>
@@ -79,9 +129,32 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
-        <div className="pt-8 border-t border-[#3D1520]/60 flex flex-col sm:flex-row items-center justify-between text-xs text-[#A89F91]">
+        {/* Wispr-Flow Inspired Monumental Brand Watermark */}
+        <div
+          className={`text-[17vw] font-black leading-[0.8] text-center tracking-tighter select-none my-4 pointer-events-none transition-all ${
+            isLight
+              ? 'bg-gradient-to-b from-[#6F1025]/20 via-[#A83249]/10 to-transparent bg-clip-text text-transparent'
+              : 'bg-gradient-to-b from-[#C83E5B]/35 via-[#6F1025]/15 to-transparent bg-clip-text text-transparent'
+          }`}
+        >
+          SAYN
+        </div>
+
+        <div
+          className={`pt-6 border-t flex flex-col sm:flex-row items-center justify-between text-xs transition-colors ${
+            isLight
+              ? 'border-[#E2D9CD] text-[#706E6B]'
+              : 'border-[#3D1520]/60 text-[#A89F91]'
+          }`}
+        >
           <p>© {new Date().getFullYear()} SAYN. All rights reserved.</p>
-          <p className="mt-2 sm:mt-0 font-medium text-[#D6C7B2]">Crafted with Deep Maroon & Warm Cream.</p>
+          <p
+            className={`mt-2 sm:mt-0 font-medium ${
+              isLight ? 'text-[#2D0A12]' : 'text-[#D6C7B2]'
+            }`}
+          >
+            Crafted with Deep Maroon & Warm Cream
+          </p>
         </div>
       </div>
     </footer>
