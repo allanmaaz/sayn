@@ -160,7 +160,6 @@ export const LandingPage: React.FC = () => {
   const [device, setDevice] = useState<DeviceInfo | null>(null);
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const [manualLaserProg, setManualLaserProg] = useState<number | null>(null);
-  const [activeWorkflowStep, setActiveWorkflowStep] = useState<0 | 1 | 2>(0);
   const [typingSimText, setTypingSimText] = useState('Hey team, I revie');
   const { scrollY, scrollProgress } = useScrollAnimation();
   const { actualTheme } = useTheme();
@@ -192,12 +191,16 @@ export const LandingPage: React.FC = () => {
       ? 1.15
       : 0.85;
 
-  // Reversible Pinned Scrollytelling Tracks (Ch.02 Laser Prism, Ch.03 LPU Constellation, Ch.04 Incinerator)
+  // Reversible Pinned Scrollytelling Tracks (Ch.02 Laser Prism, Ch.03 LPU Constellation, How It Works, Ch.04 Incinerator)
   const prismTrackRef = React.useRef<HTMLElement | null>(null);
   const [scrollLaserProg, setScrollLaserProg] = useState(0);
 
   const lpuTrackRef = React.useRef<HTMLElement | null>(null);
   const [lpuProg, setLpuProg] = useState(0);
+
+  const workflowTrackRef = React.useRef<HTMLElement | null>(null);
+  const [workflowProg, setWorkflowProg] = useState(0);
+  const [manualWorkflowStep, setManualWorkflowStep] = useState<0 | 1 | 2 | null>(null);
 
   const privacyTrackRef = React.useRef<HTMLElement | null>(null);
   const [privacyProg, setPrivacyProg] = useState(0);
@@ -221,6 +224,10 @@ export const LandingPage: React.FC = () => {
       // Chapter 03: Groq LPU Constellation (180vh track)
       setLpuProg(calcTrackProgress(lpuTrackRef.current, pinTop));
 
+      // How It Works: 3-Step Interactive Workflow (210vh track)
+      setWorkflowProg(calcTrackProgress(workflowTrackRef.current, pinTop));
+      setManualWorkflowStep(null);
+
       // Chapter 04: Zero Cloud Retention (170vh track)
       setPrivacyProg(calcTrackProgress(privacyTrackRef.current, pinTop));
     };
@@ -233,6 +240,13 @@ export const LandingPage: React.FC = () => {
       window.removeEventListener('resize', onScroll);
     };
   }, []);
+
+  const scrollWorkflowStep: 0 | 1 | 2 = workflowProg >= 0.66 ? 2 : workflowProg >= 0.33 ? 1 : 0;
+  const activeWorkflowStep: 0 | 1 | 2 = manualWorkflowStep !== null ? manualWorkflowStep : scrollWorkflowStep;
+
+  const setActiveWorkflowStep = (step: 0 | 1 | 2) => {
+    setManualWorkflowStep(step);
+  };
 
   const prismProg = manualLaserProg !== null ? manualLaserProg : scrollLaserProg;
   const laserLeftPct = 8 + prismProg * 84;
@@ -1511,211 +1525,295 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 3. INTERACTIVE 3-STEP WORKFLOW SECTION */}
+      {/* 3. INTERACTIVE 3-STEP WORKFLOW SECTION (Sticky Reversible Scrollytelling Track) */}
       <section
         id="how-it-works"
-        className={`py-24 border-t relative overflow-hidden transition-colors ${
+        ref={workflowTrackRef}
+        className={`relative h-[210vh] border-t transition-colors z-10 my-8 ${
           isLight ? 'border-[#E2D9CD] bg-[#FDFBF7]' : 'border-[#3D1520] bg-[#100709]'
         }`}
       >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center max-w-2xl mx-auto mb-16 reveal-on-scroll scroll-reveal">
-            <span className="text-xs font-bold uppercase tracking-widest text-[#A83249] mb-2 block">
-              Workflow
-            </span>
-            <h2
-              className={`text-3xl sm:text-4xl font-extrabold tracking-tight mb-3 ${
-                isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
-              }`}
-            >
-              How It Works
-            </h2>
-            <p
-              className={`text-sm ${
-                isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
-              }`}
-            >
-              A frictionless three-step process to elevate any communication in seconds.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-            {/* Left: 3 Interactive Step Cards */}
-            <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
-              {[
-                {
-                  step: 0,
-                  num: '1',
-                  title: 'Speak or Type',
-                  desc: 'Record your voice with Fn or Option+Space, or paste a rough thought without worrying about phrasing or punctuation.',
-                },
-                {
-                  step: 1,
-                  num: '2',
-                  title: 'Choose Refinement',
-                  desc: 'Select your desired mode and style—Natural, Fluent, Professional, Prompt Mode, or Live Translation.',
-                },
-                {
-                  step: 2,
-                  num: '3',
-                  title: 'Auto-Paste Anywhere',
-                  desc: 'The refined text automatically injects into your active chatbot, email, or editor. Zero manual Cmd+V required.',
-                },
-              ].map((item) => {
-                const isActive = activeWorkflowStep === item.step;
-                return (
-                  <div
-                    key={item.num}
-                    onClick={() => setActiveWorkflowStep(item.step as 0 | 1 | 2)}
-                    className={`cursor-pointer p-6 rounded-2xl border transition-all duration-300 text-left ${
-                      isActive
-                        ? isLight
-                          ? 'bg-white border-[#6F1025] shadow-lg translate-x-1.5'
-                          : 'bg-[#1C060B] border-[#C83E5B] shadow-[0_12px_30px_rgba(200,62,91,0.18)] translate-x-1.5'
-                        : isLight
-                          ? 'bg-white/60 border-[#E2D9CD] opacity-60 hover:opacity-90'
-                          : 'bg-[#14080D]/60 border-[#3D1520] opacity-50 hover:opacity-85'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3 mb-2">
-                      <div
-                        className={`w-7 h-7 rounded-full font-mono text-xs font-bold flex items-center justify-center transition-colors ${
-                          isActive
-                            ? 'bg-[#A83249] text-white shadow-sm'
-                            : isLight
-                              ? 'bg-[#E2D9CD] text-[#5C4D44]'
-                              : 'bg-[#3D1520] text-[#D6C7B2]'
-                        }`}
-                      >
-                        {item.num}
-                      </div>
-                      <h3
-                        className={`font-bold text-base ${
-                          isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
-                        }`}
-                      >
-                        {item.title}
-                      </h3>
-                    </div>
-                    <p
-                      className={`text-xs sm:text-sm leading-relaxed pl-10 ${
-                        isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
-                      }`}
-                    >
-                      {item.desc}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Right: The Morphing Live Stage Card */}
-            <div className="lg:col-span-7">
-              <div
-                className={`h-full min-h-[380px] rounded-3xl p-7 sm:p-9 border flex flex-col justify-between shadow-2xl relative transition-all ${
-                  isLight
-                    ? 'bg-gradient-to-br from-white via-[#FAF7F2] to-[#F5EFE6] border-[#6F1025]/30 shadow-[0_20px_50px_rgba(111,16,37,0.09)]'
-                    : 'bg-gradient-to-br from-[#260910] via-[#1C060B] to-[#120307] border-[#C83E5B]/50 shadow-[0_25px_70px_rgba(0,0,0,0.75)]'
+        <div className="sticky top-20 sm:top-24 h-auto">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10 reveal-on-scroll scroll-reveal">
+              <span className="text-xs font-bold uppercase tracking-widest text-[#C83E5B] mb-2 block font-mono">
+                WORKFLOW — THE THREE-PHASE CONDUIT
+              </span>
+              <h2
+                className={`text-3xl sm:text-4xl font-extrabold tracking-tight mb-2 ${
+                  isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
                 }`}
               >
-                {/* Stage Header */}
-                <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#A83249]/20">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#C83E5B]">
-                    {activeWorkflowStep === 0 && 'STEP 01 — CAPTURING VOICE STREAM'}
-                    {activeWorkflowStep === 1 && 'STEP 02 — GRAMMAR & STYLE REFINEMENT'}
-                    {activeWorkflowStep === 2 && 'STEP 03 — ZERO-CLICK AUTO-PASTE'}
-                  </span>
+                How It Works
+              </h2>
+              <p
+                className={`text-xs sm:text-sm ${
+                  isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
+                }`}
+              >
+                A frictionless three-step process to elevate any communication in seconds.
+              </p>
+            </div>
 
-                  {/* Mode Pills */}
-                  <div className="flex items-center space-x-1.5 text-xs">
-                    {(['Raw Input', 'Professional', 'Auto-Paste'] as const).map((label, idx) => (
-                      <button
-                        key={label}
-                        onClick={() => setActiveWorkflowStep(idx as 0 | 1 | 2)}
-                        className={`px-3 py-1 rounded-full font-medium transition-all ${
-                          activeWorkflowStep === idx
-                            ? 'bg-[#C83E5B] text-white shadow-sm'
-                            : isLight
-                              ? 'bg-white text-[#5C4D44] border border-[#E2D9CD]'
-                              : 'bg-[#100709] text-[#B59CA2] border border-[#3D1520]'
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-stretch">
+              {/* Left: 3 Interactive Step Cards */}
+              <div className="lg:col-span-5 flex flex-col justify-between space-y-3 sm:space-y-4">
+                {[
+                  {
+                    step: 0,
+                    num: '1',
+                    title: 'Speak or Type',
+                    desc: 'Record your voice with Fn or Option+Space, or paste a rough thought without worrying about phrasing or punctuation.',
+                  },
+                  {
+                    step: 1,
+                    num: '2',
+                    title: 'Choose Refinement',
+                    desc: 'Select your desired mode and style—Natural, Fluent, Professional, Prompt Mode, or Live Translation.',
+                  },
+                  {
+                    step: 2,
+                    num: '3',
+                    title: 'Auto-Paste Anywhere',
+                    desc: 'The refined text automatically injects into your active chatbot, email, or editor. Zero manual Cmd+V required.',
+                  },
+                ].map((item) => {
+                  const isActive = activeWorkflowStep === item.step;
+                  const isCompleted = activeWorkflowStep > item.step;
 
-                {/* Stage Dynamic Body Content */}
-                <div
-                  className={`my-6 p-6 rounded-2xl border min-h-[160px] flex flex-col justify-between transition-all ${
-                    isLight
-                      ? 'bg-white border-[#E2D9CD] shadow-inner'
-                      : 'bg-[#100709] border-[#3D1520] shadow-inner'
-                  }`}
-                >
-                  {activeWorkflowStep === 0 && (
-                    <div className="text-sm sm:text-base leading-relaxed">
-                      "Um,{' '}
-                      <span className="line-through text-[#C83E5B] opacity-75">
-                        like
-                      </span>{' '}
-                      can you let the team know the launch is{' '}
-                      <span className="line-through text-[#C83E5B] opacity-75">
-                        uh basically
-                      </span>{' '}
-                      slipping to Thursday? We still need design system sign-off."
-                    </div>
-                  )}
+                  // Micro progress for this step (0 to 100%)
+                  const stepProg =
+                    item.step === 0
+                      ? Math.min(1, Math.max(0, workflowProg / 0.33))
+                      : item.step === 1
+                      ? Math.min(1, Math.max(0, (workflowProg - 0.33) / 0.34))
+                      : Math.min(1, Math.max(0, (workflowProg - 0.67) / 0.33));
 
-                  {activeWorkflowStep === 1 && (
+                  return (
                     <div
-                      className={`text-sm sm:text-base leading-relaxed ${
-                        isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
+                      key={item.num}
+                      onClick={() => setActiveWorkflowStep(item.step as 0 | 1 | 2)}
+                      className={`cursor-pointer p-5 sm:p-6 rounded-2xl border transition-all duration-300 text-left ${
+                        isActive
+                          ? isLight
+                            ? 'bg-white border-[#6F1025] shadow-lg translate-x-1.5'
+                            : 'bg-[#1C060B] border-[#C83E5B] shadow-[0_12px_30px_rgba(200,62,91,0.22)] translate-x-1.5'
+                          : isCompleted
+                          ? isLight
+                            ? 'bg-white/80 border-[#6F1025]/40 opacity-80'
+                            : 'bg-[#16060A]/80 border-[#6F1025]/60 opacity-80'
+                          : isLight
+                            ? 'bg-white/50 border-[#E2D9CD] opacity-50 hover:opacity-85'
+                            : 'bg-[#14080D]/50 border-[#3D1520] opacity-45 hover:opacity-80'
                       }`}
                     >
-                      "Hey team, I reviewed the latest sprint deliverables. The design system migration is on track for completion this Thursday."
-                    </div>
-                  )}
-
-                  {activeWorkflowStep === 2 && (
-                    <div>
-                      <div className="text-[11px] font-mono text-[#A89F91] mb-2 flex items-center space-x-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                        <span>Slack — #product-engineering</span>
+                      <div className="flex items-center space-x-3 mb-2">
+                        <div
+                          className={`w-7 h-7 rounded-full font-mono text-xs font-bold flex items-center justify-center transition-all ${
+                            isCompleted
+                              ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400'
+                              : isActive
+                              ? 'bg-[#C83E5B] text-white shadow-md'
+                              : isLight
+                                ? 'bg-[#E2D9CD] text-[#5C4D44]'
+                                : 'bg-[#3D1520] text-[#D6C7B2]'
+                          }`}
+                        >
+                          {isCompleted ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : item.num}
+                        </div>
+                        <h3
+                          className={`font-bold text-base ${
+                            isActive
+                              ? isLight
+                                ? 'text-[#6F1025]'
+                                : 'text-[#F5EBDD]'
+                              : isLight
+                              ? 'text-[#2D0A12]'
+                              : 'text-[#D6C7B2]'
+                          }`}
+                        >
+                          {item.title}
+                        </h3>
                       </div>
-                      <div
-                        className={`text-sm sm:text-base leading-relaxed font-medium ${
-                          isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
+                      <p
+                        className={`text-xs sm:text-sm leading-relaxed pl-10 ${
+                          isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
                         }`}
                       >
-                        "Hey team, I reviewed the latest sprint deliverables. The design system migration is on track for completion this Thursday."
-                        <span className="inline-block w-1.5 h-4 ml-1 bg-[#C83E5B] animate-pulse align-middle" />
+                        {item.desc}
+                      </p>
+
+                      {/* Step Progress Line */}
+                      <div className="w-full h-1 mt-3 ml-10 rounded-full bg-[#100205] overflow-hidden max-w-[calc(100%-2.5rem)]">
+                        <div
+                          className="h-full bg-gradient-to-r from-[#FF4D73] to-[#C83E5B] transition-all duration-100"
+                          style={{
+                            width: `${isCompleted ? 100 : isActive ? Math.round(stepProg * 100) : 0}%`,
+                          }}
+                        />
                       </div>
                     </div>
-                  )}
+                  );
+                })}
+              </div>
 
-                  <div className="pt-4 mt-4 border-t border-[#A83249]/20 flex items-center justify-between text-xs">
-                    <span className="text-[#C83E5B] font-semibold">
-                      {activeWorkflowStep === 0 && '🎙️ Fn Key Held (00:04)'}
-                      {activeWorkflowStep === 1 && '✨ Mode: Professional & Fluent'}
-                      {activeWorkflowStep === 2 && '✔ Injected into active cursor'}
-                    </span>
-                    <span className="text-emerald-500 font-bold">
-                      {activeWorkflowStep === 0 && 'Groq Whisper LPU Active'}
-                      {activeWorkflowStep === 1 && 'Clarity Optimized'}
-                      {activeWorkflowStep === 2 && 'Zero Cmd+V Required'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Stage Hint */}
+              {/* Right: The Morphing Live Stage Card */}
+              <div className="lg:col-span-7">
                 <div
-                  className={`text-center text-xs ${
-                    isLight ? 'text-[#706E6B]' : 'text-[#B59CA2]'
+                  className={`h-full min-h-[380px] rounded-3xl p-6 sm:p-8 border flex flex-col justify-between shadow-2xl relative transition-all ${
+                    isLight
+                      ? 'bg-gradient-to-br from-white via-[#FAF7F2] to-[#F5EFE6] border-[#6F1025]/30 shadow-[0_20px_50px_rgba(111,16,37,0.09)]'
+                      : 'bg-gradient-to-br from-[#260910] via-[#1C060B] to-[#120307] border-[#C83E5B]/50 shadow-[0_25px_70px_rgba(0,0,0,0.75)]'
                   }`}
                 >
-                  Click steps or pills above to preview how SAYN transforms and auto-pastes your message.
+                  <div>
+                    {/* Top Scrollytelling Progress Bar */}
+                    <div className="relative w-full h-1.5 rounded-full bg-[#100205] overflow-hidden border border-[#3D1520] mb-4">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-[#FF4D73] via-[#C83E5B] to-emerald-400 transition-all duration-100"
+                        style={{ width: `${Math.round(workflowProg * 100)}%` }}
+                      />
+                    </div>
+
+                    {/* Stage Header */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#A83249]/20">
+                      <div className="flex items-center space-x-2">
+                        <span className="w-2 h-2 rounded-full bg-[#C83E5B] animate-ping" />
+                        <span className="text-xs font-bold uppercase tracking-wider text-[#C83E5B] font-mono">
+                          {activeWorkflowStep === 0 && 'STEP 01 — CAPTURING VOICE STREAM'}
+                          {activeWorkflowStep === 1 && 'STEP 02 — GRAMMAR & STYLE REFINEMENT'}
+                          {activeWorkflowStep === 2 && 'STEP 03 — ZERO-CLICK AUTO-PASTE'}
+                        </span>
+                      </div>
+
+                      {/* Mode Pills */}
+                      <div className="flex items-center space-x-1.5 text-xs">
+                        {(['Raw Input', 'Professional', 'Auto-Paste'] as const).map((label, idx) => (
+                          <button
+                            key={label}
+                            onClick={() => setActiveWorkflowStep(idx as 0 | 1 | 2)}
+                            className={`px-3 py-1 rounded-full font-medium text-xs transition-all ${
+                              activeWorkflowStep === idx
+                                ? 'bg-[#C83E5B] text-white shadow-sm'
+                                : isLight
+                                  ? 'bg-white text-[#5C4D44] border border-[#E2D9CD]'
+                                  : 'bg-[#100709] text-[#B59CA2] border border-[#3D1520]'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Stage Dynamic Body Content */}
+                    <div
+                      className={`my-5 p-6 rounded-2xl border min-h-[170px] flex flex-col justify-between transition-all ${
+                        isLight
+                          ? 'bg-white border-[#E2D9CD] shadow-inner'
+                          : 'bg-[#100709] border-[#3D1520] shadow-inner'
+                      }`}
+                    >
+                      {activeWorkflowStep === 0 && (
+                        <div>
+                          <div className="text-sm sm:text-base leading-relaxed mb-4">
+                            "Um,{' '}
+                            <span className="line-through text-[#C83E5B] font-semibold opacity-85">
+                              like
+                            </span>{' '}
+                            can you let the team know the launch is{' '}
+                            <span className="line-through text-[#C83E5B] font-semibold opacity-85">
+                              uh basically
+                            </span>{' '}
+                            slipping to Thursday? We still need design system sign-off."
+                          </div>
+
+                          {/* Soundwave Mic Indicator */}
+                          <div className="flex items-center space-x-1.5 py-1">
+                            {[14, 26, 18, 32, 22, 28, 16, 24, 12].map((h, i) => (
+                              <div
+                                key={i}
+                                className="w-1 bg-[#C83E5B] rounded-full animate-pulse"
+                                style={{
+                                  height: `${h}px`,
+                                  animationDelay: `${i * 90}ms`,
+                                }}
+                              />
+                            ))}
+                            <span className="text-[11px] font-mono text-[#D6C7B2] ml-2">
+                              Acoustic stream locked (48kHz)
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {activeWorkflowStep === 1 && (
+                        <div>
+                          <div
+                            className={`text-sm sm:text-base leading-relaxed mb-4 ${
+                              isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
+                            }`}
+                          >
+                            "Hey team, I reviewed the latest sprint deliverables. The design system migration is on track for completion this Thursday."
+                          </div>
+                          <div className="flex items-center space-x-2 text-[11px] font-mono text-[#C83E5B]">
+                            <Sparkles className="w-3.5 h-3.5" />
+                            <span>Filler tokens stripped • Professional cadence synthesized</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {activeWorkflowStep === 2 && (
+                        <div>
+                          <div className="text-[11px] font-mono text-[#A89F91] mb-2 flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                              <span>Slack — #product-engineering</span>
+                            </div>
+                            <span className="text-emerald-400 font-bold text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                              FOREGROUND CURSOR
+                            </span>
+                          </div>
+                          <div
+                            className={`text-sm sm:text-base leading-relaxed font-medium ${
+                              isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
+                            }`}
+                          >
+                            {(() => {
+                              const fullText = "Hey team, I reviewed the latest sprint deliverables. The design system migration is on track for completion this Thursday.";
+                              const step3Prog = Math.min(1, Math.max(0, (workflowProg - 0.67) / 0.28));
+                              const charCount = Math.max(16, Math.floor(fullText.length * step3Prog));
+                              return fullText.slice(0, charCount);
+                            })()}
+                            <span className="inline-block w-1.5 h-4 ml-1 bg-[#C83E5B] animate-pulse align-middle" />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="pt-4 mt-4 border-t border-[#A83249]/20 flex items-center justify-between text-xs">
+                        <span className="text-[#C83E5B] font-semibold flex items-center space-x-1.5">
+                          {activeWorkflowStep === 0 && <span>🎙️ Fn Key Held (00:04)</span>}
+                          {activeWorkflowStep === 1 && <span>✨ Mode: Professional & Fluent</span>}
+                          {activeWorkflowStep === 2 && <span>✔ Injected into active cursor</span>}
+                        </span>
+                        <span className="text-emerald-500 font-bold">
+                          {activeWorkflowStep === 0 && 'Groq Whisper LPU Active'}
+                          {activeWorkflowStep === 1 && 'Clarity Optimized'}
+                          {activeWorkflowStep === 2 && 'Zero Cmd+V Required'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stage Dynamic Story Hint */}
+                  <div className="flex items-center justify-between text-xs pt-2 text-[#D6C7B2]">
+                    <span className="font-mono text-[11px] text-[#A89F91]">
+                      STEP {activeWorkflowStep + 1} OF 3 ({Math.round(workflowProg * 100)}%)
+                    </span>
+                    <span className="text-[11px] text-[#D6C7B2]/70">
+                      Scroll to advance story • Reversible on scroll up
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
