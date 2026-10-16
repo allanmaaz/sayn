@@ -99,7 +99,7 @@ const DEFAULT_HISTORY: WebDictationEntry[] = [
 ];
 
 const DEFAULT_VOCABULARY = [
-  'SAYN', 'Wispr', 'Flow', 'Groq', 'LPU', 'Whisper', 'SwiftUI', 'Flutter',
+  'SAYN', 'Voice Studio', 'Groq', 'LPU', 'Whisper', 'SwiftUI', 'Flutter',
   'PostgreSQL', 'Next.js', 'TypeScript', 'Tailwind', 'Kubernetes', 'Docker',
   'GraphQL', 'GitHub', 'API', 'JSON', 'SDK', 'OAuth', 'Cloudflare', 'Gemini'
 ];

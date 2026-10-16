@@ -256,10 +256,11 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
            let data = try? Data(contentsOf: dictionaryFile),
            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
            let terms = json["terms"] as? [String] {
-            self.dictionaryWords = terms
+            self.dictionaryWords = terms.map { $0.replacingOccurrences(of: "Wispr Flow", with: "SAYN Voice") }
+            saveDictionary()
         } else {
             self.dictionaryWords = [
-                "Wispr Flow", "lunc ✨", "Sardi ✨", "Zwapy ✨", "Mohammed Maaz", "Mohammed", "btw -> by the way", "allanmaazimdad@gmail.com"
+                "SAYN Voice", "lunc ✨", "Sardi ✨", "Zwapy ✨", "Mohammed Maaz", "Mohammed", "btw -> by the way", "allanmaazimdad@gmail.com"
             ]
             saveDictionary()
         }

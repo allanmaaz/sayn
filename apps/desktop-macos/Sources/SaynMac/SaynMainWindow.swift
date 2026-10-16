@@ -12,12 +12,12 @@ final class SaynMainWindow: NSWindow, NSWindowDelegate {
         )
         
         self.delegate = self
-        self.title = "Flow — SAYN Desktop"
+        self.title = "SAYN — Voice Intelligence & Studio"
         self.titlebarAppearsTransparent = true
         self.titleVisibility = .hidden
         self.isMovableByWindowBackground = true
         self.backgroundColor = NSColor(red: 250/255, green: 249/255, blue: 245/255, alpha: 1.0)
-        self.minSize = NSSize(width: 880, height: 600)
+        self.minSize = NSSize(width: 960, height: 640)
         self.contentView = contentView
         self.center()
         self.setFrameAutosaveName("SaynMainWindowAutosave")
@@ -147,7 +147,7 @@ struct SaynStudioView: View {
                 HStack(spacing: 0) {
                     if !isSidebarCollapsed {
                         sidebarView
-                            .frame(width: 220)
+                            .frame(width: 240)
                             .background(bgCanvas)
                         
                         Divider()
@@ -194,7 +194,7 @@ struct SaynStudioView: View {
                     .transition(.scale(scale: 0.95).combined(with: .opacity))
             }
         }
-        .frame(minWidth: 880, minHeight: 600)
+        .frame(minWidth: 960, minHeight: 640)
         .onAppear {
             editFirstName = store.firstName
             editLastName = store.lastName
@@ -212,21 +212,35 @@ struct SaynStudioView: View {
                 }
             }) {
                 Image(systemName: "sidebar.left")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(textDark)
-                    .padding(6)
+                    .padding(8)
                     .background(Circle().fill(Color.black.opacity(0.04)))
             }
             .buttonStyle(PlainButtonStyle())
             
-            // Brand Logo
-            HStack(spacing: 6) {
-                Image(systemName: "waveform")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(textDark)
+            // Brand Logo & Wordmark (Official SAYN Deep Maroon Lockup)
+            HStack(spacing: 8) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 7)
+                        .fill(accentTeal)
+                        .frame(width: 26, height: 26)
+                    HStack(spacing: 1.5) {
+                        RoundedRectangle(cornerRadius: 1)
+                            .fill(Color(red: 245/255, green: 235/255, blue: 221/255))
+                            .frame(width: 2.2, height: 9)
+                        RoundedRectangle(cornerRadius: 1)
+                            .fill(Color(red: 245/255, green: 235/255, blue: 221/255))
+                            .frame(width: 2.2, height: 14)
+                        RoundedRectangle(cornerRadius: 1)
+                            .fill(Color(red: 245/255, green: 235/255, blue: 221/255))
+                            .frame(width: 2.2, height: 10)
+                    }
+                }
                 
-                Text("Flow")
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                Text("SAYN")
+                    .font(.system(size: 18, weight: .black, design: .rounded))
+                    .tracking(1.2)
                     .foregroundColor(textDark)
             }
             
@@ -297,7 +311,7 @@ struct SaynStudioView: View {
             // Free Tier / Quota Card
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("You are on Flow Free")
+                    Text("You are on SAYN Free")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(textDark)
                     Text("0 words left this week")
@@ -306,12 +320,12 @@ struct SaynStudioView: View {
                 }
                 Spacer()
                 Button(action: {}) {
-                    Text("Get Flow Pro")
+                    Text("Get SAYN Pro")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.white)
+                        .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(Color.black))
+                        .background(RoundedRectangle(cornerRadius: 8).fill(accentTeal))
                 }
                 .buttonStyle(PlainButtonStyle())
             }
@@ -322,7 +336,7 @@ struct SaynStudioView: View {
             // Referral Card
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Get a free month of Flow Pro")
+                    Text("Get a free month of SAYN Pro")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(textDark)
                     Text("Refer friends, earn rewards")
@@ -375,77 +389,78 @@ struct SaynStudioView: View {
                         Button(action: {
                             selectedTab = tab
                         }) {
-                            HStack(spacing: 10) {
+                            HStack(spacing: 12) {
                                 Image(systemName: tab.iconName)
-                                    .font(.system(size: 14, weight: selectedTab == tab ? .semibold : .regular))
-                                    .frame(width: 20)
-                                    .foregroundColor(selectedTab == tab ? textDark : textMuted)
+                                    .font(.system(size: 15.5, weight: selectedTab == tab ? .bold : .medium))
+                                    .frame(width: 22)
+                                    .foregroundColor(selectedTab == tab ? accentTeal : textDark.opacity(0.75))
                                 
                                 Text(tab.rawValue)
-                                    .font(.system(size: 13, weight: selectedTab == tab ? .semibold : .regular, design: .rounded))
-                                    .foregroundColor(selectedTab == tab ? textDark : textMuted)
+                                    .font(.system(size: 14.5, weight: selectedTab == tab ? .bold : .medium, design: .rounded))
+                                    .foregroundColor(selectedTab == tab ? accentTeal : textDark)
                                 
                                 Spacer()
                                 
                                 if tab == .notetaker {
                                     Text("New!")
-                                        .font(.system(size: 10, weight: .bold))
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 2)
-                                        .background(Capsule().fill(accentAmber))
+                                        .font(.system(size: 10.5, weight: .bold))
+                                        .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
+                                        .padding(.horizontal, 7)
+                                        .padding(.vertical, 2.5)
+                                        .background(Capsule().fill(accentTeal))
                                 }
                             }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
                             .background(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(selectedTab == tab ? surfaceBeige : Color.clear)
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(selectedTab == tab ? accentTeal.opacity(0.09) : Color.clear)
                             )
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
                 }
-                .padding(.top, 8)
+                .padding(.top, 10)
                 
-                Spacer(minLength: 16)
+                Spacer(minLength: 20)
                 
                 // Explore Notetaker Promo Card
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 10) {
                     HStack {
                         Image(systemName: "person.crop.rectangle.stack")
-                            .font(.system(size: 24))
+                            .font(.system(size: 26))
                             .foregroundColor(accentTeal)
                         Spacer()
                     }
                     Text("Explore Notetaker")
-                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
                         .foregroundColor(textDark)
                     Text("Get a transcript, summary, and action items for every meeting")
-                        .font(.system(size: 11, weight: .regular))
+                        .font(.system(size: 12, weight: .regular))
                         .foregroundColor(textMuted)
+                        .lineSpacing(2)
                     
                     Button(action: { selectedTab = .notetaker }) {
                         Text("Check it out")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(.system(size: 12, weight: .bold))
                             .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 7)
                             .background(Capsule().fill(accentTeal))
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
-                .padding(12)
-                .background(RoundedRectangle(cornerRadius: 12).fill(accentTeal.opacity(0.08)))
+                .padding(14)
+                .background(RoundedRectangle(cornerRadius: 14).fill(accentTeal.opacity(0.08)))
                 .padding(.horizontal, 10)
             }
             
             Divider()
                 .background(borderDivider)
-                .padding(.vertical, 4)
+                .padding(.vertical, 6)
             
             // Bottom Utility Strip
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 sidebarUtilityButton(title: "Invite your team", icon: "person.2") {
                     activeSettingsTab = .team
                     showSettingsModal = true
@@ -459,25 +474,26 @@ struct SaynStudioView: View {
                 }
                 sidebarUtilityButton(title: "Help", icon: "questionmark.circle") {}
             }
-            .padding(.bottom, 8)
+            .padding(.bottom, 12)
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 10)
     }
     
     private func sidebarUtilityButton(title: String, icon: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 8) {
+            HStack(spacing: 10) {
                 Image(systemName: icon)
-                    .font(.system(size: 12))
-                    .frame(width: 18)
+                    .font(.system(size: 14))
+                    .frame(width: 20)
                     .foregroundColor(textMuted)
                 Text(title)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(textMuted)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(textDark.opacity(0.85))
                 Spacer()
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(RoundedRectangle(cornerRadius: 8).fill(Color.clear))
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -642,7 +658,7 @@ struct SaynStudioView: View {
                     HStack {
                         Text("0 words left")
                             .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(Color.purple)
+                            .foregroundColor(accentTeal)
                         Image(systemName: "info.circle")
                             .font(.system(size: 11))
                             .foregroundColor(textMuted)
@@ -654,10 +670,10 @@ struct SaynStudioView: View {
                     Button(action: {}) {
                         Text("Upgrade to Pro")
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(.black)
+                            .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 8)
-                            .background(RoundedRectangle(cornerRadius: 8).fill(accentAmber))
+                            .background(RoundedRectangle(cornerRadius: 8).fill(accentTeal))
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
@@ -679,10 +695,10 @@ struct SaynStudioView: View {
                     Button(action: { selectedTab = .insights }) {
                         Text("Create report")
                             .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(.black)
+                            .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 7)
-                            .background(RoundedRectangle(cornerRadius: 8).fill(accentAmber))
+                            .background(RoundedRectangle(cornerRadius: 8).fill(accentTeal))
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
@@ -1167,7 +1183,7 @@ struct SaynStudioView: View {
                         )
                     
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Flow spells the way you do.")
+                        Text("SAYN spells the way you do.")
                             .font(.system(size: 20, weight: .bold, design: .serif))
                             .foregroundColor(.white)
                         
@@ -1186,7 +1202,7 @@ struct SaynStudioView: View {
                             }
                             .buttonStyle(PlainButtonStyle())
                             
-                            ForEach(["Wispr Flow", "Samir", "Sara", "Karol", "Spyder"], id: \.self) { chip in
+                            ForEach(["SAYN Voice", "Mohammed Maaz", "SwiftUI", "TypeScript", "Groq LPU"], id: \.self) { chip in
                                 Button(action: { store.addDictionaryWord(chip) }) {
                                     Text(chip)
                                         .font(.system(size: 11, weight: .medium))
@@ -1266,15 +1282,15 @@ struct SaynStudioView: View {
                     .foregroundColor(textDark)
                 
                 // Style Navigation Tabs
-                HStack(spacing: 20) {
+                HStack(spacing: 24) {
                     ForEach(["Personal messages", "Work messages", "Email", "Other", "Auto cleanup"], id: \.self) { t in
                         Button(action: { activeStyleSubTab = t }) {
                             Text(t)
-                                .font(.system(size: 13, weight: activeStyleSubTab == t ? .bold : .regular))
-                                .foregroundColor(activeStyleSubTab == t ? textDark : textMuted)
+                                .font(.system(size: 14, weight: activeStyleSubTab == t ? .bold : .medium))
+                                .foregroundColor(activeStyleSubTab == t ? accentTeal : textMuted)
                                 .overlay(
                                     activeStyleSubTab == t ?
-                                    Rectangle().frame(height: 2).offset(y: 12).foregroundColor(textDark) : nil,
+                                    Rectangle().frame(height: 2.5).offset(y: 12).foregroundColor(accentTeal) : nil,
                                     alignment: .bottom
                                 )
                         }
@@ -1416,30 +1432,32 @@ struct SaynStudioView: View {
     
     private func cleanupLevelCard(title: String, subtitle: String, example: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 14) {
                 Text(title)
-                    .font(.system(size: 20, weight: .bold, design: .serif))
+                    .font(.system(size: 22, weight: .bold, design: .serif))
                     .foregroundColor(textDark)
                 Text(subtitle)
-                    .font(.system(size: 11))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundColor(textMuted)
                     .lineLimit(2)
-                    .frame(height: 28, alignment: .topLeading)
+                    .frame(height: 34, alignment: .topLeading)
                 
                 Text(example)
-                    .font(.system(size: 12, design: .rounded))
+                    .font(.system(size: 13.5, weight: .regular, design: .rounded))
                     .foregroundColor(textDark)
-                    .padding(12)
+                    .lineSpacing(3)
+                    .padding(14)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(Color(red: 247/255, green: 243/255, blue: 250/255)))
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color(red: 250/255, green: 244/255, blue: 235/255)))
             }
-            .padding(16)
+            .padding(20)
+            .frame(minHeight: 230, alignment: .topLeading)
             .background(
                 RoundedRectangle(cornerRadius: 14)
                     .fill(cardWhite)
                     .overlay(
                         RoundedRectangle(cornerRadius: 14)
-                            .stroke(isSelected ? Color.purple : Color.clear, lineWidth: 2)
+                            .stroke(isSelected ? accentTeal : borderDivider, lineWidth: isSelected ? 2.5 : 1)
                     )
             )
         }
@@ -1448,35 +1466,37 @@ struct SaynStudioView: View {
     
     private func emailToneCard(title: String, subtitle: String, greeting: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 14) {
                 Text(title)
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.system(size: 20, weight: .bold))
                     .foregroundColor(textDark)
                 Text(subtitle)
-                    .font(.system(size: 11))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundColor(textMuted)
                 
                 Divider()
                     .background(borderDivider)
                 
                 Text("To: Alex Doe")
-                    .font(.system(size: 11))
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(textMuted)
                 
                 Text(greeting)
-                    .font(.system(size: 12, design: .rounded))
+                    .font(.system(size: 13, design: .rounded))
                     .foregroundColor(textDark)
-                    .padding(10)
+                    .lineSpacing(3)
+                    .padding(14)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(surfaceBeige))
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color(red: 250/255, green: 244/255, blue: 235/255)))
             }
-            .padding(16)
+            .padding(20)
+            .frame(minHeight: 230, alignment: .topLeading)
             .background(
                 RoundedRectangle(cornerRadius: 14)
                     .fill(cardWhite)
                     .overlay(
                         RoundedRectangle(cornerRadius: 14)
-                            .stroke(isSelected ? Color.purple : Color.clear, lineWidth: 2)
+                            .stroke(isSelected ? accentTeal : borderDivider, lineWidth: isSelected ? 2.5 : 1)
                     )
             )
         }
@@ -1826,8 +1846,8 @@ struct SaynStudioView: View {
                 Spacer()
                 
                 HStack(spacing: 6) {
-                    Text("Flow v1.6.1147")
-                        .font(.system(size: 11))
+                    Text("SAYN Studio v2.4.0")
+                        .font(.system(size: 11, weight: .medium))
                         .foregroundColor(textMuted)
                     Image(systemName: "arrow.triangle.2.circlepath")
                         .font(.system(size: 10))
@@ -1835,7 +1855,7 @@ struct SaynStudioView: View {
                 }
                 .padding(14)
             }
-            .frame(width: 180)
+            .frame(width: 190)
             .background(surfaceBeige)
             
             Divider()
@@ -1868,7 +1888,7 @@ struct SaynStudioView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(cardWhite)
         }
-        .frame(width: 680, height: 480)
+        .frame(width: 720, height: 520)
         .clipShape(RoundedRectangle(cornerRadius: 18))
         .overlay(RoundedRectangle(cornerRadius: 18).stroke(borderDivider, lineWidth: 1))
         .shadow(color: Color.black.opacity(0.3), radius: 25, x: 0, y: 10)
@@ -1878,16 +1898,16 @@ struct SaynStudioView: View {
         Button(action: { activeSettingsTab = tab }) {
             HStack(spacing: 8) {
                 Image(systemName: tab.iconName)
-                    .font(.system(size: 12))
-                    .frame(width: 16)
-                    .foregroundColor(activeSettingsTab == tab ? textDark : textMuted)
+                    .font(.system(size: 13))
+                    .frame(width: 18)
+                    .foregroundColor(activeSettingsTab == tab ? accentTeal : textMuted)
                 Text(tab.rawValue)
-                    .font(.system(size: 12, weight: activeSettingsTab == tab ? .bold : .regular))
-                    .foregroundColor(activeSettingsTab == tab ? textDark : textMuted)
+                    .font(.system(size: 13, weight: activeSettingsTab == tab ? .bold : .regular))
+                    .foregroundColor(activeSettingsTab == tab ? accentTeal : textDark.opacity(0.85))
                 Spacer()
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 8)
                     .fill(activeSettingsTab == tab ? cardWhite : Color.clear)
@@ -1904,7 +1924,7 @@ struct SaynStudioView: View {
                 .foregroundColor(textDark)
             
             VStack(spacing: 12) {
-                settingsRow(title: "Shortcuts", desc: "Hold fn and speak. Learn more →", buttonLabel: "Change") {}
+                settingsRow(title: "Shortcuts", desc: "Hold fn or press Option+Space to speak. Learn more →", buttonLabel: "Change") {}
                 settingsRow(title: "Microphone", desc: "Auto-detect (MacBook Pro)", buttonLabel: "Change") {}
                 settingsRow(title: "Dictation Languages", desc: "English · British · Urdu (اردو)", buttonLabel: "Change") {}
                 
@@ -1913,13 +1933,14 @@ struct SaynStudioView: View {
                         Text("App Language")
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(textDark)
-                        Text("Select your preferred Wispr Flow Hub language")
+                        Text("Select your preferred SAYN Hub language")
                             .font(.system(size: 11))
                             .foregroundColor(textMuted)
                     }
                     Spacer()
                     Text("English ▾")
-                        .font(.system(size: 12))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(textDark)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
                         .background(RoundedRectangle(cornerRadius: 6).fill(surfaceBeige))
@@ -1942,7 +1963,7 @@ struct SaynStudioView: View {
             
             VStack(spacing: 10) {
                 settingsToggle(title: "Launch app at login", state: .constant(true))
-                settingsToggle(title: "Show Flow Bar at all times", state: .constant(true))
+                settingsToggle(title: "Show SAYN Voice Capsule at all times", state: .constant(true))
                 settingsToggle(title: "Show app in dock", state: .constant(true))
             }
             .padding(14)
@@ -1970,6 +1991,7 @@ struct SaynStudioView: View {
                 Spacer()
                 Text("Start tutorial")
                     .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(textDark)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(RoundedRectangle(cornerRadius: 6).fill(surfaceBeige))
@@ -1984,11 +2006,17 @@ struct SaynStudioView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Notify before scheduled meetings start")
                             .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(textDark)
                         Text("Choose when to get a heads-up before a meeting starts")
-                            .font(.system(size: 11)).foregroundColor(textMuted)
+                            .font(.system(size: 11))
+                            .foregroundColor(textMuted)
                     }
                     Spacer()
-                    Text("15 sec ▾").font(.system(size: 11)).padding(4).background(RoundedRectangle(cornerRadius: 4).fill(surfaceBeige))
+                    Text("15 sec ▾")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(textDark)
+                        .padding(4)
+                        .background(RoundedRectangle(cornerRadius: 4).fill(surfaceBeige))
                 }
                 Divider()
                 settingsToggle(title: "Show your next meeting in the menu bar", state: .constant(true))
@@ -2008,16 +2036,20 @@ struct SaynStudioView: View {
             
             VStack(spacing: 12) {
                 HStack {
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: 3) {
                         Text("Variable recognition (VS Code, Cursor, Windsurf)")
                             .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(textDark)
                         Text("Better understands variables in code. Learn more →")
-                            .font(.system(size: 11)).foregroundColor(textMuted)
+                            .font(.system(size: 11))
+                            .foregroundColor(textMuted)
                     }
                     Spacer()
                     Text("Set up")
-                        .font(.system(size: 11, weight: .medium))
-                        .padding(.horizontal, 10).padding(.vertical, 5)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(textDark)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
                         .background(RoundedRectangle(cornerRadius: 6).fill(surfaceBeige))
                 }
                 
@@ -2047,14 +2079,15 @@ struct SaynStudioView: View {
                 HStack {
                     Text("Profile picture")
                         .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(textDark)
                     Spacer()
                     ZStack {
                         Circle()
-                            .fill(Color(red: 79/255, green: 91/255, blue: 213/255))
-                            .frame(width: 30, height: 30)
+                            .fill(accentTeal)
+                            .frame(width: 32, height: 32)
                         Text(String(store.firstName.prefix(1)).uppercased())
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(.white)
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
                     }
                 }
             }
@@ -2071,6 +2104,7 @@ struct SaynStudioView: View {
                 Button(action: {}) {
                     Text("Sign out")
                         .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(textDark)
                         .padding(.horizontal, 12).padding(.vertical, 6)
                         .background(RoundedRectangle(cornerRadius: 6).fill(surfaceBeige))
                 }
@@ -2101,9 +2135,9 @@ struct SaynStudioView: View {
                 }) {
                     Text("Save")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 16).padding(.vertical, 6)
-                        .background(RoundedRectangle(cornerRadius: 6).fill(Color.black))
+                        .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
+                        .padding(.horizontal, 18).padding(.vertical, 6)
+                        .background(RoundedRectangle(cornerRadius: 6).fill(accentTeal))
                 }
                 .buttonStyle(PlainButtonStyle())
             }
@@ -2131,9 +2165,11 @@ struct SaynStudioView: View {
             HStack {
                 Text("Local data storage")
                     .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(textDark)
                 Spacer()
                 Text("Store data locally ▾")
-                    .font(.system(size: 11))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(textDark)
                     .padding(.horizontal, 8).padding(.vertical, 4)
                     .background(RoundedRectangle(cornerRadius: 6).fill(surfaceBeige))
             }

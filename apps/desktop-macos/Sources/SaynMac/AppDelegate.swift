@@ -123,7 +123,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let styleSubmenu = NSMenu()
         let styles = [
             ("natural", "Natural (Authentic & Conversational)"),
-            ("fluent", "Fluent (Polished Grammar & Flow)"),
+            ("fluent", "Fluent (Natural & Polished Grammar)"),
             ("professional", "Professional (Executive & Formal)")
         ]
         
@@ -436,7 +436,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self.isFallbackCard = false
                 self.isCommitting = false
             } else {
-                // Scenario B: No active textbox present (Wispr Flow behavior) -> Show Fallback HUD Card!
+                // Scenario B: No active textbox present -> Show Fallback HUD Card!
                 self.currentTranscript = trimmed
                 self.isFallbackCard = true
                 self.pillWindow?.showAnimated(isCard: true)
