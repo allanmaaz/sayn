@@ -67,7 +67,6 @@ enum SaynSettingsTab: String, CaseIterable, Identifiable {
     case mcp = "MCP"
     case account = "Account"
     case team = "Team"
-    case billing = "Plans and Billing"
     case privacy = "Data and Privacy"
     
     var id: String { rawValue }
@@ -82,7 +81,6 @@ enum SaynSettingsTab: String, CaseIterable, Identifiable {
         case .mcp: return "puzzlepiece.extension"
         case .account: return "person.crop.circle"
         case .team: return "person.2"
-        case .billing: return "creditcard"
         case .privacy: return "shield.lefthalf.filled"
         }
     }
@@ -308,52 +306,31 @@ struct SaynStudioView: View {
             Divider()
                 .background(borderDivider)
             
-            // Free Tier / Quota Card
+            // Unlimited Studio Status Card
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("You are on SAYN Free")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(textDark)
-                    Text("0 words left this week")
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(Color.green)
+                            .frame(width: 7, height: 7)
+                        Text("Unlimited Studio")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(textDark)
+                    }
+                    Text("Local-first · Zero limits · Private")
                         .font(.system(size: 11, weight: .regular))
                         .foregroundColor(textMuted)
                 }
                 Spacer()
-                Button(action: {}) {
-                    Text("Get SAYN Pro")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(accentTeal))
-                }
-                .buttonStyle(PlainButtonStyle())
+                Text("Lifetime")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 4)
+                    .background(Capsule().fill(accentTeal))
             }
-            
-            Divider()
-                .background(borderDivider)
-            
-            // Referral Card
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Get a free month of SAYN Pro")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(textDark)
-                    Text("Refer friends, earn rewards")
-                        .font(.system(size: 11, weight: .regular))
-                        .foregroundColor(textMuted)
-                }
-                Spacer()
-                Button(action: {}) {
-                    Text("Refer a friend")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(textDark)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(surfaceBeige))
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
+            .padding(10)
+            .background(RoundedRectangle(cornerRadius: 10).fill(surfaceBeige))
             
             Divider()
                 .background(borderDivider)
@@ -465,8 +442,9 @@ struct SaynStudioView: View {
                     activeSettingsTab = .team
                     showSettingsModal = true
                 }
-                sidebarUtilityButton(title: "Get a free month", icon: "gift") {
-                    showProfilePopover = true
+                sidebarUtilityButton(title: "Shortcuts", icon: "command") {
+                    activeSettingsTab = .general
+                    showSettingsModal = true
                 }
                 sidebarUtilityButton(title: "Settings", icon: "gearshape") {
                     activeSettingsTab = .general
@@ -653,29 +631,52 @@ struct SaynStudioView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(RoundedRectangle(cornerRadius: 14).fill(surfaceBeige))
                 
-                // Quota Card
+                // Unlimited Voice Engine Card
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
-                        Text("0 words left")
-                            .font(.system(size: 13, weight: .bold))
+                        HStack(spacing: 5) {
+                            Circle()
+                                .fill(Color.green)
+                                .frame(width: 7, height: 7)
+                            Text("Unlimited Voice")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(textDark)
+                        }
+                        Spacer()
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 12))
                             .foregroundColor(accentTeal)
-                        Image(systemName: "info.circle")
-                            .font(.system(size: 11))
-                            .foregroundColor(textMuted)
                     }
-                    Text("You've hit your weekly dictation limit. Resets Sunday, 12 a.m. PT.")
-                        .font(.system(size: 11))
+                    Text("Zero word limits. All dictation, speech formatting, and AI polishing are 100% free and private.")
+                        .font(.system(size: 11.5))
                         .foregroundColor(textMuted)
+                        .lineSpacing(2)
                     
-                    Button(action: {}) {
-                        Text("Upgrade to Pro")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
-                            .background(RoundedRectangle(cornerRadius: 8).fill(accentTeal))
+                    HStack(spacing: 8) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "waveform")
+                                .font(.system(size: 10))
+                                .foregroundColor(accentTeal)
+                            Text("Groq LPU")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(textDark)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(RoundedRectangle(cornerRadius: 6).fill(cardWhite))
+                        
+                        HStack(spacing: 4) {
+                            Image(systemName: "lock.shield.fill")
+                                .font(.system(size: 10))
+                                .foregroundColor(accentTeal)
+                            Text("Local-First")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(textDark)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(RoundedRectangle(cornerRadius: 6).fill(cardWhite))
                     }
-                    .buttonStyle(PlainButtonStyle())
                 }
                 .padding(16)
                 .background(RoundedRectangle(cornerRadius: 14).fill(surfaceBeige))
@@ -1839,7 +1840,7 @@ struct SaynStudioView: View {
                     .padding(.horizontal, 12)
                     .padding(.top, 14)
                 
-                ForEach([SaynSettingsTab.account, .team, .billing, .privacy]) { tab in
+                ForEach([SaynSettingsTab.account, .team, .privacy]) { tab in
                     settingsTabButton(tab: tab)
                 }
                 

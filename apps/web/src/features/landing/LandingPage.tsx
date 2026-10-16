@@ -22,7 +22,10 @@ import {
   Smartphone,
   Monitor,
   Settings,
+  Zap,
+  Info,
 } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext.js';
 import { detectDevice, DeviceInfo } from '../../utils/deviceDetector.js';
 import { DownloadModal } from '../../components/download/DownloadModal.js';
 import { useScrollAnimation } from '../../hooks/useScrollAnimation.js';
@@ -33,6 +36,8 @@ export const LandingPage: React.FC = () => {
   const [isDownloadOpen, setIsDownloadOpen] = useState(false);
   const [device, setDevice] = useState<DeviceInfo | null>(null);
   const { scrollY } = useScrollAnimation();
+  const { actualTheme } = useTheme();
+  const isLight = actualTheme === 'light';
 
   React.useEffect(() => {
     setDevice(detectDevice());
@@ -47,7 +52,11 @@ export const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-[#100709] text-[#F5EBDD] overflow-hidden">
+    <div
+      className={`flex-1 flex flex-col overflow-hidden transition-colors duration-300 ${
+        isLight ? 'bg-[#FAF7F2] text-[#2D0A12]' : 'bg-[#100709] text-[#F5EBDD]'
+      }`}
+    >
       {/* 1. HERO SECTION (Responsive: Mobile iPhone Mockup & Desktop Laptop Showcase) */}
       <section className="relative pt-20 pb-16 sm:pt-24 sm:pb-24 md:pt-28 md:pb-28 overflow-hidden">
         {/* Flowing Crimson/Maroon Silk Wave Ribbons (matching mobile mockup) */}
@@ -324,7 +333,11 @@ export const LandingPage: React.FC = () => {
                 {/* Primary Warm Cream Button */}
                 <button
                   onClick={() => setIsDownloadOpen(true)}
-                  className="inline-flex items-center justify-center space-x-2.5 px-7 py-3.5 rounded-full font-bold text-sm bg-[#F5EBDD] text-[#100709] hover:bg-[#FAF4EB] active:scale-95 transition-all shadow-[0_4px_24px_rgba(245,235,221,0.25)]"
+                  className={`inline-flex items-center justify-center space-x-2.5 px-7 py-3.5 rounded-full font-bold text-sm active:scale-95 transition-all shadow-md ${
+                    isLight
+                      ? 'bg-[#6F1025] hover:bg-[#85162E] text-[#F5EBDD] shadow-[0_4px_24px_rgba(111,16,37,0.25)]'
+                      : 'bg-[#F5EBDD] hover:bg-[#FAF4EB] text-[#100709] shadow-[0_4px_24px_rgba(245,235,221,0.25)]'
+                  }`}
                 >
                   <Download className="w-4 h-4 stroke-[2.5]" />
                   <span>
@@ -333,13 +346,17 @@ export const LandingPage: React.FC = () => {
                 </button>
 
                 {/* Secondary Maroon Bordered Button */}
-                <Link
-                  to="/workspace"
-                  className="inline-flex items-center justify-center space-x-2 px-7 py-3.5 rounded-full font-semibold text-sm text-[#F5EBDD] bg-[#100709] border border-[#A83249] hover:bg-[#6F1025]/30 hover:border-[#F5EBDD]/40 transition-all shadow-sm"
+                <a
+                  href="#how-it-works"
+                  className={`inline-flex items-center justify-center space-x-2 px-7 py-3.5 rounded-full font-semibold text-sm transition-all shadow-xs ${
+                    isLight
+                      ? 'text-[#2D0A12] bg-white border border-[#E2D9CD] hover:border-[#6F1025]'
+                      : 'text-[#F5EBDD] bg-[#100709] border border-[#A83249] hover:bg-[#6F1025]/30 hover:border-[#F5EBDD]/40'
+                  }`}
                 >
-                  <span>Try Web Studio</span>
+                  <span>See How It Works</span>
                   <ArrowRight className="w-4 h-4" />
-                </Link>
+                </a>
               </div>
 
               {/* Platform Badges Row */}
@@ -567,9 +584,119 @@ export const LandingPage: React.FC = () => {
               <div className="w-12 h-12 rounded-xl bg-[#6F1025]/30 border border-[#A83249]/40 flex items-center justify-center text-[#F5EBDD] mb-5 group-hover:scale-110 transition-transform">
                 <ShieldCheck className="w-6 h-6 text-[#A83249]" />
               </div>
-              <h3 className="text-lg font-bold text-[#F5EBDD] mb-2">100% Free & Unlimited</h3>
+              <h3 className="text-lg font-bold text-[#F5EBDD] mb-2">100% Free &amp; Unlimited</h3>
               <p className="text-xs sm:text-sm text-[#D6C7B2] leading-relaxed">
-                Zero rupees held. Unlimited usage with zero-prompt embedded keys. Audio is processed ephemerally and discarded immediately.
+                Zero paywalls. Unlimited usage with zero-prompt embedded keys. Audio is processed ephemerally and discarded immediately.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 2B. ABOUT SAYN SECTION */}
+      <section
+        id="about"
+        className={`py-24 border-t relative overflow-hidden transition-colors ${
+          isLight ? 'border-[#E2D9CD] bg-[#F7F4EE]' : 'border-[#3D1520] bg-[#14080D]/90'
+        }`}
+      >
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center max-w-3xl mx-auto mb-16 reveal-on-scroll scroll-reveal">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#A83249] mb-2 block">
+              About SAYN
+            </span>
+            <h2
+              className={`text-3xl sm:text-4xl font-extrabold tracking-tight mb-4 ${
+                isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
+              }`}
+            >
+              Built for Humans Who Think Fast
+            </h2>
+            <p
+              className={`text-sm sm:text-base leading-relaxed ${
+                isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
+              }`}
+            >
+              Human speech flows at 150 to 200 words per minute, while typing maxes out at 40 to 60 words per minute. SAYN eliminates this bottleneck with zero subscription fees, zero word quotas, and uncompromising local-first privacy.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div
+              className={`p-6 rounded-2xl border transition-all ${
+                isLight
+                  ? 'bg-white border-[#E2D9CD] shadow-sm'
+                  : 'bg-[#1C0B12] border-[#3D1520]'
+              }`}
+            >
+              <div className="w-10 h-10 rounded-xl bg-[#6F1025]/20 flex items-center justify-center text-[#A83249] mb-4">
+                <Zap className="w-5 h-5" />
+              </div>
+              <h3
+                className={`text-base font-bold mb-2 ${
+                  isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
+                }`}
+              >
+                Why No Subscription?
+              </h3>
+              <p
+                className={`text-xs leading-relaxed ${
+                  isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
+                }`}
+              >
+                Unlike apps that cut you off with "0 words left" or charge monthly subscriptions, SAYN is built on ultra-fast Groq LPU Whisper and local SQLite architectures. Dictate 10 words or 100,000 words—it is completely free.
+              </p>
+            </div>
+
+            <div
+              className={`p-6 rounded-2xl border transition-all ${
+                isLight
+                  ? 'bg-white border-[#E2D9CD] shadow-sm'
+                  : 'bg-[#1C0B12] border-[#3D1520]'
+              }`}
+            >
+              <div className="w-10 h-10 rounded-xl bg-[#6F1025]/20 flex items-center justify-center text-[#A83249] mb-4">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <h3
+                className={`text-base font-bold mb-2 ${
+                  isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
+                }`}
+              >
+                How It Helps You
+              </h3>
+              <p
+                className={`text-xs leading-relaxed ${
+                  isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
+                }`}
+              >
+                Speak unstructured thoughts, stumble, or pace around your desk. SAYN strips verbal fillers ("um", "ah"), fixes grammar, and auto-adapts your tone for executive emails, Slack replies, or GitHub PR descriptions.
+              </p>
+            </div>
+
+            <div
+              className={`p-6 rounded-2xl border transition-all ${
+                isLight
+                  ? 'bg-white border-[#E2D9CD] shadow-sm'
+                  : 'bg-[#1C0B12] border-[#3D1520]'
+              }`}
+            >
+              <div className="w-10 h-10 rounded-xl bg-[#6F1025]/20 flex items-center justify-center text-[#A83249] mb-4">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <h3
+                className={`text-base font-bold mb-2 ${
+                  isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
+                }`}
+              >
+                Local-First &amp; Private
+              </h3>
+              <p
+                className={`text-xs leading-relaxed ${
+                  isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
+                }`}
+              >
+                Audio streams are kept in ephemeral memory and discarded immediately after transcription. Your history is stored on your local machine in SQLite WAL. No surveillance, and no model training on your private voice data.
               </p>
             </div>
           </div>
@@ -620,6 +747,198 @@ export const LandingPage: React.FC = () => {
               <p className="text-xs sm:text-sm text-[#D6C7B2] leading-relaxed">
                 The refined text automatically injects into your active chatbot, email, or editor. Zero manual Cmd+V required.
               </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 3B. DIRECT DOWNLOAD SECTION */}
+      <section
+        id="download"
+        className={`py-24 border-t relative overflow-hidden transition-colors ${
+          isLight ? 'border-[#E2D9CD] bg-[#FAF7F2]' : 'border-[#3D1520] bg-[#100709]'
+        }`}
+      >
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+          <span className="text-xs font-bold uppercase tracking-widest text-[#A83249] mb-2 block">
+            Install Once. Speak Anywhere.
+          </span>
+          <h2
+            className={`text-3xl sm:text-5xl font-extrabold tracking-tight mb-4 ${
+              isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
+            }`}
+          >
+            Download SAYN Free
+          </h2>
+          <p
+            className={`max-w-2xl mx-auto text-sm sm:text-base mb-12 ${
+              isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
+            }`}
+          >
+            Native performance on Apple Silicon, Intel Macs, Windows 10/11, and Android. No credit card, no subscription, no sign-up barrier.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+            {/* macOS Card */}
+            <div
+              className={`p-6 rounded-2xl border relative flex flex-col justify-between ${
+                isLight
+                  ? 'bg-white border-[#E2D9CD] shadow-sm'
+                  : 'bg-[#18080E] border-[#3D1520]'
+              }`}
+            >
+              <div>
+                <div className="w-12 h-12 rounded-xl bg-[#6F1025]/20 flex items-center justify-center text-[#A83249] mb-4">
+                  <Laptop className="w-6 h-6" />
+                </div>
+                <div className="flex items-center justify-between mb-1">
+                  <h3
+                    className={`text-lg font-bold ${
+                      isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
+                    }`}
+                  >
+                    macOS
+                  </h3>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                    Universal 2
+                  </span>
+                </div>
+                <p
+                  className={`text-xs mb-4 ${
+                    isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
+                  }`}
+                >
+                  Optimized for Apple Silicon M1/M2/M3/M4 &amp; Intel. Includes floating pill window &amp; Fn push-to-talk.
+                </p>
+                <div
+                  className={`text-[11px] font-mono space-y-1 mb-6 ${
+                    isLight ? 'text-[#706E6B]' : 'text-[#D6C7B2]/70'
+                  }`}
+                >
+                  <div>• macOS 11.0 (Big Sur) or later</div>
+                  <div>• Native Global Keyboard Listener</div>
+                  <div>• Direct AXUIElement Auto-Paste</div>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsDownloadOpen(true)}
+                className={`w-full py-3 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 transition shadow-sm ${
+                  isLight
+                    ? 'bg-[#6F1025] hover:bg-[#85162E] text-[#F5EBDD]'
+                    : 'bg-[#F5EBDD] hover:bg-[#FAF4EB] text-[#100709]'
+                }`}
+              >
+                <Download className="w-4 h-4 stroke-[2.5]" />
+                <span>Download for Mac (.dmg)</span>
+              </button>
+            </div>
+
+            {/* Windows Card */}
+            <div
+              className={`p-6 rounded-2xl border relative flex flex-col justify-between ${
+                isLight
+                  ? 'bg-white border-[#E2D9CD] shadow-sm'
+                  : 'bg-[#18080E] border-[#3D1520]'
+              }`}
+            >
+              <div>
+                <div className="w-12 h-12 rounded-xl bg-[#6F1025]/20 flex items-center justify-center text-[#A83249] mb-4">
+                  <Monitor className="w-6 h-6" />
+                </div>
+                <div className="flex items-center justify-between mb-1">
+                  <h3
+                    className={`text-lg font-bold ${
+                      isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
+                    }`}
+                  >
+                    Windows
+                  </h3>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                    x64 / ARM64
+                  </span>
+                </div>
+                <p
+                  className={`text-xs mb-4 ${
+                    isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
+                  }`}
+                >
+                  High-speed desktop assistant with global hotkey support and Windows SendInput injection.
+                </p>
+                <div
+                  className={`text-[11px] font-mono space-y-1 mb-6 ${
+                    isLight ? 'text-[#706E6B]' : 'text-[#D6C7B2]/70'
+                  }`}
+                >
+                  <div>• Windows 10 / 11 (64-bit)</div>
+                  <div>• Low latency tray overlay</div>
+                  <div>• Seamless Office, VS Code, Browser paste</div>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsDownloadOpen(true)}
+                className={`w-full py-3 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 transition border ${
+                  isLight
+                    ? 'border-[#6F1025] text-[#6F1025] hover:bg-[#6F1025]/10'
+                    : 'border-[#A83249] text-[#F5EBDD] hover:bg-[#6F1025]/30'
+                }`}
+              >
+                <Download className="w-4 h-4" />
+                <span>Download for Windows (.exe)</span>
+              </button>
+            </div>
+
+            {/* Android Card */}
+            <div
+              className={`p-6 rounded-2xl border relative flex flex-col justify-between ${
+                isLight
+                  ? 'bg-white border-[#E2D9CD] shadow-sm'
+                  : 'bg-[#18080E] border-[#3D1520]'
+              }`}
+            >
+              <div>
+                <div className="w-12 h-12 rounded-xl bg-[#6F1025]/20 flex items-center justify-center text-[#A83249] mb-4">
+                  <Smartphone className="w-6 h-6" />
+                </div>
+                <div className="flex items-center justify-between mb-1">
+                  <h3
+                    className={`text-lg font-bold ${
+                      isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
+                    }`}
+                  >
+                    Android
+                  </h3>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                    IME Keyboard
+                  </span>
+                </div>
+                <p
+                  className={`text-xs mb-4 ${
+                    isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
+                  }`}
+                >
+                  Voice-first custom Android keyboard with floating mic bubble and real-time smart punctuation.
+                </p>
+                <div
+                  className={`text-[11px] font-mono space-y-1 mb-6 ${
+                    isLight ? 'text-[#706E6B]' : 'text-[#D6C7B2]/70'
+                  }`}
+                >
+                  <div>• Android 9.0 (Pie) to 15+</div>
+                  <div>• System-wide Input Method (IME)</div>
+                  <div>• Floating dictation overlay</div>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsDownloadOpen(true)}
+                className={`w-full py-3 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 transition border ${
+                  isLight
+                    ? 'border-[#6F1025] text-[#6F1025] hover:bg-[#6F1025]/10'
+                    : 'border-[#A83249] text-[#F5EBDD] hover:bg-[#6F1025]/30'
+                }`}
+              >
+                <Download className="w-4 h-4" />
+                <span>Download Android APK</span>
+              </button>
             </div>
           </div>
         </div>
@@ -683,15 +1002,15 @@ export const LandingPage: React.FC = () => {
               className="w-full sm:w-auto inline-flex items-center justify-center space-x-2.5 px-8 py-4 rounded-full font-bold text-sm bg-[#F5EBDD] text-[#100709] hover:bg-[#FAF4EB] active:scale-95 transition-all shadow-[0_4px_24px_rgba(245,235,221,0.25)] hover:shadow-[0_8px_32px_rgba(245,235,221,0.35)]"
             >
               <Download className="w-4 h-4 stroke-[2.5]" />
-              <span>Download for {device?.osName || 'Your Device'}</span>
+              <span>Download Free for {device?.osName || 'Your Device'}</span>
             </button>
-            <Link
-              to="/workspace"
+            <a
+              href="#about"
               className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-8 py-4 rounded-full font-semibold text-sm text-[#F5EBDD] bg-[#100709] border border-[#A83249] hover:bg-[#6F1025]/30 hover:border-[#F5EBDD]/40 transition-all"
             >
-              <span>Start Using Web Studio</span>
+              <span>Learn More About SAYN</span>
               <ArrowRight className="w-4 h-4" />
-            </Link>
+            </a>
           </div>
         </div>
       </section>

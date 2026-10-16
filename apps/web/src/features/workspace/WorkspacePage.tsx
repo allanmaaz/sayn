@@ -22,13 +22,13 @@ import {
   Radio,
   Sliders,
   Users,
-  Gift,
+  Keyboard,
   Settings as SettingsIcon,
   HelpCircle,
   Bell,
   Info,
   X,
-  CreditCard,
+  Zap,
   Shield,
   ArrowRight,
   ChevronRight,
@@ -127,7 +127,7 @@ export const WorkspacePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<StudioTab>('dictation');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [settingsActiveTab, setSettingsActiveTab] = useState<'account' | 'general' | 'billing' | 'privacy'>('account');
+  const [settingsActiveTab, setSettingsActiveTab] = useState<'account' | 'general' | 'privacy'>('account');
 
   // Real Persistent State
   const [history, setHistory] = useState<WebDictationEntry[]>(() => {
@@ -511,13 +511,13 @@ export const WorkspacePage: React.FC = () => {
           </button>
           <button
             onClick={() => {
-              setSettingsActiveTab('billing');
+              setSettingsActiveTab('general');
               setShowSettingsModal(true);
             }}
             className="w-full flex items-center space-x-2.5 px-2 py-1.5 rounded-lg hover:bg-[#F2EFE6] hover:text-[#1A1A1A] transition"
           >
-            <Gift className="w-4 h-4" />
-            {!isSidebarCollapsed && <span>Get a free month</span>}
+            <Keyboard className="w-4 h-4" />
+            {!isSidebarCollapsed && <span>Shortcuts</span>}
           </button>
           <button
             onClick={() => {
@@ -786,26 +786,24 @@ export const WorkspacePage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Quota Card */}
+                {/* Unlimited Voice Status Card */}
                 <div className="p-4 rounded-2xl bg-[#F7F5EE] border border-[#EBE8DF] space-y-2">
-                  <div className="flex items-center justify-between text-xs font-semibold text-purple-700">
-                    <span className="flex items-center space-x-1">
-                      <span>0 words left</span>
-                      <Info className="w-3 h-3 text-[#706E6B]" />
+                  <div className="flex items-center justify-between text-xs font-semibold text-[#6F1025]">
+                    <span className="flex items-center space-x-1.5">
+                      <Zap className="w-3.5 h-3.5 text-[#6F1025]" />
+                      <span className="font-bold">Unlimited Voice</span>
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#6F1025]/10 text-[#6F1025]">
+                      Free Forever
                     </span>
                   </div>
                   <p className="text-[11px] text-[#706E6B] leading-tight">
-                    You've hit your weekly dictation limit. Resets Sunday, 12 a.m. PT.
+                    Zero word quotas or paywalls. Powered by Groq LPU Whisper &amp; llama-3.3-70b.
                   </p>
-                  <button
-                    onClick={() => {
-                      setSettingsActiveTab('billing');
-                      setShowSettingsModal(true);
-                    }}
-                    className="w-full mt-2 py-2 rounded-xl bg-[#6F1025] hover:bg-[#8F1835] text-[#F5EBDD] font-semibold text-xs transition shadow-xs"
-                  >
-                    Upgrade to Pro
-                  </button>
+                  <div className="pt-1 flex items-center space-x-2 text-[10px] text-[#706E6B] font-medium">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Instant Dictation Active</span>
+                  </div>
                 </div>
 
                 {/* Voice Profile Card */}
@@ -1159,7 +1157,6 @@ export const WorkspacePage: React.FC = () => {
                 {[
                   { id: 'account', label: 'Account', icon: Users },
                   { id: 'general', label: 'General', icon: Sliders },
-                  { id: 'billing', label: 'Plans & Billing', icon: CreditCard },
                   { id: 'privacy', label: 'Data & Privacy', icon: Shield },
                 ].map(s => {
                   const Icon = s.icon;
@@ -1227,17 +1224,6 @@ export const WorkspacePage: React.FC = () => {
                   </div>
                 )}
 
-                {settingsActiveTab === 'billing' && (
-                  <div className="space-y-3">
-                    <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs">
-                      <p className="font-bold text-[#1A1A1A]">Free Starter Plan</p>
-                      <p className="text-[#706E6B] mt-1">2,000 words per week included.</p>
-                    </div>
-                    <button className="w-full py-2.5 rounded-xl bg-[#6F1025] text-[#F5EBDD] text-xs font-bold hover:bg-[#8F1835] transition shadow-xs">
-                      Upgrade to Unlimited Pro ($10/mo)
-                    </button>
-                  </div>
-                )}
 
                 {settingsActiveTab === 'privacy' && (
                   <div className="space-y-3 text-xs text-[#706E6B]">
