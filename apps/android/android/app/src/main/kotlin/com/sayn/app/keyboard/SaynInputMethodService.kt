@@ -399,7 +399,7 @@ class SaynInputMethodService : InputMethodService() {
             try {
                 val refined = SaynCloudVoiceClient.refineText(
                     textToRefine,
-                    currentInputBinding?.editorInfo?.packageName,
+                    currentInputEditorInfo?.packageName,
                     activeMode
                 )
                 withContext(Dispatchers.Main) {
@@ -1162,7 +1162,7 @@ class SaynInputMethodService : InputMethodService() {
         return try {
             SaynCloudVoiceClient.refineText(
                 rawText = text,
-                activeAppPackage = currentInputBinding?.editorInfo?.packageName,
+                activeAppPackage = currentInputEditorInfo?.packageName,
                 mode = mode
             )
         } catch (e: Exception) {
