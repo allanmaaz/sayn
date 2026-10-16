@@ -1,15 +1,12 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  WRITING_MODES,
   WritingMode,
   WritingTone,
-  RefineResponse,
   SynonymIntensity,
   WordAlternative,
   GrammarIssue,
 } from '@sayn/shared-types';
 import { apiClient } from '../../services/api.js';
-import { DiffViewer } from '../../components/ui/DiffViewer.js';
 import { VoiceModal } from '../voice/VoiceModal.js';
 import { SynonymPopover } from './SynonymPopover.js';
 import { GrammarlyIssueCard } from './GrammarlyIssueCard.js';
@@ -20,39 +17,73 @@ import {
 } from './readability.js';
 import {
   Mic,
+  FileText,
+  Sparkles,
+  Trash2,
   Copy,
   Check,
+  Download,
+  ArrowRight,
+  ChevronDown,
   RotateCcw,
   Sliders,
-  Layers,
-  Sparkles,
   AlertCircle,
-  ShieldAlert,
-  Snowflake,
-  Download,
-  Trash2,
-  CheckCheck,
-  ExternalLink,
-  ChevronRight,
-  Flame,
+  X,
 } from 'lucide-react';
+
+/**
+ * Custom 4-pointed AI Sparkle Star matching the official SAYN mockup
+ */
+const SparkleStarIcon: React.FC<{ className?: string }> = ({ className = 'w-12 h-12' }) => (
+  <svg
+    viewBox="0 0 48 48"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    {/* Main 4-point star with pinched waist */}
+    <path
+      d="M24 4C24 15 15 24 4 24C15 24 24 33 24 44C24 33 33 24 44 24C33 24 24 15 24 4Z"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    {/* Satellite star top-right */}
+    <path
+      d="M38 6C38 9 36 11 33 11C36 11 38 13 38 16C38 13 40 11 43 11C40 11 38 9 38 6Z"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    {/* Satellite star bottom-left */}
+    <path
+      d="M11 33C11 35.5 9.5 37 7 37C9.5 37 11 38.5 11 41C11 38.5 12.5 37 15 37C12.5 37 11 35.5 11 33Z"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
 export const WorkspacePage: React.FC = () => {
   const [sourceText, setSourceText] = useState('');
   const [refinedText, setRefinedText] = useState('');
   const [selectedMode, setSelectedMode] = useState<WritingMode>('standard');
   const [selectedTone, setSelectedTone] = useState<WritingTone>('neutral');
-  const [synonymLevel, setSynonymLevel] = useState<SynonymIntensity>(2);
-  const [freezeWords, setFreezeWords] = useState<string[]>(['SAYN', 'API']);
-  const [newFreezeWord, setNewFreezeWord] = useState('');
-  const [showFreezeDrawer, setShowFreezeDrawer] = useState(false);
+  // 0: Basic, 1: Medium, 2: Extreme (mapped to SynonymIntensity 0, 2, 4)
+  const [synonymStep, setSynonymStep] = useState<number>(1);
+  const [customInstruction, setCustomInstruction] = useState('');
+  const [showCustomPrompt, setShowCustomPrompt] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [showDiff, setShowDiff] = useState(false);
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'edit' | 'inspect'>('edit');
+  const [isInlineRecording, setIsInlineRecording] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   // Grammarly Issues state
   const [grammarIssues, setGrammarIssues] = useState<GrammarIssue[]>([]);
@@ -63,12 +94,19 @@ export const WorkspacePage: React.FC = () => {
     position: { top: number; left: number };
   } | null>(null);
 
-  // Performance metrics
+  const recognitionRef = useRef<any>(null);
+
+  // Performance metrics calculation
   const metrics = useMemo(() => {
     return calculateDocumentMetrics(sourceText, grammarIssues);
   }, [sourceText, grammarIssues]);
 
-  // Run 0ms local heuristic grammar check whenever sourceText changes
+  const refinedWordsCount = useMemo(() => {
+    if (!refinedText.trim()) return 0;
+    return refinedText.trim().split(/\s+/).filter(Boolean).length;
+  }, [refinedText]);
+
+  // Run instant 0ms local heuristic grammar check whenever sourceText changes
   useEffect(() => {
     if (!sourceText.trim()) {
       setGrammarIssues([]);
@@ -87,23 +125,22 @@ export const WorkspacePage: React.FC = () => {
     }
   }, []);
 
-  const handleAddFreezeWord = (e: React.FormEvent) => {
-    e.preventDefault();
-    const clean = newFreezeWord.trim();
-    if (clean && !freezeWords.includes(clean)) {
-      setFreezeWords([...freezeWords, clean]);
-      setNewFreezeWord('');
-    }
-  };
-
-  const handleRemoveFreezeWord = (word: string) => {
-    setFreezeWords(freezeWords.filter((w) => w !== word));
-  };
+  // Keyboard shortcut listener for Voice Dictation (Fn / Option + V)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Fn' || (e.altKey && e.code === 'KeyV')) {
+        e.preventDefault();
+        setIsVoiceOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Paraphrase execution using Groq LPU / Cloudflare
   const handleParaphrase = async () => {
     if (!sourceText.trim()) {
-      setError('Please enter or dictate some text to paraphrase.');
+      setError('Please enter or dictate some text to refine.');
       return;
     }
 
@@ -111,20 +148,22 @@ export const WorkspacePage: React.FC = () => {
     setError(null);
     setActiveAlternative(null);
 
+    const synonymLevel: SynonymIntensity = synonymStep === 0 ? 0 : synonymStep === 1 ? 2 : 4;
+
     try {
       const res = await apiClient.refineText({
         text: sourceText,
         mode: selectedMode,
         tone: selectedTone,
         synonymLevel,
-        freezeWords,
+        freezeWords: ['SAYN', 'API'],
         includeGrammarIssues: true,
         includeAlternatives: true,
+        customInstruction: selectedMode === 'custom' ? customInstruction : undefined,
       });
 
       setRefinedText(res.refinedText);
 
-      // Synthesize QuillBot alternatives if not provided by backend
       if (res.alternatives && res.alternatives.length > 0) {
         setWordAlternatives(res.alternatives);
       } else {
@@ -135,7 +174,7 @@ export const WorkspacePage: React.FC = () => {
         setGrammarIssues(res.issues);
       }
     } catch (err: any) {
-      // Local Fallback Paraphraser
+      // Offline / fallback paraphraser
       const localResult = localParaphraseFallback(sourceText, synonymLevel);
       setRefinedText(localResult);
       generateClientAlternatives(sourceText, localResult);
@@ -200,6 +239,61 @@ export const WorkspacePage: React.FC = () => {
     return out;
   };
 
+  // Inline Dictation Toggle via Web Speech API
+  const toggleInlineDictation = () => {
+    if (isInlineRecording) {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {}
+        recognitionRef.current = null;
+      }
+      setIsInlineRecording(false);
+      return;
+    }
+
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      // Fallback to full VoiceModal
+      setIsVoiceOpen(true);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        setIsInlineRecording(true);
+      };
+
+      recognition.onresult = (event: any) => {
+        let current = '';
+        for (let i = 0; i < event.results.length; i++) {
+          current += event.results[i][0].transcript;
+        }
+        setSourceText(current);
+      };
+
+      recognition.onerror = () => {
+        setIsInlineRecording(false);
+      };
+
+      recognition.onend = () => {
+        setIsInlineRecording(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch {
+      setIsVoiceOpen(true);
+    }
+  };
+
   // Grammarly Accept / Dismiss Handlers
   const handleAcceptIssue = (issue: GrammarIssue) => {
     const updated =
@@ -217,7 +311,6 @@ export const WorkspacePage: React.FC = () => {
   const handleAcceptAllIssues = () => {
     if (grammarIssues.length === 0) return;
     let text = sourceText;
-    // Apply in reverse offset order so earlier offsets remain valid
     const sorted = [...grammarIssues].sort((a, b) => b.startOffset - a.startOffset);
     for (const issue of sorted) {
       text =
@@ -260,289 +353,329 @@ export const WorkspacePage: React.FC = () => {
 
   return (
     <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-      {/* Top Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Top Header Section */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center space-x-2">
-            <h1 className="text-2xl font-black tracking-tight text-sayn-dark-text">
-              SAYN AI Studio
-            </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-sayn-dark-accent/15 text-sayn-dark-accent border border-sayn-dark-accent/30">
-              QuillBot + Grammarly + Voice AI
-            </span>
-          </div>
-          <p className="text-xs text-sayn-dark-secondary mt-1">
-            Real-time multi-pillar grammar linting, synonym depth control, and sub-second speech intelligence.
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#F5EBDD]">
+            AI Studio
+          </h1>
+          <p className="text-xs sm:text-sm text-[#D6C7B2]/80 mt-1">
+            Turn your rough thoughts into clear, refined writing.
           </p>
         </div>
 
-        {/* Global Dictate & Actions */}
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={() => setIsVoiceOpen(true)}
-            className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold text-black bg-sayn-dark-accent hover:brightness-110 shadow-lg shadow-sayn-dark-accent/20 transition-all"
-          >
-            <Mic className="w-4 h-4 text-black stroke-[2.5]" />
-            <span>Voice Dictation (Fn)</span>
-          </button>
-        </div>
+        {/* Top-Right Voice Dictation Pill Button */}
+        <button
+          onClick={() => setIsVoiceOpen(true)}
+          className="self-start sm:self-auto inline-flex items-center space-x-2 px-4 sm:px-5 py-2.5 rounded-full text-xs sm:text-sm font-semibold text-[#F5EBDD] bg-[#6F1025] hover:bg-[#8F1835] active:scale-95 shadow-[0_4px_16px_rgba(111,16,37,0.35)] transition-all"
+        >
+          <Mic className="w-4 h-4 stroke-[2.2]" />
+          <span>Voice Dictation (Fn)</span>
+        </button>
       </div>
 
-      {/* QuillBot Controls Bar (Modes + Synonym Slider + Freeze Words) */}
-      <div className="p-4 rounded-2xl bg-sayn-dark-surface dark:bg-sayn-dark-surface light:bg-sayn-light-surface border border-sayn-dark-divider glass-obsidian space-y-4">
-        {/* Modes Pills */}
-        <div className="flex items-center justify-between gap-4 overflow-x-auto pb-1 scrollbar-none">
-          <div className="flex items-center gap-1.5 flex-nowrap">
-            {Object.values(WRITING_MODES).slice(0, 10).map((mode) => {
-              const isSelected = selectedMode === mode.id;
+      {/* Controls Horizontal Bar (Mode | Synonym Depth | Tone) */}
+      <div className="p-3.5 sm:p-4 rounded-2xl bg-[#14080D] border border-[#2D1219] shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* Left Segment: Mode Selection */}
+        <div className="flex items-center space-x-3">
+          <span className="text-xs font-semibold text-[#8E8278]">Mode</span>
+          <div className="flex items-center p-1 rounded-full bg-[#100709] border border-[#2D1219]">
+            {(['standard', 'fluent', 'custom'] as const).map((mode) => {
+              const isSelected = selectedMode === mode;
+              const label =
+                mode === 'standard' ? 'Standard' : mode === 'fluent' ? 'Fluent' : 'Custom';
               return (
                 <button
-                  key={mode.id}
+                  key={mode}
                   onClick={() => {
-                    setSelectedMode(mode.id);
-                    if (sourceText.trim()) handleParaphrase();
+                    setSelectedMode(mode);
+                    if (mode === 'custom') {
+                      setShowCustomPrompt(true);
+                    } else {
+                      setShowCustomPrompt(false);
+                      if (sourceText.trim()) handleParaphrase();
+                    }
                   }}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+                  className={`px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all ${
                     isSelected
-                      ? 'bg-sayn-dark-accent text-black shadow-md shadow-sayn-dark-accent/25'
-                      : 'bg-sayn-dark-surface2 text-sayn-dark-secondary border border-white/5 hover:text-white'
+                      ? 'bg-[#6F1025] text-[#F5EBDD] font-semibold shadow-sm'
+                      : 'text-[#8E8278] hover:text-[#D6C7B2]'
                   }`}
                 >
-                  {mode.label}
+                  {label}
                 </button>
               );
             })}
           </div>
-
-          {/* Freeze Words Drawer Toggle */}
-          <button
-            onClick={() => setShowFreezeDrawer(!showFreezeDrawer)}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap border transition-all ${
-              freezeWords.length > 0
-                ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30'
-                : 'bg-sayn-dark-surface2 text-sayn-dark-muted border-sayn-dark-divider'
-            }`}
-          >
-            <Snowflake className="w-3.5 h-3.5" />
-            <span>Freeze Words ({freezeWords.length})</span>
-          </button>
         </div>
 
-        {/* Synonym Slider & Tone Selector */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-3 border-t border-sayn-dark-divider text-xs">
-          {/* Synonym Slider */}
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-1.5 text-sayn-dark-secondary font-semibold">
-              <Flame className="w-4 h-4 text-sayn-dark-accent" />
-              <span>Synonym Depth:</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-[10px] text-sayn-dark-muted">Basic</span>
+        {/* Divider 1 */}
+        <div className="hidden md:block h-7 w-[1px] bg-[#3D1520]" />
+
+        {/* Center Segment: Synonym Depth Slider */}
+        <div className="flex items-center space-x-3 sm:space-x-4">
+          <span className="text-xs font-semibold text-[#8E8278] whitespace-nowrap">
+            Synonym Depth
+          </span>
+          <div className="flex flex-col space-y-1.5 w-44 sm:w-56">
+            {/* Range Track with white thumb */}
+            <div className="relative flex items-center h-4 cursor-pointer select-none">
               <input
                 type="range"
                 min="0"
-                max="4"
+                max="2"
                 step="1"
-                value={synonymLevel}
+                value={synonymStep}
                 onChange={(e) => {
-                  setSynonymLevel(Number(e.target.value) as SynonymIntensity);
+                  setSynonymStep(Number(e.target.value));
                   if (sourceText.trim()) handleParaphrase();
                 }}
-                className="w-32 h-1.5 bg-sayn-dark-surface2 rounded-lg appearance-none cursor-pointer accent-sayn-dark-accent"
+                className="w-full h-1 bg-[#3D1520] rounded-full appearance-none cursor-pointer accent-[#F5EBDD]"
               />
-              <span className="text-[10px] text-sayn-dark-muted">Extreme</span>
-              <span className="px-2 py-0.5 rounded-md bg-sayn-dark-accent/15 text-sayn-dark-accent font-bold text-[10px]">
-                {['Minimal', 'Low', 'Medium', 'High', 'Maximum'][synonymLevel]}
-              </span>
+            </div>
+            {/* Step Labels */}
+            <div className="flex justify-between text-[11px] font-medium text-[#8E8278]">
+              <button
+                type="button"
+                onClick={() => {
+                  setSynonymStep(0);
+                  if (sourceText.trim()) handleParaphrase();
+                }}
+                className={`transition-colors ${
+                  synonymStep === 0 ? 'text-[#F5EBDD] font-bold' : 'hover:text-[#D6C7B2]'
+                }`}
+              >
+                Basic
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSynonymStep(1);
+                  if (sourceText.trim()) handleParaphrase();
+                }}
+                className={`transition-colors ${
+                  synonymStep === 1
+                    ? 'text-[#F5EBDD] font-bold underline underline-offset-4 decoration-[#6F1025]'
+                    : 'hover:text-[#D6C7B2]'
+                }`}
+              >
+                Medium
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSynonymStep(2);
+                  if (sourceText.trim()) handleParaphrase();
+                }}
+                className={`transition-colors ${
+                  synonymStep === 2 ? 'text-[#F5EBDD] font-bold' : 'hover:text-[#D6C7B2]'
+                }`}
+              >
+                Extreme
+              </button>
             </div>
           </div>
+        </div>
 
-          {/* Tone Selector */}
-          <div className="flex items-center space-x-2">
-            <span className="text-sayn-dark-muted font-medium">Tone:</span>
+        {/* Divider 2 */}
+        <div className="hidden md:block h-7 w-[1px] bg-[#3D1520]" />
+
+        {/* Right Segment: Tone Dropdown Selector */}
+        <div className="flex items-center space-x-3">
+          <span className="text-xs font-semibold text-[#8E8278]">Tone</span>
+          <div className="relative">
             <select
               value={selectedTone}
               onChange={(e) => {
                 setSelectedTone(e.target.value as WritingTone);
                 if (sourceText.trim()) handleParaphrase();
               }}
-              className="px-3 py-1.5 rounded-lg bg-sayn-dark-surface2 border border-sayn-dark-divider text-sayn-dark-text focus:outline-none font-medium"
+              className="appearance-none bg-[#100709] border border-[#3D1520] hover:border-[#6F1025] text-[#F5EBDD] pl-4 pr-9 py-1.5 rounded-full text-xs sm:text-sm font-medium focus:outline-none cursor-pointer transition-colors"
             >
-              <option value="neutral">Neutral Flow</option>
+              <option value="neutral">Neutral</option>
               <option value="professional">Professional</option>
-              <option value="casual">Casual & Relaxed</option>
-              <option value="friendly">Friendly & Warm</option>
-              <option value="confident">Direct & Confident</option>
-              <option value="academic">Academic & Formal</option>
+              <option value="casual">Casual</option>
+              <option value="academic">Academic</option>
+              <option value="confident">Confident</option>
+              <option value="friendly">Friendly</option>
+              <option value="direct">Direct</option>
             </select>
+            <ChevronDown className="w-3.5 h-3.5 text-[#8E8278] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
         </div>
-
-        {/* Freeze Words Drawer Content */}
-        {showFreezeDrawer && (
-          <div className="p-3 rounded-xl bg-sayn-dark-surface2/60 border border-sayn-dark-divider space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-sayn-dark-text flex items-center space-x-1.5">
-                <Snowflake className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Protected / Freeze Words (QuillBot will NOT alter these)</span>
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {freezeWords.map((word) => (
-                <span
-                  key={word}
-                  className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-mono font-medium"
-                >
-                  <span>{word}</span>
-                  <button
-                    onClick={() => handleRemoveFreezeWord(word)}
-                    className="hover:text-red-400 transition-colors"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-            <form onSubmit={handleAddFreezeWord} className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Lock a word or acronym (e.g. Kubernetes, SAYN)..."
-                value={newFreezeWord}
-                onChange={(e) => setNewFreezeWord(e.target.value)}
-                className="flex-1 px-3 py-1.5 rounded-lg bg-sayn-dark-surface border border-sayn-dark-divider text-xs text-sayn-dark-text focus:outline-none"
-              />
-              <button
-                type="submit"
-                className="px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-bold hover:bg-cyan-500/30 transition-all"
-              >
-                + Lock Word
-              </button>
-            </form>
-          </div>
-        )}
       </div>
 
+      {/* Expandable Custom Prompt Input (when Custom Mode is selected) */}
+      {selectedMode === 'custom' && showCustomPrompt && (
+        <div className="p-3.5 rounded-2xl bg-[#14080D] border border-[#3D1520] flex items-center gap-3 animate-in fade-in duration-150">
+          <input
+            type="text"
+            placeholder="Enter custom instructions (e.g. make it punchy, bullet points, executive brief)..."
+            value={customInstruction}
+            onChange={(e) => setCustomInstruction(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleParaphrase();
+            }}
+            className="flex-1 px-4 py-2 rounded-xl bg-[#100709] border border-[#2D1219] text-xs sm:text-sm text-[#F5EBDD] placeholder:text-[#5E554C] focus:outline-none focus:border-[#6F1025]"
+          />
+          <button
+            onClick={handleParaphrase}
+            className="px-4 py-2 rounded-xl bg-[#6F1025] hover:bg-[#8F1835] text-xs font-semibold text-[#F5EBDD] transition-all"
+          >
+            Apply
+          </button>
+        </div>
+      )}
+
+      {/* Optional Error Alert Banner */}
+      {error && (
+        <div className="p-3 rounded-xl bg-red-950/40 border border-red-500/30 text-red-300 text-xs flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+          <button onClick={() => setError(null)} className="p-1 text-red-300 hover:text-white">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Main Dual-Pane Workstation */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Pane: Input & Grammarly 4-Pillar Linter */}
-        <div className="flex flex-col rounded-2xl bg-sayn-dark-surface dark:bg-sayn-dark-surface light:bg-sayn-light-surface border border-sayn-dark-divider glass-obsidian overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-sayn-dark-divider bg-sayn-dark-surface2/30">
-            <div className="flex items-center space-x-2">
-              <span className="text-xs font-black uppercase tracking-wider text-sayn-dark-secondary">
-                Input Text
-              </span>
-              {grammarIssues.length > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/15 text-red-400 border border-red-500/30">
-                  {grammarIssues.length} issues
-                </span>
-              )}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative items-stretch">
+        {/* Left Card: Input Text */}
+        <div className="flex flex-col rounded-2xl sm:rounded-3xl bg-[#14080D] border border-[#2D1219] p-5 sm:p-6 shadow-xl min-h-[460px] justify-between transition-all">
+          {/* Card Top */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 text-[#F5EBDD]">
+              <FileText className="w-4 h-4 text-[#D6C7B2]" />
+              <span className="font-bold text-sm sm:text-base tracking-wide">Input Text</span>
             </div>
 
-            <div className="flex items-center space-x-2 text-xs">
-              {grammarIssues.length > 0 && (
-                <button
-                  onClick={handleAcceptAllIssues}
-                  className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-sayn-dark-accent/15 text-sayn-dark-accent border border-sayn-dark-accent/30 font-bold hover:bg-sayn-dark-accent/25 transition-all"
-                >
-                  <CheckCheck className="w-3.5 h-3.5" />
-                  <span>Accept All ({grammarIssues.length})</span>
-                </button>
-              )}
-              <button
-                onClick={() => setSourceText('')}
-                className="text-sayn-dark-muted hover:text-red-400 p-1"
-                title="Clear input"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
+            <button
+              onClick={() => {
+                setSourceText('');
+                setGrammarIssues([]);
+              }}
+              className="inline-flex items-center space-x-1.5 text-xs text-[#8E8278] hover:text-[#FF453A] transition-colors"
+              title="Clear text"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Clear</span>
+            </button>
           </div>
 
-          {/* Text Area */}
-          <div className="p-4 flex-1 min-h-[300px] flex flex-col">
+          {/* Card Body (Text Area) */}
+          <div className="my-4 flex-1 flex flex-col rounded-xl sm:rounded-2xl bg-[#0E0507]/80 border border-[#230C13] p-4 focus-within:border-[#6F1025]/50 transition-colors">
             <textarea
               value={sourceText}
               onChange={(e) => setSourceText(e.target.value)}
-              placeholder="Paste or dictate your text here to begin paraphrasing and grammar inspection..."
-              className="w-full flex-1 bg-transparent resize-none border-none outline-none text-sayn-dark-text text-sm sm:text-base leading-relaxed placeholder:text-sayn-dark-muted font-sans"
-              rows={11}
+              placeholder="Paste or dictate your text here..."
+              rows={12}
+              className="w-full flex-1 bg-transparent resize-none outline-none border-none text-[#F5EBDD] placeholder:text-[#5E554C] text-sm sm:text-base leading-relaxed font-sans"
             />
           </div>
 
-          {/* Grammarly Issues Drawer (if issues present) */}
-          {grammarIssues.length > 0 && (
-            <div className="p-4 border-t border-sayn-dark-divider bg-sayn-dark-surface2/20 space-y-2.5 max-h-64 overflow-y-auto">
-              <div className="flex items-center justify-between text-xs font-bold text-sayn-dark-muted uppercase tracking-wider">
-                <span>Grammarly Suggestions ({grammarIssues.length})</span>
-              </div>
-              <div className="space-y-2">
-                {grammarIssues.map((issue) => (
-                  <GrammarlyIssueCard
-                    key={issue.id}
-                    issue={issue}
-                    onAccept={handleAcceptIssue}
-                    onDismiss={handleDismissIssue}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Bottom Action Bar */}
-          <div className="flex items-center justify-between px-4 py-3 border-t border-sayn-dark-divider bg-sayn-dark-surface2/40 text-xs">
-            <span className="text-sayn-dark-muted">
-              {metrics.wordCount} words • {metrics.characterCount} chars
+          {/* Card Footer */}
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-xs text-[#8E8278]">
+              {metrics.wordCount} {metrics.wordCount === 1 ? 'word' : 'words'}
             </span>
+
             <button
-              onClick={handleParaphrase}
-              disabled={isLoading || !sourceText.trim()}
-              className="inline-flex items-center space-x-2 px-5 py-2 rounded-xl bg-sayn-dark-accent text-black font-extrabold shadow-md hover:brightness-110 disabled:opacity-40 transition-all"
+              onClick={toggleInlineDictation}
+              className={`inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                isInlineRecording
+                  ? 'bg-[#FF453A] text-white animate-pulse'
+                  : 'bg-[#6F1025] hover:bg-[#8F1835] text-[#F5EBDD] shadow-sm active:scale-95'
+              }`}
             >
-              <Sparkles className="w-4 h-4 stroke-[2.5]" />
-              <span>{isLoading ? 'Paraphrasing...' : 'Paraphrase (Groq 21ms)'}</span>
+              <Mic className="w-3.5 h-3.5" />
+              <span>{isInlineRecording ? 'Listening...' : 'Dictate'}</span>
             </button>
           </div>
         </div>
 
-        {/* Right Pane: Paraphrased Output + QuillBot Word Synonyms */}
-        <div className="flex flex-col rounded-2xl bg-sayn-dark-surface dark:bg-sayn-dark-surface light:bg-sayn-light-surface border border-sayn-dark-divider glass-obsidian overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-sayn-dark-divider bg-sayn-dark-surface2/30">
-            <div className="flex items-center space-x-2">
-              <span className="text-xs font-black uppercase tracking-wider text-sayn-dark-accent">
-                Paraphrased Output
-              </span>
-              <span className="text-[10px] text-sayn-dark-muted">
-                (Click highlighted words to view synonyms)
-              </span>
+        {/* Center Floating Arrow Button (Desktop absolute, Mobile centered) */}
+        <button
+          onClick={handleParaphrase}
+          disabled={isLoading || !sourceText.trim()}
+          className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-[#5B101E] hover:bg-[#6F1025] text-[#F5EBDD] border border-[#7E1B2D] shadow-[0_4px_24px_rgba(111,16,37,0.5)] items-center justify-center transition-all hover:scale-110 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 cursor-pointer"
+          title="Refine text"
+        >
+          {isLoading ? (
+            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <ArrowRight className="w-5 h-5 stroke-[2.5]" />
+          )}
+        </button>
+
+        {/* Mobile Stack Arrow */}
+        <div className="flex lg:hidden justify-center my-[-8px] z-10">
+          <button
+            onClick={handleParaphrase}
+            disabled={isLoading || !sourceText.trim()}
+            className="w-11 h-11 rounded-full bg-[#5B101E] hover:bg-[#6F1025] text-[#F5EBDD] border border-[#7E1B2D] shadow-lg flex items-center justify-center transition-all active:scale-95 disabled:opacity-50"
+            title="Refine text"
+          >
+            {isLoading ? (
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <ArrowRight className="w-4 h-4 stroke-[2.5] rotate-90" />
+            )}
+          </button>
+        </div>
+
+        {/* Right Card: Refined Output */}
+        <div className="flex flex-col rounded-2xl sm:rounded-3xl bg-[#14080D] border border-[#2D1219] p-5 sm:p-6 shadow-xl min-h-[460px] justify-between transition-all">
+          {/* Card Top */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 text-[#F5EBDD]">
+              <Sparkles className="w-4 h-4 text-[#A83249]" />
+              <span className="font-bold text-sm sm:text-base tracking-wide">Refined Output</span>
             </div>
 
-            <div className="flex items-center space-x-2 text-xs">
+            <div className="flex items-center space-x-2">
               <button
                 onClick={handleCopy}
                 disabled={!refinedText}
-                className="inline-flex items-center space-x-1 px-3 py-1 rounded-lg bg-sayn-dark-surface2 border border-sayn-dark-divider hover:border-sayn-dark-accent text-sayn-dark-text font-medium disabled:opacity-40 transition-all"
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-[#240F16] border border-[#3D1520] hover:border-[#6F1025] text-xs font-semibold text-[#F5EBDD] disabled:opacity-40 transition-all"
               >
-                {copied ? <Check className="w-3.5 h-3.5 text-sayn-dark-accent" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copied ? 'Copied' : 'Copy'}</span>
+                {copied ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-green-400" />
+                    <span className="text-green-400">Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copy</span>
+                  </>
+                )}
               </button>
 
               <button
                 onClick={handleExportText}
                 disabled={!refinedText}
-                className="p-1 text-sayn-dark-muted hover:text-sayn-dark-text transition-colors"
-                title="Export as Text File"
+                className="p-1.5 rounded-xl bg-[#240F16] border border-[#3D1520] hover:border-[#6F1025] text-[#F5EBDD] disabled:opacity-40 transition-all"
+                title="Download Output"
               >
-                <Download className="w-4 h-4" />
+                <Download className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
-          {/* Interactive Output Area */}
-          <div className="p-4 flex-1 min-h-[300px] flex flex-col relative text-sm sm:text-base leading-relaxed text-sayn-dark-text">
-            {refinedText ? (
-              <div className="space-y-3">
+          {/* Card Body */}
+          <div className="my-4 flex-1 flex flex-col rounded-xl sm:rounded-2xl bg-[#0E0507]/80 border border-[#230C13] p-4 relative overflow-y-auto min-h-[300px]">
+            {isLoading ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-8 space-y-3">
+                <div className="w-8 h-8 rounded-full border-2 border-[#6F1025] border-t-[#F5EBDD] animate-spin" />
+                <p className="text-sm font-medium text-[#F5EBDD]">Refining your writing with AI...</p>
+                <p className="text-xs text-[#8E8278]">
+                  Enhancing vocabulary, cadence, and grammatical clarity
+                </p>
+              </div>
+            ) : refinedText ? (
+              <div className="text-sm sm:text-base leading-relaxed text-[#F5EBDD] select-text">
                 <p>
                   {refinedText.split(/\s+/).map((word, idx) => {
                     const altMatch = wordAlternatives.find((a) => a.wordIndex === idx);
@@ -568,11 +701,13 @@ export const WorkspacePage: React.FC = () => {
                 </p>
               </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-sayn-dark-muted">
-                <Sparkles className="w-10 h-10 text-sayn-dark-accent/30 mb-3" />
-                <p className="text-sm font-semibold">Your paraphrased prose will appear here</p>
-                <p className="text-xs text-sayn-dark-muted mt-1">
-                  Adjust the Synonym Slider or choose any mode above to transform your text.
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-[#8E8278] my-auto">
+                <SparkleStarIcon className="w-12 h-12 text-[#D6C7B2]/40 mb-3" />
+                <p className="text-sm sm:text-base font-semibold text-[#F5EBDD]">
+                  Your refined text will appear here
+                </p>
+                <p className="text-xs sm:text-sm text-[#8E8278] mt-1">
+                  Enter or dictate your text to get started.
                 </p>
               </div>
             )}
@@ -588,28 +723,75 @@ export const WorkspacePage: React.FC = () => {
             )}
           </div>
 
-          {/* Bottom Actions Bar */}
-          <div className="flex items-center justify-between px-4 py-3 border-t border-sayn-dark-divider bg-sayn-dark-surface2/40 text-xs">
-            <span className="text-sayn-dark-muted">
-              {refinedText ? `${refinedText.split(/\s+/).filter(Boolean).length} words` : '0 words'}
+          {/* Card Footer */}
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-xs text-[#8E8278]">
+              {refinedWordsCount} {refinedWordsCount === 1 ? 'word' : 'words'}
             </span>
 
-            <button
-              onClick={() => setSourceText(refinedText)}
-              disabled={!refinedText}
-              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-sayn-dark-surface2 border border-sayn-dark-divider text-sayn-dark-text font-semibold hover:border-sayn-dark-accent disabled:opacity-40 transition-all"
-            >
-              <RotateCcw className="w-3.5 h-3.5 text-sayn-dark-accent" />
-              <span>Use as Input</span>
-            </button>
+            {refinedText && (
+              <button
+                onClick={() => setSourceText(refinedText)}
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-[#240F16] border border-[#3D1520] hover:border-[#6F1025] text-xs font-semibold text-[#F5EBDD] transition-all"
+                title="Use refined text as input"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-[#A83249]" />
+                <span>Use as Input</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Document Performance Score & Metrics Dock */}
-      <ScoreMetricsDock metrics={metrics} />
+      {/* Expandable Writing Quality & Diagnostics Strip */}
+      <div className="pt-2">
+        <button
+          onClick={() => setShowAnalytics(!showAnalytics)}
+          className="flex items-center space-x-2 text-xs font-semibold text-[#8E8278] hover:text-[#F5EBDD] transition-colors"
+        >
+          <Sliders className="w-3.5 h-3.5" />
+          <span>
+            Writing Quality & Diagnostics (Score {metrics.overallScore} • {grammarIssues.length}{' '}
+            {grammarIssues.length === 1 ? 'suggestion' : 'suggestions'})
+          </span>
+          <ChevronDown
+            className={`w-3.5 h-3.5 transition-transform ${showAnalytics ? 'rotate-180' : ''}`}
+          />
+        </button>
 
-      {/* Voice Dictation Modal */}
+        {showAnalytics && (
+          <div className="mt-4 space-y-4 animate-in fade-in duration-200">
+            <ScoreMetricsDock metrics={metrics} />
+            {grammarIssues.length > 0 && (
+              <div className="p-4 rounded-2xl bg-[#14080D] border border-[#2D1219] space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#F5EBDD] uppercase tracking-wider">
+                    Grammar & Flow Suggestions ({grammarIssues.length})
+                  </span>
+                  <button
+                    onClick={handleAcceptAllIssues}
+                    className="text-xs font-bold text-[#A83249] hover:underline"
+                  >
+                    Accept All
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                  {grammarIssues.map((issue) => (
+                    <GrammarlyIssueCard
+                      key={issue.id}
+                      issue={issue}
+                      onAccept={handleAcceptIssue}
+                      onDismiss={handleDismissIssue}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Full Voice Dictation Modal */}
       {isVoiceOpen && (
         <VoiceModal
           isOpen={isVoiceOpen}
