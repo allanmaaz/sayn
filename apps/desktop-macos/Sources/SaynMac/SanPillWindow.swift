@@ -6,9 +6,9 @@ final class SanPillWindow: NSPanel {
     override var canBecomeMain: Bool { false }
     
     init(contentView: NSView) {
-        // Canvas width 440 x 100 so shadows feather out naturally with zero clipping
+        // Canvas width 340 x 90 so shadows feather out naturally with zero clipping
         super.init(
-            contentRect: NSRect(x: 0, y: 0, width: 440, height: 100),
+            contentRect: NSRect(x: 0, y: 0, width: 340, height: 90),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -82,56 +82,9 @@ struct SanPillView: View {
                 // 1. SAYN Brand Icon
                 SanLogoBadge()
                 
-                // 2. Interactive Mode Chips: [ Dictate | Prompt | Translate | Code ]
-                HStack(spacing: 4) {
-                    ModeChip(
-                        title: "Dictate",
-                        isSelected: waveformEngine.currentMode == .dictate,
-                        activeColor: deepMaroon,
-                        roseColor: roseMaroon,
-                        creamColor: warmCream
-                    ) {
-                        waveformEngine.setMode(.dictate)
-                    }
-                    
-                    ModeChip(
-                        title: "Prompt",
-                        isSelected: waveformEngine.currentMode == .prompt,
-                        activeColor: deepMaroon,
-                        roseColor: roseMaroon,
-                        creamColor: warmCream
-                    ) {
-                        waveformEngine.setMode(.prompt)
-                    }
-                    
-                    ModeChip(
-                        title: "Translate",
-                        isSelected: waveformEngine.currentMode == .translate,
-                        activeColor: deepMaroon,
-                        roseColor: roseMaroon,
-                        creamColor: warmCream
-                    ) {
-                        waveformEngine.setMode(.translate)
-                    }
-                    
-                    ModeChip(
-                        title: "Code",
-                        isSelected: waveformEngine.currentMode == .code,
-                        activeColor: deepMaroon,
-                        roseColor: roseMaroon,
-                        creamColor: warmCream
-                    ) {
-                        waveformEngine.setMode(.code)
-                    }
-                }
-                
-                Divider()
-                    .frame(height: 18)
-                    .background(roseMaroon.opacity(0.35))
-                
-                // 3. Center Activity: Soundwave during speaking OR Processing Status
+                // 2. Center Activity: Soundwave during speaking OR Processing Status
                 if waveformEngine.isProcessing {
-                    HStack(spacing: 7) {
+                    HStack(spacing: 8) {
                         ZStack {
                             Circle()
                                 .fill(roseMaroon.opacity(dotPulse ? 0.45 : 0.2))
@@ -148,28 +101,43 @@ struct SanPillView: View {
                         }
                         
                         Text(waveformEngine.currentMode.statusTitle)
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
                             .foregroundColor(warmCream)
-                            .tracking(0.15)
+                            .tracking(0.2)
                     }
                     .transition(.opacity)
                 } else {
-                    // Audio Equalizer Waveform Bars in Soft Rose-Maroon and Warm Cream
-                    HStack(spacing: 2.5) {
-                        ForEach(0..<8, id: \.self) { index in
-                            RoundedRectangle(cornerRadius: 1.5)
-                                .fill(index % 2 == 0 ? roseMaroon : warmCream)
-                                .frame(width: 2.5, height: CGFloat(max(4, waveformEngine.audioLevels[index] * 20)))
-                                .animation(.easeOut(duration: 0.08), value: waveformEngine.audioLevels[index])
+                    HStack(spacing: 8) {
+                        // Audio Equalizer Waveform Bars in Soft Rose-Maroon and Warm Cream
+                        HStack(spacing: 2.5) {
+                            ForEach(0..<8, id: \.self) { index in
+                                RoundedRectangle(cornerRadius: 1.5)
+                                    .fill(index % 2 == 0 ? roseMaroon : warmCream)
+                                    .frame(width: 2.5, height: CGFloat(max(4, waveformEngine.audioLevels[index] * 20)))
+                                    .animation(.easeOut(duration: 0.08), value: waveformEngine.audioLevels[index])
+                            }
+                        }
+                        .frame(width: 36, height: 22)
+                        
+                        if !transcriptText.isEmpty {
+                            Text(transcriptText)
+                                .font(.system(size: 13, weight: .medium, design: .rounded))
+                                .foregroundColor(warmCream)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                                .frame(maxWidth: 130, alignment: .leading)
+                        } else {
+                            Text("Listening...")
+                                .font(.system(size: 13, weight: .medium, design: .rounded))
+                                .foregroundColor(mutedCream.opacity(0.85))
                         }
                     }
-                    .frame(width: 36, height: 22)
                     .transition(.opacity)
                 }
                 
-                Spacer(minLength: 2)
+                Spacer(minLength: 4)
                 
-                // 4. Minimal Dismiss Button [ Close ]
+                // 3. Minimal Dismiss Button [ Close ]
                 Button(action: onCancel) {
                     ZStack {
                         Circle()
@@ -187,14 +155,14 @@ struct SanPillView: View {
                     }
                 }
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 14)
             .padding(.vertical, 8)
-            .frame(width: 388, height: 50)
+            .frame(width: 260, height: 48)
             .background(
-                RoundedRectangle(cornerRadius: 25, style: .continuous)
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
                     .fill(nearBlack.opacity(0.96))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 25, style: .continuous)
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
                             .stroke(
                                 LinearGradient(
                                     stops: [
@@ -214,35 +182,6 @@ struct SanPillView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .animation(.spring(response: 0.25, dampingFraction: 0.8), value: waveformEngine.isProcessing)
-    }
-}
-
-// Mode Chip Component
-struct ModeChip: View {
-    let title: String
-    let isSelected: Bool
-    let activeColor: Color
-    let roseColor: Color
-    let creamColor: Color
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 11, weight: isSelected ? .bold : .medium, design: .rounded))
-                .foregroundColor(isSelected ? creamColor : creamColor.opacity(0.65))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(isSelected ? activeColor : Color.white.opacity(0.05))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .stroke(isSelected ? roseColor : Color.clear, lineWidth: 1)
-                        )
-                )
-        }
-        .buttonStyle(PlainButtonStyle())
     }
 }
 
