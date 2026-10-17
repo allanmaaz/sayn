@@ -20,7 +20,7 @@ class _VoiceFlowScreenState extends State<VoiceFlowScreen>
   late AnimationController _pulseController;
   bool _isDictating = false;
   bool _isPolishing = false;
-  String _selectedTone = 'standard';
+  String _selectedTone = 'mammals';
   String _polishedResult = '';
   int _lastLatencyMs = 0;
   bool _copied = false;
@@ -28,6 +28,7 @@ class _VoiceFlowScreenState extends State<VoiceFlowScreen>
   bool _keyboardActive = false;
 
   final List<Map<String, String>> _tones = const [
+    {'id': 'mammals', 'label': 'Mammals'},
     {'id': 'standard', 'label': 'Standard'},
     {'id': 'professional', 'label': 'Professional'},
     {'id': 'casual', 'label': 'Casual'},
