@@ -43,6 +43,7 @@ object SaynCloudVoiceClient {
             }
 
             val toneInstruction = when (mode?.lowercase()) {
+                "mammals" -> "Human-to-human modern texting. Fix grammar, typos, and formatting flawlessly, but NEVER add passive-aggressive full stops / periods at the end of single sentences or text messages. Keep natural slang and flow."
                 "professional" -> "Polished, executive, articulate, and well-structured."
                 "casual" -> "Natural, friendly, and conversational."
                 "concise", "shorten" -> "Extremely brief, direct, zero fluff."
@@ -57,9 +58,10 @@ object SaynCloudVoiceClient {
                 1. Remove all speech fillers (um, uh, you know, basically, literally, actually, sort of).
                 2. Fix spoken self-corrections (e.g. 'at 2 no wait 3' -> 'at 3').
                 3. Capitalize the first letter and format numbers/currencies properly.
-                4. Natural Human Voice: Do NOT overuse punctuation. Avoid excessive commas, full stops, or underscores. Keep the flow smooth and authentic like a real person.
+                4. Natural Human Voice: Do NOT overuse punctuation. Avoid excessive commas or stiff periods. Keep the flow smooth and authentic like a real person texting.
                 5. Tone style: $toneInstruction
-                6. Output ONLY the polished text with NO quotes, NO explanation, NO markdown, NO underscores.
+                6. If in 'mammals' mode, NEVER put a period (.) at the very end of the final sentence.
+                7. Output ONLY the polished text with NO quotes, NO explanation, NO markdown, NO underscores.
             """.trimIndent()
 
             val payload = JSONObject().apply {
@@ -86,7 +88,10 @@ object SaynCloudVoiceClient {
                 val choices = json.optJSONArray("choices")
                 if (choices != null && choices.length() > 0) {
                     val message = choices.getJSONObject(0).optJSONObject("message")
-                    val content = message?.optString("content")?.trim() ?: ""
+                    var content = message?.optString("content")?.trim() ?: ""
+                    if (mode?.lowercase() == "mammals" && content.endsWith(".")) {
+                        content = content.dropLast(1).trimEnd()
+                    }
                     if (content.isNotBlank()) {
                         return@withContext content
                     }
