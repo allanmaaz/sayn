@@ -334,7 +334,7 @@ class FloatingBubbleService : Service() {
 
                 setOnClickListener {
                     performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                    confirmVoiceDictation()
+                    commitVoiceDictation()
                 }
             }
             addView(confirmCircle)
