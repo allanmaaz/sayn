@@ -518,7 +518,7 @@ class SaynInputMethodService : InputMethodService() {
             ).apply { bottomMargin = dpToPx(4) }
         }
 
-        // 1. Far Left: Sparkle Icon (✨) from Screenshot
+        // 1. Far Left: Sparkle / Quick Action Icon
         val sparkleBtn = FrameLayout(this).apply {
             val sIcon = ImageView(this@SaynInputMethodService).apply {
                 setImageResource(R.drawable.ic_sayn_sparkles)
@@ -530,16 +530,21 @@ class SaynInputMethodService : InputMethodService() {
             isFocusable = false
             setOnClickListener {
                 triggerKeyFeedback("ENTER")
-                openFullAiPanel(activeMode)
+                // Delegate voice & smart polishing to the floating microphone overlay
+                com.sayn.app.overlay.FloatingBubbleService.instance?.let { bubble ->
+                    bubble.updateVisibility(true)
+                } ?: run {
+                    toggleInKeyboardVoice()
+                }
             }
             layoutParams = LinearLayout.LayoutParams(dpToPx(34), dpToPx(34))
         }
 
         val div0 = createDividerView()
 
-        // 2. Candidate Left ("Modern" or prediction)
+        // 2. Candidate Left (Standard word prediction)
         candidateLeft = TextView(this).apply {
-            text = "Modern"
+            text = "I"
             textSize = 14f
             setTextColor(COLOR_WARM_CREAM)
             gravity = Gravity.CENTER
@@ -551,12 +556,7 @@ class SaynInputMethodService : InputMethodService() {
                 val t = text.toString().trim()
                 if (t.isNotEmpty()) {
                     triggerKeyFeedback("SPACE")
-                    if (isPredictionActive) {
-                        commitCandidate(t)
-                    } else {
-                        activeMode = "rewrite"
-                        Toast.makeText(this@SaynInputMethodService, "Modern rewrite active", Toast.LENGTH_SHORT).show()
-                    }
+                    commitCandidate(t)
                 }
             }
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
@@ -564,9 +564,9 @@ class SaynInputMethodService : InputMethodService() {
 
         val div1 = createDividerView()
 
-        // 3. Candidate Center ("Mammals" / signature mode or best prediction)
+        // 3. Candidate Center (Best word prediction)
         candidateCenter = TextView(this).apply {
-            text = "Mammals"
+            text = "the"
             textSize = 14.5f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(COLOR_WARM_CREAM)
@@ -581,12 +581,7 @@ class SaynInputMethodService : InputMethodService() {
                 val t = text.toString().trim()
                 if (t.isNotEmpty()) {
                     triggerKeyFeedback("ENTER")
-                    if (isPredictionActive) {
-                        commitCandidate(t)
-                    } else {
-                        activeMode = "mammals"
-                        Toast.makeText(this@SaynInputMethodService, "Mammals texting mode active", Toast.LENGTH_SHORT).show()
-                    }
+                    commitCandidate(t)
                 }
             }
             layoutParams = LinearLayout.LayoutParams(0, dpToPx(32), 1.2f)
@@ -594,9 +589,9 @@ class SaynInputMethodService : InputMethodService() {
 
         val div2 = createDividerView()
 
-        // 4. Candidate Right ("Android" or prediction)
+        // 4. Candidate Right (Secondary word prediction)
         candidateRight = TextView(this).apply {
-            text = "Android"
+            text = "thanks"
             textSize = 14f
             setTextColor(COLOR_WARM_CREAM)
             gravity = Gravity.CENTER
@@ -608,12 +603,7 @@ class SaynInputMethodService : InputMethodService() {
                 val t = text.toString().trim()
                 if (t.isNotEmpty()) {
                     triggerKeyFeedback("SPACE")
-                    if (isPredictionActive) {
-                        commitCandidate(t)
-                    } else {
-                        activeMode = "casual"
-                        Toast.makeText(this@SaynInputMethodService, "Casual android mode active", Toast.LENGTH_SHORT).show()
-                    }
+                    commitCandidate(t)
                 }
             }
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
@@ -688,10 +678,10 @@ class SaynInputMethodService : InputMethodService() {
 
         val before = ic.getTextBeforeCursor(40, 0)?.toString() ?: ""
 
-        // Case 1: Empty or start of sentence -> Show signature modes from screenshot
+        // Case 1: Empty or start of sentence -> Show standard starter words
         if (before.isEmpty()) {
-            isPredictionActive = false
-            setCandidateTexts("Modern", "Mammals", "Android")
+            isPredictionActive = true
+            setCandidateTexts("I", "The", "Thanks")
             return
         }
 
@@ -747,8 +737,8 @@ class SaynInputMethodService : InputMethodService() {
             }
         }
 
-        isPredictionActive = false
-        setCandidateTexts("Modern", "Mammals", "Android")
+        isPredictionActive = true
+        setCandidateTexts("I", "The", "Thanks")
     }
 
     private fun setCandidateTexts(left: String, center: String, right: String) {

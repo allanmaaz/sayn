@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { detectDevice, DeviceInfo, ALL_DOWNLOAD_OPTIONS } from '../../utils/deviceDetector.js';
+import { TerminalInstall } from '../../components/download/TerminalInstall.js';
+import { AndroidDownloadCard } from '../../components/download/AndroidDownloadCard.js';
 
 export const DownloadPage: React.FC = () => {
   const [device, setDevice] = useState<DeviceInfo | null>(null);
@@ -85,100 +87,56 @@ export const DownloadPage: React.FC = () => {
         </p>
       </div>
 
-      {/* Main Detected OS Card */}
-      {device && (
-        <div className="relative p-7 sm:p-9 rounded-2xl bg-[#1C0B12] border-2 border-[#A83249]/60 shadow-[0_0_50px_rgba(111,16,37,0.35)] mb-14">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="flex items-start space-x-5">
-              <div className="p-4 rounded-2xl bg-[#100709] border border-[#3D1520] flex-shrink-0">
-                {getOsIcon(device.os)}
-              </div>
-              <div>
-                <div className="flex items-center space-x-3">
-                  <h2 className="text-xl sm:text-2xl font-bold text-[#F5EBDD]">
-                    SAYN for {device.osName}
-                  </h2>
-                  <span className="px-3 py-0.5 text-xs font-bold rounded-full bg-[#6F1025] text-[#F5EBDD] border border-[#A83249]">
-                    {device.badgeLabel}
-                  </span>
+      {/* Device Bifurcated Content */}
+      {device?.os === 'android' ? (
+        /* Android-Exclusive View */
+        <div className="space-y-10">
+          <AndroidDownloadCard />
+        </div>
+      ) : (
+        /* Laptop & Desktop View */
+        <div className="space-y-14">
+          {/* Terminal Quick-Install */}
+          <TerminalInstall />
+
+          {/* Grid: Desktop Manual Installer Assets (macOS & Windows ONLY - Android Excluded) */}
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-[#F5EBDD]">Desktop Manual Installers</h3>
+              <span className="text-xs text-[#D6C7B2]">Direct DMG and EXE packages</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {ALL_DOWNLOAD_OPTIONS.filter((opt) => opt.category !== 'Android').map((opt, idx) => (
+                <div
+                  key={idx}
+                  className="p-5 rounded-2xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249] transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-mono px-2 py-0.5 rounded bg-[#240F16] text-[#A83249] border border-[#3D1520]">
+                        {opt.category}
+                      </span>
+                      <span className="text-xs font-mono text-[#D6C7B2]">{opt.format}</span>
+                    </div>
+                    <h4 className="text-sm font-bold text-[#F5EBDD]">{opt.title}</h4>
+                    <p className="text-xs text-[#D6C7B2] mt-1">{opt.arch}</p>
+                    <p className="text-[11px] text-[#A89F91] font-mono mt-1">{opt.fileName}</p>
+                  </div>
+
+                  <button
+                    onClick={() => handleDownload(opt.url)}
+                    className="mt-4 w-full py-2.5 px-3 rounded-full text-xs font-bold bg-[#240F16] hover:bg-[#6F1025] hover:text-[#F5EBDD] text-[#D6C7B2] transition-all flex items-center justify-center space-x-2 border border-[#3D1520]"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download ({opt.tag})</span>
+                  </button>
                 </div>
-                <p className="text-sm text-[#D6C7B2] mt-1.5">
-                  Detected Architecture: <strong className="text-[#F5EBDD]">{device.archName}</strong>
-                </p>
-                <p className="text-xs text-[#A89F91] mt-1 font-mono">
-                  {device.recommendedFileName} • Zero Cost (₹0.00) • Free Forever
-                </p>
-              </div>
-            </div>
-
-            {/* Primary Action Button */}
-            <button
-              onClick={() => handleDownload(device.recommendedDownloadUrl)}
-              className="w-full md:w-auto px-8 py-4 rounded-full font-extrabold text-sm bg-[#F5EBDD] text-[#100709] hover:bg-[#FAF4EB] active:scale-95 transition-all shadow-[0_4px_20px_rgba(245,235,221,0.25)] flex items-center justify-center space-x-2.5 flex-shrink-0"
-            >
-              <Download className="w-5 h-5 stroke-[2.5]" />
-              <span>Download for {device.osName}</span>
-            </button>
-          </div>
-
-          {downloadStarted && (
-            <div className="mt-5 p-3.5 rounded-xl bg-[#6F1025]/30 border border-[#A83249] flex items-center space-x-2 text-xs font-semibold text-[#F5EBDD] animate-in fade-in">
-              <CheckCircle className="w-4 h-4 text-[#30D158] flex-shrink-0" />
-              <span>Download initiated! Open the file once finished to install.</span>
-            </div>
-          )}
-
-          <div className="mt-6 pt-5 border-t border-[#3D1520] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[#D6C7B2]">
-            <div className="flex items-center space-x-2">
-              <Zap className="w-4 h-4 text-[#A83249] flex-shrink-0" />
-              <span>{device.instructions}</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="flex items-center space-x-1 text-[#D6C7B2]">
-                <ShieldCheck className="w-4 h-4 text-[#30D158]" />
-                <span>Code-Signed & Verified</span>
-              </span>
+              ))}
             </div>
           </div>
         </div>
       )}
-
-      {/* Grid: All Other Platforms & Architectures */}
-      <div>
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-[#F5EBDD]">All Platforms & Architectures</h3>
-          <span className="text-xs text-[#D6C7B2]">Universal support for every device</span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {ALL_DOWNLOAD_OPTIONS.map((opt, idx) => (
-            <div
-              key={idx}
-              className="p-5 rounded-2xl bg-[#1C0B12] border border-[#3D1520] hover:border-[#A83249] transition-all flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-[#240F16] text-[#A83249] border border-[#3D1520]">
-                    {opt.category}
-                  </span>
-                  <span className="text-xs font-mono text-[#D6C7B2]">{opt.format}</span>
-                </div>
-                <h4 className="text-sm font-bold text-[#F5EBDD]">{opt.title}</h4>
-                <p className="text-xs text-[#D6C7B2] mt-1">{opt.arch}</p>
-                <p className="text-[11px] text-[#A89F91] font-mono mt-1">{opt.fileName}</p>
-              </div>
-
-              <button
-                onClick={() => handleDownload(opt.url)}
-                className="mt-4 w-full py-2.5 px-3 rounded-full text-xs font-bold bg-[#240F16] hover:bg-[#6F1025] hover:text-[#F5EBDD] text-[#D6C7B2] transition-all flex items-center justify-center space-x-2 border border-[#3D1520]"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Download ({opt.tag})</span>
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
 
       {/* Web PWA Card */}
       <div className="mt-14 p-7 rounded-2xl bg-gradient-to-r from-[#1C0B12] to-[#14080D] border border-[#3D1520] flex flex-col sm:flex-row items-center justify-between gap-4">

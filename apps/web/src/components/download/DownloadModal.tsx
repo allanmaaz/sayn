@@ -13,6 +13,8 @@ import {
   Laptop,
 } from 'lucide-react';
 import { detectDevice, DeviceInfo, ALL_DOWNLOAD_OPTIONS } from '../../utils/deviceDetector.js';
+import { TerminalInstall } from './TerminalInstall.js';
+import { AndroidDownloadCard } from './AndroidDownloadCard.js';
 
 interface DownloadModalProps {
   isOpen: boolean;
@@ -96,96 +98,56 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({ isOpen, onClose })
 
         {/* Content */}
         <div className="p-6 overflow-y-auto space-y-6">
-          {/* Main Detected Device Card */}
-          <div className="relative p-6 rounded-2xl bg-[#1C0B12] border-2 border-[#A83249]/50 shadow-[0_0_35px_rgba(111,16,37,0.3)]">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-start space-x-4">
-                <div className="p-3.5 rounded-xl bg-[#100709] border border-[#3D1520]">
-                  {getOsIcon(device.os)}
-                </div>
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h3 className="text-lg font-bold text-[#F5EBDD]">
-                      SAYN for {device.osName}
-                    </h3>
-                    <span className="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-[#6F1025] text-[#F5EBDD] border border-[#A83249]">
-                      {device.badgeLabel}
-                    </span>
-                  </div>
-                  <p className="text-xs text-[#D6C7B2] mt-1">
-                    Detected Architecture: <span className="text-[#F5EBDD] font-bold">{device.archName}</span>
-                  </p>
-                  <p className="text-xs text-[#A89F91] mt-0.5">
-                    File: <span className="font-mono text-[#D6C7B2]">{device.recommendedFileName}</span> • Free & Unlimited
-                  </p>
-                </div>
-              </div>
+          {device.os === 'android' ? (
+            /* Android-Exclusive View */
+            <AndroidDownloadCard />
+          ) : (
+            /* Laptop / Desktop View */
+            <div className="space-y-6">
+              <TerminalInstall />
 
-              {/* Primary Download Button in Warm Cream */}
-              <button
-                onClick={() => handleDownload(device.recommendedDownloadUrl)}
-                className="w-full sm:w-auto px-7 py-3.5 rounded-full font-bold text-sm bg-[#F5EBDD] text-[#100709] hover:bg-[#FAF4EB] active:scale-95 transition-all shadow-[0_4px_20px_rgba(245,235,221,0.2)] flex items-center justify-center space-x-2 flex-shrink-0"
-              >
-                <Download className="w-4 h-4 stroke-[2.5]" />
-                <span>Download Now</span>
-              </button>
-            </div>
+              {/* Collapsible: Desktop Manual Installers */}
+              <div>
+                <button
+                  onClick={() => setShowAllOptions(!showAllOptions)}
+                  className="w-full flex items-center justify-between py-2 text-xs font-semibold text-[#D6C7B2] hover:text-[#F5EBDD] transition-colors"
+                >
+                  <span>Looking for direct installer files? (macOS Universal DMG, Windows 64-bit / 32-bit / Portable)</span>
+                  {showAllOptions ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
 
-            {/* Download Status Alert */}
-            {downloadStarted && (
-              <div className="mt-4 p-3 rounded-xl bg-[#6F1025]/30 border border-[#A83249] flex items-center space-x-2 text-xs text-[#F5EBDD] animate-in fade-in">
-                <CheckCircle className="w-4 h-4 text-[#30D158] flex-shrink-0" />
-                <span>Download started! Check your browser's download tray.</span>
-              </div>
-            )}
+                {showAllOptions && (
+                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                    {ALL_DOWNLOAD_OPTIONS.filter((opt) => opt.category !== 'Android').map((opt, idx) => (
+                      <div
+                        key={idx}
+                        className="p-4 rounded-xl bg-[#180B0F] border border-[#3D1520] hover:border-[#A83249] transition-colors flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-[#F5EBDD]">{opt.title}</span>
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#240F16] text-[#D6C7B2] border border-[#3D1520]">
+                              {opt.format}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-[#D6C7B2] mt-1">{opt.arch}</p>
+                          <p className="text-[10px] text-[#A89F91] font-mono mt-0.5">{opt.fileName}</p>
+                        </div>
 
-            {/* Installation Instructions */}
-            <div className="mt-4 pt-4 border-t border-[#3D1520] text-xs text-[#D6C7B2] flex items-start space-x-2">
-              <Sparkles className="w-4 h-4 text-[#A83249] flex-shrink-0 mt-0.5" />
-              <span>{device.instructions}</span>
-            </div>
-          </div>
-
-          {/* Collapsible: All Platforms & Architectures */}
-          <div>
-            <button
-              onClick={() => setShowAllOptions(!showAllOptions)}
-              className="w-full flex items-center justify-between py-2 text-xs font-semibold text-[#D6C7B2] hover:text-[#F5EBDD] transition-colors"
-            >
-              <span>Looking for other platforms or architectures? (Mac Intel/Silicon, Windows 32/64-bit, Android)</span>
-              {showAllOptions ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </button>
-
-            {showAllOptions && (
-              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                {ALL_DOWNLOAD_OPTIONS.map((opt, idx) => (
-                  <div
-                    key={idx}
-                    className="p-4 rounded-xl bg-[#180B0F] border border-[#3D1520] hover:border-[#A83249] transition-colors flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[#F5EBDD]">{opt.title}</span>
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#240F16] text-[#D6C7B2] border border-[#3D1520]">
-                          {opt.format}
-                        </span>
+                        <button
+                          onClick={() => handleDownload(opt.url)}
+                          className="mt-3 w-full py-2 px-3 rounded-full text-xs font-semibold bg-[#240F16] hover:bg-[#6F1025] hover:text-[#F5EBDD] text-[#D6C7B2] transition-all flex items-center justify-center space-x-1.5 border border-[#3D1520]"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Download {opt.tag}</span>
+                        </button>
                       </div>
-                      <p className="text-[11px] text-[#D6C7B2] mt-1">{opt.arch}</p>
-                      <p className="text-[10px] text-[#A89F91] font-mono mt-0.5">{opt.fileName}</p>
-                    </div>
-
-                    <button
-                      onClick={() => handleDownload(opt.url)}
-                      className="mt-3 w-full py-2 px-3 rounded-full text-xs font-semibold bg-[#240F16] hover:bg-[#6F1025] hover:text-[#F5EBDD] text-[#D6C7B2] transition-all flex items-center justify-center space-x-1.5 border border-[#3D1520]"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>Download {opt.tag}</span>
-                    </button>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}

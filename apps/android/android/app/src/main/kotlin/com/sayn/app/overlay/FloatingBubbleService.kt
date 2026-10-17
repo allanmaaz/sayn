@@ -590,7 +590,7 @@ class FloatingBubbleService : Service() {
 
             CoroutineScope(Dispatchers.Main).launch {
                 val hostPackage = SaynAccessibilityService.instance?.findEditableTargetNode()?.packageName?.toString()
-                val refined = SaynCloudVoiceClient.refineText(textToInsert, hostPackage)
+                val refined = SaynCloudVoiceClient.refineText(textToInsert, hostPackage, mode = "mammals")
 
                 // 1. Inject directly into currently focused field across ANY app (WhatsApp, Slack, Gmail, etc.)
                 val injected = SaynAccessibilityService.instance?.insertTextIntoFocusedField(refined) ?: false

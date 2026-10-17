@@ -29,6 +29,8 @@ import {
 import { useTheme } from '../../context/ThemeContext.js';
 import { detectDevice, DeviceInfo } from '../../utils/deviceDetector.js';
 import { DownloadModal } from '../../components/download/DownloadModal.js';
+import { TerminalInstall } from '../../components/download/TerminalInstall.js';
+import { AndroidDownloadCard } from '../../components/download/AndroidDownloadCard.js';
 import { useScrollAnimation } from '../../hooks/useScrollAnimation.js';
 
 export type StudioModeKey = 'ai-writer' | 'voice-mode' | 'grammar' | 'shorten' | 'expand';
@@ -1830,186 +1832,30 @@ export const LandingPage: React.FC = () => {
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           <span className="text-xs font-bold uppercase tracking-widest text-[#A83249] mb-2 block">
-            Install Once. Speak Anywhere.
+            {device?.os === 'android' ? 'Mobile Voice Intelligence' : 'Install Once. Speak Anywhere.'}
           </span>
           <h2
             className={`text-3xl sm:text-5xl font-extrabold tracking-tight mb-4 ${
               isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
             }`}
           >
-            Download SAYN Free
+            {device?.os === 'android' ? 'Download SAYN for Android' : 'Install SAYN in Seconds'}
           </h2>
           <p
             className={`max-w-2xl mx-auto text-sm sm:text-base mb-12 ${
               isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
             }`}
           >
-            Native performance on Apple Silicon, Intel Macs, Windows 10/11, and Android. No credit card, no subscription, no sign-up barrier.
+            {device?.os === 'android'
+              ? 'Voice-first custom Android keyboard with floating mic bubble and Mammals casual texting. Zero credit card, no subscription, no sign-up barrier.'
+              : 'Native performance on Apple Silicon, Intel Macs, and Windows 10/11. One terminal command. Zero credit card, no subscription, no sign-up barrier.'}
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-            {/* macOS Card */}
-            <div
-              className={`p-6 rounded-2xl border relative flex flex-col justify-between ${
-                isLight
-                  ? 'bg-white border-[#E2D9CD] shadow-sm'
-                  : 'bg-[#18080E] border-[#3D1520]'
-              }`}
-            >
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-[#6F1025]/20 flex items-center justify-center text-[#A83249] mb-4">
-                  <Laptop className="w-6 h-6" />
-                </div>
-                <div className="flex items-center justify-between mb-1">
-                  <h3
-                    className={`text-lg font-bold ${
-                      isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
-                    }`}
-                  >
-                    macOS
-                  </h3>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                    Universal 2
-                  </span>
-                </div>
-                <p
-                  className={`text-xs mb-4 ${
-                    isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
-                  }`}
-                >
-                  Optimized for Apple Silicon M1/M2/M3/M4 &amp; Intel. Includes floating pill window &amp; Fn push-to-talk.
-                </p>
-                <div
-                  className={`text-[11px] font-mono space-y-1 mb-6 ${
-                    isLight ? 'text-[#706E6B]' : 'text-[#D6C7B2]/70'
-                  }`}
-                >
-                  <div>• macOS 11.0 (Big Sur) or later</div>
-                  <div>• Native Global Keyboard Listener</div>
-                  <div>• Direct AXUIElement Auto-Paste</div>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsDownloadOpen(true)}
-                className={`w-full py-3 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 transition shadow-sm ${
-                  isLight
-                    ? 'bg-[#6F1025] hover:bg-[#85162E] text-[#F5EBDD]'
-                    : 'bg-[#F5EBDD] hover:bg-[#FAF4EB] text-[#100709]'
-                }`}
-              >
-                <Download className="w-4 h-4 stroke-[2.5]" />
-                <span>Download for Mac (.dmg)</span>
-              </button>
-            </div>
-
-            {/* Windows Card */}
-            <div
-              className={`p-6 rounded-2xl border relative flex flex-col justify-between ${
-                isLight
-                  ? 'bg-white border-[#E2D9CD] shadow-sm'
-                  : 'bg-[#18080E] border-[#3D1520]'
-              }`}
-            >
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-[#6F1025]/20 flex items-center justify-center text-[#A83249] mb-4">
-                  <Monitor className="w-6 h-6" />
-                </div>
-                <div className="flex items-center justify-between mb-1">
-                  <h3
-                    className={`text-lg font-bold ${
-                      isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
-                    }`}
-                  >
-                    Windows
-                  </h3>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                    x64 / ARM64
-                  </span>
-                </div>
-                <p
-                  className={`text-xs mb-4 ${
-                    isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
-                  }`}
-                >
-                  High-speed desktop assistant with global hotkey support and Windows SendInput injection.
-                </p>
-                <div
-                  className={`text-[11px] font-mono space-y-1 mb-6 ${
-                    isLight ? 'text-[#706E6B]' : 'text-[#D6C7B2]/70'
-                  }`}
-                >
-                  <div>• Windows 10 / 11 (64-bit)</div>
-                  <div>• Low latency tray overlay</div>
-                  <div>• Seamless Office, VS Code, Browser paste</div>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsDownloadOpen(true)}
-                className={`w-full py-3 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 transition border ${
-                  isLight
-                    ? 'border-[#6F1025] text-[#6F1025] hover:bg-[#6F1025]/10'
-                    : 'border-[#A83249] text-[#F5EBDD] hover:bg-[#6F1025]/30'
-                }`}
-              >
-                <Download className="w-4 h-4" />
-                <span>Download for Windows (.exe)</span>
-              </button>
-            </div>
-
-            {/* Android Card */}
-            <div
-              className={`p-6 rounded-2xl border relative flex flex-col justify-between ${
-                isLight
-                  ? 'bg-white border-[#E2D9CD] shadow-sm'
-                  : 'bg-[#18080E] border-[#3D1520]'
-              }`}
-            >
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-[#6F1025]/20 flex items-center justify-center text-[#A83249] mb-4">
-                  <Smartphone className="w-6 h-6" />
-                </div>
-                <div className="flex items-center justify-between mb-1">
-                  <h3
-                    className={`text-lg font-bold ${
-                      isLight ? 'text-[#2D0A12]' : 'text-[#F5EBDD]'
-                    }`}
-                  >
-                    Android
-                  </h3>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
-                    IME Keyboard
-                  </span>
-                </div>
-                <p
-                  className={`text-xs mb-4 ${
-                    isLight ? 'text-[#5C4D44]' : 'text-[#D6C7B2]'
-                  }`}
-                >
-                  Voice-first custom Android keyboard with floating mic bubble and real-time smart punctuation.
-                </p>
-                <div
-                  className={`text-[11px] font-mono space-y-1 mb-6 ${
-                    isLight ? 'text-[#706E6B]' : 'text-[#D6C7B2]/70'
-                  }`}
-                >
-                  <div>• Android 9.0 (Pie) to 15+</div>
-                  <div>• System-wide Input Method (IME)</div>
-                  <div>• Floating dictation overlay</div>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsDownloadOpen(true)}
-                className={`w-full py-3 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 transition border ${
-                  isLight
-                    ? 'border-[#6F1025] text-[#6F1025] hover:bg-[#6F1025]/10'
-                    : 'border-[#A83249] text-[#F5EBDD] hover:bg-[#6F1025]/30'
-                }`}
-              >
-                <Download className="w-4 h-4" />
-                <span>Download Android APK</span>
-              </button>
-            </div>
-          </div>
+          {device?.os === 'android' ? (
+            <AndroidDownloadCard isLight={isLight} />
+          ) : (
+            <TerminalInstall isLight={isLight} />
+          )}
         </div>
       </section>
 
