@@ -5,8 +5,7 @@
     <color name="brand_rose">#A83249</color>
     <color name="brand_obsidian">#100709</color>
     <color name="brand_surface">#180B0F</color>
+    <color name="brand_divider">#3D1520</color>
     <color name="warm_cream">#F5EBDD</color>
-    <color name="accent_blue">#A83249</color>
-    <color name="accent_cyan">#6F1025</color>
-    <color name="brand_volt">#A83249</color>
+    <color name="accent_crimson">#C83E5B</color>
 </resources>

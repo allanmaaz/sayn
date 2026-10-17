@@ -157,9 +157,9 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
       // Add speech indicator or listen for transcription
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Listening... speak now. San will transcribe directly into the text box.'),
+          content: Text('Listening... speak now. SAYN will transcribe directly into the text box.'),
           duration: Duration(seconds: 3),
-          backgroundColor: Color(0xFF16161D),
+          backgroundColor: SaynColors.darkSurface,
         ),
       );
     } catch (_) {}
@@ -183,7 +183,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         SnackBar(
           content: Text('Pasted ${data.text!.length} characters from clipboard.'),
           duration: const Duration(seconds: 2),
-          backgroundColor: const Color(0xFF16161D),
+          backgroundColor: SaynColors.darkSurface,
         ),
       );
     }
@@ -210,26 +210,28 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              width: 28,
+              height: 28,
               decoration: BoxDecoration(
-                color: SaynColors.darkAccent.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: SaynColors.darkAccent.withOpacity(0.35)),
+                borderRadius: BorderRadius.circular(7),
+                border: Border.all(color: SaynColors.roseMaroon.withOpacity(0.4)),
               ),
-              child: const Text(
-                'SAN',
-                style: TextStyle(
-                  color: SaynColors.darkAccent,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
-                ),
+              clipBehavior: Clip.antiAlias,
+              child: Image.asset(
+                'assets/images/logo.png',
+                width: 28,
+                height: 28,
+                fit: BoxFit.cover,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             const Text(
-              'Voice & Grammar Studio',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+              'SAYN Studio',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+                color: SaynColors.darkText,
+              ),
             ),
           ],
         ),

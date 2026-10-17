@@ -180,7 +180,7 @@ class _OverlaySettingsScreenState extends State<OverlaySettingsScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Universal Accessibility Card (San Voice style across ALL keyboards)
+                  // Universal Accessibility Card (SAYN Voice style across ALL keyboards)
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -232,7 +232,7 @@ class _OverlaySettingsScreenState extends State<OverlaySettingsScreen> {
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Allows the San voice pill to automatically show whenever you type using Gboard, Samsung Keyboard, or SwiftKey, and types your speech directly into the chat.',
+                          'Allows the SAYN voice pill to automatically show whenever you type using Gboard, Samsung Keyboard, or SwiftKey, and types your speech directly into the chat.',
                           style: TextStyle(
                             fontSize: 11,
                             color: SaynColors.darkSecondary,

@@ -206,16 +206,17 @@ class _VoiceFlowScreenState extends State<VoiceFlowScreen>
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: SaynColors.darkAccent.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(9),
                       border: Border.all(
-                        color: SaynColors.darkAccent.withOpacity(0.4),
+                        color: SaynColors.roseMaroon.withOpacity(0.4),
                       ),
                     ),
-                    child: const Icon(
-                      Icons.graphic_eq_rounded,
-                      color: SaynColors.darkAccent,
-                      size: 18,
+                    clipBehavior: Clip.antiAlias,
+                    child: Image.asset(
+                      'assets/images/logo.png',
+                      width: 32,
+                      height: 32,
+                      fit: BoxFit.cover,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -223,7 +224,7 @@ class _VoiceFlowScreenState extends State<VoiceFlowScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'SAN VOICE ENGINE',
+                        'SAYN VOICE ENGINE',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w800,

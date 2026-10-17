@@ -231,7 +231,7 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text(
-                              'Microphone (San Voice)',
+                              'Microphone (SAYN Voice)',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,

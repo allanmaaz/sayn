@@ -74,8 +74,8 @@ class FloatingPanelView(
 
         val bg = GradientDrawable().apply {
             cornerRadius = dpToPx(14).toFloat()
-            setColor(Color.parseColor("#151518"))
-            setStroke(dpToPx(1), Color.parseColor("#303036"))
+            setColor(Color.parseColor("#100709"))
+            setStroke(dpToPx(1), Color.parseColor("#3D1520"))
         }
         background = bg
         elevation = dpToPx(12).toFloat()
@@ -88,7 +88,7 @@ class FloatingPanelView(
 
         val title = TextView(context).apply {
             text = "SAYN Floating Assistant"
-            setTextColor(Color.parseColor("#F5F5F7"))
+            setTextColor(Color.parseColor("#F5EBDD"))
             textSize = 12.5f
             typeface = Typeface.DEFAULT_BOLD
             layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f)
@@ -96,7 +96,7 @@ class FloatingPanelView(
 
         timerText = TextView(context).apply {
             text = ""
-            setTextColor(Color.parseColor("#5DE4FF"))
+            setTextColor(Color.parseColor("#C83E5B"))
             textSize = 11f
             typeface = Typeface.MONOSPACE
             visibility = View.GONE
@@ -105,7 +105,7 @@ class FloatingPanelView(
 
         val closeBtn = ImageView(context).apply {
             setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
-            setColorFilter(Color.parseColor("#71717A"))
+            setColorFilter(Color.parseColor("#A83249"))
             setOnClickListener { onClose() }
         }
 
@@ -132,13 +132,13 @@ class FloatingPanelView(
         // 3. Transcript Display Area
         transcriptText = TextView(context).apply {
             text = "Tap Dictate to speak, or select a style to refine..."
-            setTextColor(Color.parseColor("#A1A1AA"))
+            setTextColor(Color.parseColor("#E0D2C3"))
             textSize = 12.5f
             setPadding(dpToPx(10), dpToPx(10), dpToPx(10), dpToPx(10))
             val textBg = GradientDrawable().apply {
                 cornerRadius = dpToPx(8).toFloat()
-                setColor(Color.parseColor("#1C1C20"))
-                setStroke(dpToPx(1), Color.parseColor("#303036"))
+                setColor(Color.parseColor("#180B0F"))
+                setStroke(dpToPx(1), Color.parseColor("#3D1520"))
             }
             background = textBg
             minHeight = dpToPx(75)
@@ -165,11 +165,11 @@ class FloatingPanelView(
             val pill = Button(context).apply {
                 text = label
                 textSize = 10f
-                setTextColor(if (modeId == activeMode) Color.WHITE else Color.parseColor("#A1A1AA"))
+                setTextColor(if (modeId == activeMode) Color.parseColor("#F5EBDD") else Color.parseColor("#B0A499"))
                 val pillBg = GradientDrawable().apply {
                     cornerRadius = dpToPx(12).toFloat()
-                    setColor(if (modeId == activeMode) Color.parseColor("#0A84FF") else Color.parseColor("#1C1C20"))
-                    setStroke(dpToPx(1), Color.parseColor("#303036"))
+                    setColor(if (modeId == activeMode) Color.parseColor("#6F1025") else Color.parseColor("#180B0F"))
+                    setStroke(dpToPx(1), Color.parseColor(if (modeId == activeMode) "#C83E5B" else "#3D1520"))
                 }
                 background = pillBg
                 setPadding(dpToPx(8), 0, dpToPx(8), 0)
@@ -199,11 +199,11 @@ class FloatingPanelView(
         recordButton = Button(context).apply {
             text = "Dictate"
             textSize = 11.5f
-            setTextColor(Color.WHITE)
+            setTextColor(Color.parseColor("#F5EBDD"))
             val btnBg = GradientDrawable().apply {
                 cornerRadius = dpToPx(8).toFloat()
-                setColor(Color.parseColor("#1C1C20"))
-                setStroke(dpToPx(1), Color.parseColor("#303036"))
+                setColor(Color.parseColor("#180B0F"))
+                setStroke(dpToPx(1), Color.parseColor("#3D1520"))
             }
             background = btnBg
             setOnClickListener { toggleDictation() }
@@ -213,10 +213,10 @@ class FloatingPanelView(
         refineButton = Button(context).apply {
             text = "Refine"
             textSize = 11.5f
-            setTextColor(Color.WHITE)
+            setTextColor(Color.parseColor("#F5EBDD"))
             val btnBg = GradientDrawable().apply {
                 cornerRadius = dpToPx(8).toFloat()
-                setColor(Color.parseColor("#0A84FF"))
+                setColor(Color.parseColor("#6F1025"))
             }
             background = btnBg
             setOnClickListener { refineCurrentText() }
@@ -239,7 +239,7 @@ class FloatingPanelView(
         copyButton = Button(context).apply {
             text = "Copy"
             textSize = 10.5f
-            setTextColor(Color.parseColor("#A1A1AA"))
+            setTextColor(Color.parseColor("#B0A499"))
             setBackgroundColor(Color.TRANSPARENT)
             setOnClickListener { copyToClipboard() }
             layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f)
@@ -248,7 +248,7 @@ class FloatingPanelView(
         shareButton = Button(context).apply {
             text = "Insert / Share"
             textSize = 10.5f
-            setTextColor(Color.parseColor("#0A84FF"))
+            setTextColor(Color.parseColor("#C83E5B"))
             setBackgroundColor(Color.TRANSPARENT)
             setOnClickListener { shareToOpenApp() }
             layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f)
@@ -265,7 +265,7 @@ class FloatingPanelView(
             val bar = View(context).apply {
                 val barBg = GradientDrawable().apply {
                     cornerRadius = dpToPx(2).toFloat()
-                    setColor(Color.parseColor("#5DE4FF"))
+                    setColor(Color.parseColor("#A83249"))
                 }
                 background = barBg
                 layoutParams = LayoutParams(dpToPx(3), dpToPx(12 + (i % 3) * 4)).apply {
@@ -282,11 +282,11 @@ class FloatingPanelView(
             val pill = modesContainer.getChildAt(i) as? Button ?: continue
             val modeId = modes[i].first
             val isSelected = modeId == activeMode
-            pill.setTextColor(if (isSelected) Color.WHITE else Color.parseColor("#A1A1AA"))
+            pill.setTextColor(if (isSelected) Color.parseColor("#F5EBDD") else Color.parseColor("#B0A499"))
             val pillBg = GradientDrawable().apply {
                 cornerRadius = dpToPx(12).toFloat()
-                setColor(if (isSelected) Color.parseColor("#0A84FF") else Color.parseColor("#1C1C20"))
-                setStroke(dpToPx(1), Color.parseColor("#303036"))
+                setColor(if (isSelected) Color.parseColor("#6F1025") else Color.parseColor("#180B0F"))
+                setStroke(dpToPx(1), Color.parseColor(if (isSelected) "#C83E5B" else "#3D1520"))
             }
             pill.background = pillBg
         }
@@ -352,7 +352,7 @@ class FloatingPanelView(
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 if (!matches.isNullOrEmpty()) {
                     transcriptText.text = matches[0]
-                    transcriptText.setTextColor(Color.parseColor("#F5F5F7"))
+                    transcriptText.setTextColor(Color.parseColor("#F5EBDD"))
                 }
             }
             override fun onPartialResults(partialResults: Bundle?) {
@@ -375,7 +375,7 @@ class FloatingPanelView(
             speechRecognizer?.startListening(intent)
             isRecording = true
             recordButton.text = "Stop"
-            recordButton.setTextColor(Color.parseColor("#FF453A"))
+            recordButton.setTextColor(Color.parseColor("#C83E5B"))
             waveformContainer.visibility = View.VISIBLE
             timerText.visibility = View.VISIBLE
             secondsElapsed = 0
@@ -430,7 +430,7 @@ class FloatingPanelView(
             } catch (e: Exception) {}
             isRecording = false
             recordButton.text = "Dictate"
-            recordButton.setTextColor(Color.WHITE)
+            recordButton.setTextColor(Color.parseColor("#F5EBDD"))
             waveformContainer.visibility = View.GONE
             timerText.visibility = View.GONE
             stopTimer()
@@ -499,7 +499,7 @@ class FloatingPanelView(
 
                     withContext(Dispatchers.Main) {
                         transcriptText.text = refined
-                        transcriptText.setTextColor(Color.parseColor("#F5F5F7"))
+                        transcriptText.setTextColor(Color.parseColor("#F5EBDD"))
                     }
                 } else {
                     withContext(Dispatchers.Main) {

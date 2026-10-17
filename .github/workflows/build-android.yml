@@ -60,42 +60,26 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: v1.0.9
-          name: "SAYN Android Release v1.0.9 (Wispr Flow Volt Sync & Floating Liquid Bottom Nav)"
+          tag_name: v1.1.0
+          name: "SAYN Android Release v1.1.0 (Deep Maroon & Warm Cream Official Theme, Integrated Logo)"
           body: |
-            ### SAYN v1.0.9 — Wispr Flow Sync & Liquid Obsidian Bottom Dock
+            ### SAYN v1.1.0 — Official Deep Maroon & Warm Cream Theme with Integrated Logo
             Official release for Android.
             
-            **What's New in v1.0.9:**
-            * **Wispr Flow Volt Neon Green (#CBFE00) & Matte Obsidian Void (#0D0D12):**
-              - Official soundwave logo launcher icon generated across all mipmap densities (`mdpi` to `xxxhdpi`).
-              - All legacy blue/purple accents updated to Volt Neon Green branding.
-            * **Floating Liquid Dark Glass Bottom Navigation Bar:**
-              - Custom frosted capsule floating dock with smooth haptics and neon glow.
-              - 4 destinations: **Flow** (live speech tester), **Workspace**, **Overlay**, and **Keyboard**.
-            * **Embedded Universal Unlimited Groq LPU Engine:**
-              - Zero API key prompts anywhere in the app.
-              - Groq Whisper Turbo + Qwen 3.8 27B on Groq LPUs with sub-25ms polishing.
-            * **Wispr 3-Piece Pill Direct In-App Injection:**
-              - Real-time speech transcription with zero placeholder text.
-              - Instantaneous polishing and auto-paste directly into active text boxes.
-            * **Universal Voice Across ANY Keyboard (Wispr Flow Style):**
-              - Works automatically with Gboard, Samsung Keyboard, SwiftKey, or ANY keyboard on your phone!
-              - Powered by `SaynAccessibilityService`: automatically detects when any text field is focused and keyboard opens, and types speech directly into WhatsApp, ChatGPT, Instagram, or any chat box.
-            * **Wispr 3-Piece Pill Directly in the Floating Overlay:**
-              - **Left `[ ✕ ]`:** Frosted glass circular cancel button to dismiss/abort speech.
-              - **Center Capsule:** Translucent frosted dark glass with **"the wavy thing"** (8 live animated audio equalizer bars jumping to your voice volume in real-time) + streaming transcription words.
-              - **Right `[ ✓ ]`:** Vibrant Wispr purple circular button. Tapping commits text directly into your active chat box and collapses.
-            * **New Gen Z Minimal Identity:**
-              - Fresh Electric Violet soundwave 'S' on Matte Carbon Black logo and brand styling.
-            * **Built-in In-App Auto-Updater:**
-              - Automatically checks and updates directly in-app with 1 tap.
-            
-            **What's New in v1.0.1:**
-            * **Authentic iOS 17 Dark Mode Keyboard:** Redesigned keycaps with raised chiclet styling, drop shadows, staggered row spacing, and crisp 22sp white typography (no dot/ellipsis clipping).
-            * **Wispr Flow Real-Time Voice Dictation:** Tap mic to stream real-time partial speech results directly in the keyboard with immediate **"✓ Correct"** commit directly into the active text box.
-            * **Microphone Permissions Flow:** Added automatic microphone permission handling in MainActivity and Keyboard settings.
-            * **AI Style Modes:** Standard, Fluent, Natural, Professional, Casual, Shorten, Expand.
+            **What's New in v1.1.0:**
+            * **Official SAYN Logo Integration:**
+              - Master SAYN logo integrated into app launcher icons across all mipmap densities (`mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`) with adaptive safe-zone geometry.
+              - In-app logo integration in Voice Engine and Studio headers.
+            * **Signature Color Theme Alignment:**
+              - Complete aesthetic alignment to SAYN's Deep Maroon (`#6F1025`), Rose Maroon (`#A83249`), Obsidian Void (`#100709`), and Warm Cream (`#F5EBDD`).
+              - Floating overlay, floating bottom nav dock, IME keyboard, and in-app screens fully harmonized.
+            * **Universal Floating Assistant & Accessibility Service:**
+              - Floating voice pill with animated equalizer soundwave and instant transcription.
+              - Direct typing injection into any Android text box (WhatsApp, Telegram, ChatGPT, Notes, etc.).
+            * **Embedded Unlimited Cloud Polishing:**
+              - Multi-style AI voice refinement (Standard, Fluent, Natural, Professional, Casual, Shorten, Expand, Formal).
+            * **Built-in Auto-Updater:**
+              - Real-time in-app check and seamless background APK installer.
             
             **Installation:**
             Download `sayn-release.apk` below and install directly on your Android device.

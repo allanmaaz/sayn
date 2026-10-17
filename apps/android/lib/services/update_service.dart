@@ -148,7 +148,7 @@ class _UpdateDialogContentState extends State<_UpdateDialogContent> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Please enable "Install unknown apps" for SAYN to auto-update.'),
-            backgroundColor: Color(0xFF007AFF),
+            backgroundColor: Color(0xFF6F1025),
           ),
         );
       }
