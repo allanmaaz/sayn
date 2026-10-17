@@ -109,11 +109,15 @@ class PlatformChannels {
     }
   }
 
+  static Future<bool> isMicrophonePermissionGranted() => checkAudioPermission();
+
   static Future<void> requestAudioPermission() async {
     try {
       await _keyboardChannel.invokeMethod('requestAudioPermission');
     } catch (_) {}
   }
+
+  static Future<void> requestMicrophonePermission() => requestAudioPermission();
 
   static Future<Map<String, dynamic>> getKeyboardFeedbackSettings() async {
     try {
@@ -218,5 +222,53 @@ class PlatformChannels {
     } catch (_) {
       return false;
     }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Real-Time Speech Recognition Channel
+  // ─────────────────────────────────────────────────────────────────────────
+  static const MethodChannel _speechChannel =
+      MethodChannel('com.sayn.app/speech');
+
+  static void setSpeechListener({
+    Function(String partialText)? onPartialResult,
+    Function(String finalText)? onFinalResult,
+    Function(String error)? onError,
+    Function()? onEndOfSpeech,
+  }) {
+    _speechChannel.setMethodCallHandler((call) async {
+      switch (call.method) {
+        case 'onPartialResult':
+          final text = call.arguments['text'] as String? ?? '';
+          onPartialResult?.call(text);
+          break;
+        case 'onFinalResult':
+          final text = call.arguments['text'] as String? ?? '';
+          onFinalResult?.call(text);
+          break;
+        case 'onEndOfSpeech':
+          onEndOfSpeech?.call();
+          break;
+        case 'onError':
+          final error = call.arguments['error'] as String? ?? '';
+          onError?.call(error);
+          break;
+      }
+    });
+  }
+
+  static Future<bool> startDictation() async {
+    try {
+      final bool started = await _speechChannel.invokeMethod('startDictation') ?? false;
+      return started;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<void> stopDictation() async {
+    try {
+      await _speechChannel.invokeMethod('stopDictation');
+    } catch (_) {}
   }
 }

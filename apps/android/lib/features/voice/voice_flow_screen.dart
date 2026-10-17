@@ -47,6 +47,9 @@ class _VoiceFlowScreenState extends State<VoiceFlowScreen>
 
   @override
   void dispose() {
+    if (_isDictating) {
+      PlatformChannels.stopDictation();
+    }
     _pulseController.dispose();
     _testInputController.dispose();
     super.dispose();
@@ -136,6 +139,96 @@ class _VoiceFlowScreenState extends State<VoiceFlowScreen>
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) setState(() => _copied = false);
       });
+    }
+  }
+
+  Future<void> _toggleVoiceDictation() async {
+    if (_isDictating) {
+      await PlatformChannels.stopDictation();
+      if (mounted) setState(() => _isDictating = false);
+      return;
+    }
+
+    final hasPerm = await PlatformChannels.checkAudioPermission();
+    if (!hasPerm) {
+      await PlatformChannels.requestAudioPermission();
+      final hasPermAfter = await PlatformChannels.checkAudioPermission();
+      if (!hasPermAfter) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Microphone permission required for speech dictation.'),
+              backgroundColor: SaynColors.darkSurface,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
+    setState(() {
+      _isDictating = true;
+      _testInputController.clear();
+      _polishedResult = '';
+    });
+    HapticFeedback.heavyImpact();
+
+    PlatformChannels.setSpeechListener(
+      onPartialResult: (text) {
+        if (mounted && text.isNotEmpty) {
+          setState(() {
+            _testInputController.value = TextEditingValue(
+              text: text,
+              selection: TextSelection.collapsed(offset: text.length),
+            );
+          });
+        }
+      },
+      onFinalResult: (text) {
+        if (mounted) {
+          setState(() {
+            _isDictating = false;
+            if (text.isNotEmpty) {
+              _testInputController.value = TextEditingValue(
+                text: text,
+                selection: TextSelection.collapsed(offset: text.length),
+              );
+            }
+          });
+          // Automatically polish spoken text directly into final result
+          if (text.trim().isNotEmpty) {
+            _runPolishTest();
+          }
+        }
+      },
+      onEndOfSpeech: () {
+        if (mounted) {
+          setState(() => _isDictating = false);
+        }
+      },
+      onError: (err) {
+        if (mounted) {
+          setState(() => _isDictating = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(err),
+              duration: const Duration(seconds: 2),
+              backgroundColor: SaynColors.darkSurface,
+            ),
+          );
+        }
+      },
+    );
+
+    final started = await PlatformChannels.startDictation();
+    if (!started && mounted) {
+      setState(() => _isDictating = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not start microphone. Check app permissions.'),
+          backgroundColor: SaynColors.darkSurface,
+        ),
+      );
     }
   }
 
@@ -329,13 +422,7 @@ class _VoiceFlowScreenState extends State<VoiceFlowScreen>
               return Transform.scale(
                 scale: scale,
                 child: GestureDetector(
-                  onTap: () {
-                    HapticFeedback.heavyImpact();
-                    setState(() => _isDictating = !_isDictating);
-                    if (_isDictating) {
-                      _loadSampleSpeech();
-                    }
-                  },
+                  onTap: _toggleVoiceDictation,
                   child: Container(
                     width: 84,
                     height: 84,

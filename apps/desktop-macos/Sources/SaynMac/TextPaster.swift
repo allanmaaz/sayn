@@ -47,7 +47,8 @@ final class TextPaster {
     /// Checks whether the target foreground application has an active editable text box / caret
     static func hasActiveEditableTextBox(targetApp: NSRunningApplication? = nil) -> Bool {
         let app = targetApp ?? lastExternalApp ?? NSWorkspace.shared.frontmostApplication
-        guard let validApp = app, validApp.bundleIdentifier != Bundle.main.bundleIdentifier else { return false }
+        guard let validApp = app else { return true }
+        if validApp.bundleIdentifier == Bundle.main.bundleIdentifier { return true }
         
         let appRef = AXUIElementCreateApplication(validApp.processIdentifier)
         var focusedElement: CFTypeRef?
@@ -91,7 +92,7 @@ final class TextPaster {
             }
         }
         
-        return false
+        return true
     }
     
     /// Automatic injection of polished speech directly into the user's active text field
@@ -104,14 +105,14 @@ final class TextPaster {
         pasteboard.clearContents()
         pasteboard.setString(cleanText, forType: .string)
         
-        // 2. Resolve destination application (guarantee non-SAYN target)
-        var appToActivate = targetApp ?? lastExternalApp
-        if appToActivate?.bundleIdentifier == Bundle.main.bundleIdentifier || appToActivate == nil {
+        // 2. Resolve destination application
+        var appToActivate = targetApp
+        if appToActivate == nil {
             let front = NSWorkspace.shared.frontmostApplication
             if front?.bundleIdentifier != Bundle.main.bundleIdentifier {
                 appToActivate = front
             } else {
-                appToActivate = lastExternalApp
+                appToActivate = lastExternalApp ?? front
             }
         }
         

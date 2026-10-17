@@ -544,7 +544,12 @@ class FloatingBubbleService : Service() {
                 if (!matches.isNullOrEmpty()) {
                     currentSpokenText = matches[0]
                 }
-                isListening = false
+                if (currentSpokenText.isNotBlank()) {
+                    commitVoiceDictation()
+                } else {
+                    isListening = false
+                    collapseToSquircle()
+                }
             }
 
             override fun onPartialResults(partialResults: Bundle?) {
@@ -576,6 +581,7 @@ class FloatingBubbleService : Service() {
 
     private fun commitVoiceDictation() {
         val textToInsert = currentSpokenText.trim()
+        currentSpokenText = ""
         stopSpeechRecognizer()
 
         if (textToInsert.isNotEmpty()) {

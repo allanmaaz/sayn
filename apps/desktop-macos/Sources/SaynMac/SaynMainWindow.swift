@@ -2028,7 +2028,7 @@ struct SaynStudioView: View {
                 .buttonStyle(PlainButtonStyle())
             }
             
-            TextEditor(text: $scratchpadText)
+            TextEditor(text: $store.scratchpadText)
                 .font(.system(size: 14, design: .rounded))
                 .padding(14)
                 .background(RoundedRectangle(cornerRadius: 14).fill(cardWhite))

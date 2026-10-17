@@ -362,11 +362,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         isFallbackCard = false
         waveformEngine.isProcessing = false
         let front = NSWorkspace.shared.frontmostApplication
+        targetApp = front
         if front?.bundleIdentifier != Bundle.main.bundleIdentifier {
-            targetApp = front
             TextPaster.lastExternalApp = front
-        } else {
-            targetApp = TextPaster.lastExternalApp
         }
         currentTranscript = ""
         
@@ -397,15 +395,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         isCommitting = true
         waveformEngine.isProcessing = true
         
-        var appToPasteInto = targetApp ?? TextPaster.lastExternalApp
-        if appToPasteInto?.bundleIdentifier == Bundle.main.bundleIdentifier || appToPasteInto == nil {
-            let front = NSWorkspace.shared.frontmostApplication
-            if front?.bundleIdentifier != Bundle.main.bundleIdentifier {
-                appToPasteInto = front
-            } else {
-                appToPasteInto = TextPaster.lastExternalApp
-            }
-        }
+        let appToPasteInto = targetApp ?? TextPaster.lastExternalApp ?? NSWorkspace.shared.frontmostApplication
         
         waveformEngine.stopRecording(activeAppBundleId: appToPasteInto?.bundleIdentifier) { [weak self] finalText in
             guard let self = self else { return }
@@ -428,23 +418,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 duration: 2.5
             )
             
-            // 2. Check if target application has an active editable text box / caret
-            let hasTextbox = TextPaster.hasActiveEditableTextBox(targetApp: appToPasteInto)
+            // 2. Hide HUD pill immediately for smooth transition
+            self.pillWindow?.orderOut(nil)
+            self.currentTranscript = ""
+            self.isFallbackCard = false
+            self.isCommitting = false
             
-            if hasTextbox {
-                // Scenario A: Active textbox present -> Auto-paste directly into field!
-                self.pillWindow?.orderOut(nil)
-                TextPaster.paste(text: trimmed, targetApp: appToPasteInto)
-                self.currentTranscript = ""
-                self.isFallbackCard = false
-                self.isCommitting = false
-            } else {
-                // Scenario B: No active textbox present -> Show Fallback HUD Card!
-                self.currentTranscript = trimmed
-                self.isFallbackCard = true
-                self.pillWindow?.showAnimated(isCard: true)
-                self.isCommitting = false
+            // 3. If target is SAYN Studio itself, update Scratchpad directly
+            if appToPasteInto?.bundleIdentifier == Bundle.main.bundleIdentifier ||
+               (NSWorkspace.shared.frontmostApplication?.bundleIdentifier == Bundle.main.bundleIdentifier && self.mainWindow?.isVisible == true) {
+                DispatchQueue.main.async {
+                    if SaynStore.shared.scratchpadText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                       SaynStore.shared.scratchpadText.starts(with: "Dictate or draft freely") {
+                        SaynStore.shared.scratchpadText = trimmed
+                    } else {
+                        SaynStore.shared.scratchpadText += "\n" + trimmed
+                    }
+                }
             }
+            
+            // 4. Hands-free zero-click auto-paste directly into active target field
+            TextPaster.paste(text: trimmed, targetApp: appToPasteInto)
         }
     }
     

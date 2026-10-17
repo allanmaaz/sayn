@@ -60,26 +60,21 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: v1.1.0
-          name: "SAYN Android Release v1.1.0 (Deep Maroon & Warm Cream Official Theme, Integrated Logo)"
+          tag_name: v1.1.1
+          name: "SAYN Android Release v1.1.1 (Hands-Free Voice-to-Textbox Auto Insertion)"
           body: |
-            ### SAYN v1.1.0 — Official Deep Maroon & Warm Cream Theme with Integrated Logo
+            ### SAYN v1.1.1 — Hands-Free Voice-to-Textbox Automatic Insertion
             Official release for Android.
             
-            **What's New in v1.1.0:**
-            * **Official SAYN Logo Integration:**
-              - Master SAYN logo integrated into app launcher icons across all mipmap densities (`mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`) with adaptive safe-zone geometry.
-              - In-app logo integration in Voice Engine and Studio headers.
-            * **Signature Color Theme Alignment:**
-              - Complete aesthetic alignment to SAYN's Deep Maroon (`#6F1025`), Rose Maroon (`#A83249`), Obsidian Void (`#100709`), and Warm Cream (`#F5EBDD`).
-              - Floating overlay, floating bottom nav dock, IME keyboard, and in-app screens fully harmonized.
-            * **Universal Floating Assistant & Accessibility Service:**
-              - Floating voice pill with animated equalizer soundwave and instant transcription.
-              - Direct typing injection into any Android text box (WhatsApp, Telegram, ChatGPT, Notes, etc.).
-            * **Embedded Unlimited Cloud Polishing:**
-              - Multi-style AI voice refinement (Standard, Fluent, Natural, Professional, Casual, Shorten, Expand, Formal).
-            * **Built-in Auto-Updater:**
-              - Real-time in-app check and seamless background APK installer.
+            **What's New in v1.1.1:**
+            * **Hands-Free Zero-Click Voice Insertion Across Android:**
+              - **Floating Pill Overlay:** Finished speaking automatically refines and injects polished text directly into WhatsApp, Telegram, ChatGPT, Gmail, Slack, and Notes without requiring manual checkmark tap.
+              - **Custom IME Keyboard:** In-keyboard speech recognition automatically refines and commits polished text straight into the active input connection.
+              - **In-App Studio & Voice Flow Screen:** Live speech stream renders directly into the input text box and auto-polishes into the result box on speech completion.
+            * **Official SAYN Logo & Brand Palette:**
+              - Complete aesthetic alignment to Deep Maroon (`#6F1025`), Rose Maroon (`#A83249`), and Warm Cream (`#F5EBDD`).
+            * **Embedded Unlimited Cloud Polishing & Auto-Updater:**
+              - Instant background updates and multi-style voice transformation.
             
             **Installation:**
             Download `sayn-release.apk` below and install directly on your Android device.

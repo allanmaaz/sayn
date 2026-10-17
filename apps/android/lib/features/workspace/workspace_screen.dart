@@ -71,6 +71,9 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
 
   @override
   void dispose() {
+    if (_isDictating) {
+      PlatformChannels.stopDictation();
+    }
     _inputController.dispose();
     _outputController.dispose();
     _customInstructionController.dispose();
@@ -144,31 +147,92 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
 
   // 2. Direct Voice Dictation (Triggered by Talk Icon)
   Future<void> _startTalking() async {
+    if (_isDictating) {
+      await PlatformChannels.stopDictation();
+      if (mounted) setState(() => _isDictating = false);
+      return;
+    }
+
+    final hasPerm = await PlatformChannels.checkAudioPermission();
+    if (!hasPerm) {
+      await PlatformChannels.requestAudioPermission();
+      final hasPermAfter = await PlatformChannels.checkAudioPermission();
+      if (!hasPermAfter) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Microphone permission is required for voice dictation.'),
+              backgroundColor: SaynColors.darkSurface,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
     setState(() => _isDictating = true);
     HapticFeedback.mediumImpact();
 
-    // Trigger platform channel dictation or simulate speech stream
-    try {
-      final hasPerm = await PlatformChannels.isMicrophonePermissionGranted();
-      if (!hasPerm) {
-        await PlatformChannels.requestMicrophonePermission();
-      }
+    PlatformChannels.setSpeechListener(
+      onPartialResult: (text) {
+        if (mounted && text.isNotEmpty) {
+          setState(() {
+            _inputController.value = TextEditingValue(
+              text: text,
+              selection: TextSelection.collapsed(offset: text.length),
+            );
+          });
+          _updateMetrics();
+        }
+      },
+      onFinalResult: (text) {
+        if (mounted) {
+          setState(() {
+            _isDictating = false;
+            if (text.isNotEmpty) {
+              _inputController.value = TextEditingValue(
+                text: text,
+                selection: TextSelection.collapsed(offset: text.length),
+              );
+              _updateMetrics();
+            }
+          });
+          // Automatically polish spoken text into final polished output without manual tap
+          if (text.trim().isNotEmpty) {
+            _runGrammarPolish();
+          }
+        }
+      },
+      onEndOfSpeech: () {
+        if (mounted) {
+          setState(() => _isDictating = false);
+        }
+      },
+      onError: (err) {
+        if (mounted) {
+          setState(() => _isDictating = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(err),
+              duration: const Duration(seconds: 2),
+              backgroundColor: SaynColors.darkSurface,
+            ),
+          );
+        }
+      },
+    );
 
-      // Add speech indicator or listen for transcription
+    final started = await PlatformChannels.startDictation();
+    if (!started && mounted) {
+      setState(() => _isDictating = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Listening... speak now. SAYN will transcribe directly into the text box.'),
-          duration: Duration(seconds: 3),
+          content: Text('Could not start speech recognizer. Please check microphone settings.'),
+          duration: Duration(seconds: 2),
           backgroundColor: SaynColors.darkSurface,
         ),
       );
-    } catch (_) {}
-
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        setState(() => _isDictating = false);
-      }
-    });
+    }
   }
 
   // 3. Paste Clipboard Content (Chats, PDFs, Articles)

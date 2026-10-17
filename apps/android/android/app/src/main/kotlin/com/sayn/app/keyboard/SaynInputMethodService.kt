@@ -1675,8 +1675,9 @@ class SaynInputMethodService : InputMethodService() {
             override fun onBufferReceived(buffer: ByteArray?) {}
 
             override fun onEndOfSpeech() {
-                voiceTranscriptText.text = "Processing speech..."
-                voiceStatusDot.setTextColor(Color.parseColor("#FF9F0A"))
+                voiceTranscriptText.text = "Polishing..."
+                voiceTranscriptText.setTextColor(COLOR_WARM_CREAM)
+                voiceStatusDot.setTextColor(COLOR_ROSE_MAROON)
             }
 
             override fun onError(error: Int) {
@@ -1720,11 +1721,17 @@ class SaynInputMethodService : InputMethodService() {
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 if (!matches.isNullOrEmpty()) {
                     currentSpokenText = matches[0]
-                    voiceTranscriptText.text = currentSpokenText
-                    voiceTranscriptText.setTextColor(Color.WHITE)
+                    voiceTranscriptText.text = "Polishing ($activeMode)..."
+                    voiceTranscriptText.setTextColor(COLOR_WARM_CREAM)
+                    voiceStatusDot.setTextColor(COLOR_ROSE_MAROON)
+                    // Automatically refine and inject into text field without requiring manual tap
+                    stopInKeyboardVoice()
+                    refineAndCommitSpokenText()
+                } else {
+                    isListening = false
+                    voiceStatusDot.setTextColor(Color.parseColor("#8E8E93"))
+                    hideVoiceLiveBar()
                 }
-                isListening = false
-                voiceStatusDot.setTextColor(Color.parseColor("#8E8E93"))
             }
 
             override fun onPartialResults(partialResults: Bundle?) {

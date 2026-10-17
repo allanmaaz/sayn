@@ -96,16 +96,16 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
             let linear = max(0.0, (power + 50.0) / 50.0)
             let normalized = min(max(Float(linear), 0.08), 1.0)
             
-            // Voice Activity Detection: user speaking power above -46 dB
-            if power > -46.0 {
+            // Voice Activity Detection: user speaking power above -45 dB
+            if power > -45.0 {
                 self.hasSpokenVoice = true
                 self.lastSpokenTimestamp = Date()
             }
             
-            // Auto-Commit on Silence: if user spoke and then stops speaking for >= 1.8 seconds
+            // Auto-Commit on Silence: if user spoke and then stops speaking for >= 0.9 seconds
             if self.hasSpokenVoice && !self.hasTriggeredSilenceCommit, let lastSpoken = self.lastSpokenTimestamp {
                 let silenceDuration = Date().timeIntervalSince(lastSpoken)
-                if silenceDuration >= 1.8 {
+                if silenceDuration >= 0.9 {
                     self.hasTriggeredSilenceCommit = true
                     DispatchQueue.main.async {
                         self.onSilenceDetected?()

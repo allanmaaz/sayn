@@ -136,6 +136,7 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
     @Published var transformsOptIn: Bool = true
     @Published var autoApplyTransform: Bool = false
     @Published var selectedAutoTransform: String = "Polish"
+    @Published var scratchpadText: String = "Dictate or draft freely here. When done, you can apply a Transform or copy directly."
     
     // Extended Functional Domains
     @Published var teamMembers: [TeamMember] = []
