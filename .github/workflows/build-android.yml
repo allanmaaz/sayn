@@ -60,21 +60,23 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: v1.1.1
-          name: "SAYN Android Release v1.1.1 (Hands-Free Voice-to-Textbox Auto Insertion)"
+          tag_name: v1.1.2
+          name: "SAYN Android Release v1.1.2 (Minimal Keyboard Refinements & Auto-Fixes)"
           body: |
-            ### SAYN v1.1.1 — Hands-Free Voice-to-Textbox Automatic Insertion
-            Official release for Android.
+            ### SAYN v1.1.2 — Minimal Chiclet Keyboard & System Enhancements
+            Official signed release for Android.
             
-            **What's New in v1.1.1:**
-            * **Hands-Free Zero-Click Voice Insertion Across Android:**
-              - **Floating Pill Overlay:** Finished speaking automatically refines and injects polished text directly into WhatsApp, Telegram, ChatGPT, Gmail, Slack, and Notes without requiring manual checkmark tap.
-              - **Custom IME Keyboard:** In-keyboard speech recognition automatically refines and commits polished text straight into the active input connection.
-              - **In-App Studio & Voice Flow Screen:** Live speech stream renders directly into the input text box and auto-polishes into the result box on speech completion.
-            * **Official SAYN Logo & Brand Palette:**
-              - Complete aesthetic alignment to Deep Maroon (`#6F1025`), Rose Maroon (`#A83249`), and Warm Cream (`#F5EBDD`).
-            * **Embedded Unlimited Cloud Polishing & Auto-Updater:**
-              - Instant background updates and multi-style voice transformation.
+            **What's New in v1.1.2:**
+            * **Zero-View-Destruction In-Place Case Shifting:**
+              - Completely resolved first-character clear glitch.
+              - Sentence capitalization and Shift toggling update keycaps in-place with zero latency and zero view tree destruction.
+            * **Android 13–15 Restricted Settings Bypass:**
+              - In-app guided 3-step assistant with direct App Info deep link to allow restricted accessibility settings on sideloaded APKs.
+            * **Signature Mammals Voice Tone:**
+              - Clean casual texting with zero trailing periods promoted across all voice tools.
+            * **Harmonized Minimal Architecture:**
+              - Stripped mode drawer clutter from keyboard; voice dictation and refinement are consolidated into the floating overlay.
+              - Bottom navigation labels refined to prevent text clipping on all devices.
             
             **Installation:**
             Download `sayn-release.apk` below and install directly on your Android device.
