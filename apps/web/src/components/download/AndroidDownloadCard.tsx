@@ -21,7 +21,7 @@ export const AndroidDownloadCard: React.FC<AndroidDownloadCardProps> = ({
 }) => {
   const [downloadTriggered, setDownloadTriggered] = useState(false);
   const apkDownloadUrl =
-    'https://github.com/allanmaaz/sayn/releases/latest/download/sayn-release.apk';
+    'https://github.com/allanmaaz/sayn/releases/download/v1.1.3/sayn-release.apk';
 
   const handleDownload = () => {
     setDownloadTriggered(true);
@@ -64,7 +64,7 @@ export const AndroidDownloadCard: React.FC<AndroidDownloadCardProps> = ({
                 SAYN for Android
               </h3>
               <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                v1.1.2 Signed APK
+                v1.1.3 Signed APK
               </span>
             </div>
             <p

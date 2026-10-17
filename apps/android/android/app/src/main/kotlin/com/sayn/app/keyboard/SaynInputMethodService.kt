@@ -670,11 +670,15 @@ class SaynInputMethodService : InputMethodService() {
         val before = ic.getTextBeforeCursor(40, 0)?.toString() ?: ""
 
         val match = Regex("""([a-zA-Z']+)\z""").find(before)
-        if (match != null) {
-            ic.deleteSurroundingText(match.value.length, 0)
+        ic.beginBatchEdit()
+        try {
+            if (match != null) {
+                ic.deleteSurroundingText(match.value.length, 0)
+            }
+            ic.commitText("$candidate ", 1)
+        } finally {
+            ic.endBatchEdit()
         }
-
-        ic.commitText("$candidate ", 1)
         updateCandidates()
         checkAutoCapitalization()
     }
@@ -1104,15 +1108,20 @@ class SaynInputMethodService : InputMethodService() {
         val ic = currentInputConnection ?: return
         if (lastSuggestion.isEmpty()) return
 
-        val selected = ic.getSelectedText(0)?.toString()
-        if (!selected.isNullOrBlank()) {
-            ic.commitText(lastSuggestion, 1)
-        } else {
-            val textBefore = ic.getTextBeforeCursor(lastOriginalText.length, 0)?.toString() ?: ""
-            if (textBefore.isNotEmpty()) {
-                ic.deleteSurroundingText(textBefore.length, 0)
+        ic.beginBatchEdit()
+        try {
+            val selected = ic.getSelectedText(0)?.toString()
+            if (!selected.isNullOrBlank()) {
+                ic.commitText(lastSuggestion, 1)
+            } else {
+                val textBefore = ic.getTextBeforeCursor(lastOriginalText.length, 0)?.toString() ?: ""
+                if (textBefore.isNotEmpty()) {
+                    ic.deleteSurroundingText(textBefore.length, 0)
+                }
+                ic.commitText(lastSuggestion, 1)
             }
-            ic.commitText(lastSuggestion, 1)
+        } finally {
+            ic.endBatchEdit()
         }
 
         hideSuggestionArea()
@@ -1649,15 +1658,20 @@ class SaynInputMethodService : InputMethodService() {
     private fun handleAcceptCurrentSuggestion() {
         val ic = currentInputConnection ?: return
         if (lastSuggestion.isNotEmpty()) {
-            val selected = ic.getSelectedText(0)?.toString()
-            if (!selected.isNullOrBlank()) {
-                ic.commitText(lastSuggestion, 1)
-            } else {
-                val textBefore = ic.getTextBeforeCursor(lastOriginalText.length, 0)?.toString() ?: ""
-                if (textBefore.isNotEmpty()) {
-                    ic.deleteSurroundingText(textBefore.length, 0)
+            ic.beginBatchEdit()
+            try {
+                val selected = ic.getSelectedText(0)?.toString()
+                if (!selected.isNullOrBlank()) {
+                    ic.commitText(lastSuggestion, 1)
+                } else {
+                    val textBefore = ic.getTextBeforeCursor(lastOriginalText.length, 0)?.toString() ?: ""
+                    if (textBefore.isNotEmpty()) {
+                        ic.deleteSurroundingText(textBefore.length, 0)
+                    }
+                    ic.commitText(lastSuggestion, 1)
                 }
-                ic.commitText(lastSuggestion, 1)
+            } finally {
+                ic.endBatchEdit()
             }
             Toast.makeText(this, "Accepted & replaced!", Toast.LENGTH_SHORT).show()
         }
@@ -2422,8 +2436,13 @@ class SaynInputMethodService : InputMethodService() {
             }
 
             if (replacement != null && replacement != rawWord) {
-                ic.deleteSurroundingText(rawWord.length, 0)
-                ic.commitText(replacement + delimiter, 1)
+                ic.beginBatchEdit()
+                try {
+                    ic.deleteSurroundingText(rawWord.length, 0)
+                    ic.commitText(replacement + delimiter, 1)
+                } finally {
+                    ic.endBatchEdit()
+                }
                 return
             }
         }

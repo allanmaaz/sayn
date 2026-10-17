@@ -60,18 +60,21 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: v1.1.2
-          name: "SAYN Android Release v1.1.2 (Minimal Keyboard Refinements & Auto-Fixes)"
+          tag_name: v1.1.3
+          name: "SAYN Android Release v1.1.3 (Minimal Chiclet Keyboard & Bug Fixes)"
           body: |
-            ### SAYN v1.1.2 — Minimal Chiclet Keyboard & System Enhancements
+            ### SAYN v1.1.3 — Minimal Chiclet Keyboard & System Enhancements
             Official signed release for Android.
             
-            **What's New in v1.1.2:**
+            **What's New in v1.1.3:**
             * **Zero-View-Destruction In-Place Case Shifting:**
               - Completely resolved first-character clear glitch.
               - Sentence capitalization and Shift toggling update keycaps in-place with zero latency and zero view tree destruction.
+              - Atomic batch editing (`beginBatchEdit`/`endBatchEdit`) on key commitments and suggestion replacements.
+            * **Instant Universal Text Injection:**
+              - Direct injection through active SAYN keyboard `InputConnection` with instant fallback to `SaynAccessibilityService` and clipboard.
             * **Android 13–15 Restricted Settings Bypass:**
-              - In-app guided 3-step assistant with direct App Info deep link to allow restricted accessibility settings on sideloaded APKs.
+              - In-app guided 4-step assistant with direct App Info deep link to allow restricted accessibility settings on sideloaded APKs.
             * **Signature Mammals Voice Tone:**
               - Clean casual texting with zero trailing periods promoted across all voice tools.
             * **Harmonized Minimal Architecture:**

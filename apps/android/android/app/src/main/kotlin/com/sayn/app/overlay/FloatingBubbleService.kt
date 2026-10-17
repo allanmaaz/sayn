@@ -592,11 +592,16 @@ class FloatingBubbleService : Service() {
                 val hostPackage = SaynAccessibilityService.instance?.findEditableTargetNode()?.packageName?.toString()
                 val refined = SaynCloudVoiceClient.refineText(textToInsert, hostPackage, mode = "mammals")
 
-                // 1. Inject directly into currently focused field across ANY app (WhatsApp, Slack, Gmail, etc.)
-                val injected = SaynAccessibilityService.instance?.insertTextIntoFocusedField(refined) ?: false
+                // 1. If SAYN Keyboard is actively connected, inject directly via InputConnection
+                var injected = SaynInputMethodService.instance?.commitTextFromExternal(refined) ?: false
+
+                // 2. Otherwise inject via AccessibilityService across ANY third-party keyboard/app
+                if (!injected) {
+                    injected = SaynAccessibilityService.instance?.insertTextIntoFocusedField(refined) ?: false
+                }
 
                 if (!injected) {
-                    // Fallback to clipboard if accessibility service is pending user toggle
+                    // 3. Fallback to clipboard if accessibility service is pending user toggle
                     val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                     clipboard.setPrimaryClip(android.content.ClipData.newPlainText("SAYN Voice", refined))
                     Toast.makeText(this@FloatingBubbleService, "Copied to clipboard. Enable SAYN in Accessibility for 1-tap typing!", Toast.LENGTH_SHORT).show()
