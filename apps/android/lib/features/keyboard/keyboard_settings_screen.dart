@@ -120,7 +120,7 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: const [
                         Text(
-                          'Native Android AI Keyboard',
+                          'Minimal Obsidian Chiclet Keyboard',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -129,7 +129,7 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
                         ),
                         SizedBox(height: 6),
                         Text(
-                          'SAYN Smart Keyboard integrates QuillBot-style writing modes directly above your keyboard keys. Type or select a message in WhatsApp, Instagram, or Gmail, tap a mode, and insert the refined result.',
+                          'SAYN Smart Keyboard provides an authentic obsidian chiclet typing experience with instant keycase switching, smart candidate suggestions, swipe spacebar navigation, and seamless universal voice overlay integration.',
                           style: TextStyle(
                             fontSize: 12,
                             color: SaynColors.darkSecondary,
@@ -295,52 +295,7 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Default Writing Mode Selector
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: SaynColors.darkSurface,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: SaynColors.darkDivider),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Default Writing Mode',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: SaynColors.darkText,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _modes.map((m) {
-                            final isSelected = _defaultMode == m['id'];
-                            return ChoiceChip(
-                              label: Text(m['label']!),
-                              selected: isSelected,
-                              selectedColor: SaynColors.darkAccent,
-                              labelStyle: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: isSelected ? Colors.white : SaynColors.darkSecondary,
-                              ),
-                              backgroundColor: SaynColors.darkSurface2,
-                              side: const BorderSide(color: SaynColors.darkDivider),
-                              onSelected: (val) {
-                                if (val) _updateDefaultMode(m['id']!);
-                              },
-                            );
-                          }).toList(),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+
 
                   // Typing Feedback (Haptic Vibration & Click Sound)
                   Container(

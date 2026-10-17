@@ -22,16 +22,48 @@ class UpdateInfo {
 }
 
 class UpdateService {
+  static const String _saynVersionUrl = 'https://sayn.ai/version.json';
   static const String _githubReleasesUrl =
       'https://api.github.com/repos/allanmaaz/sayn/releases/latest';
 
   static Future<UpdateInfo?> checkUpdate() async {
     try {
       final currentVersion = await PlatformChannels.getAppVersion();
+
+      // 1. Primary: Check sayn.ai/version.json (fast, unauthenticated, zero rate-limit)
+      try {
+        final res = await http.get(
+          Uri.parse(_saynVersionUrl),
+          headers: {'Accept': 'application/json', 'User-Agent': 'SAYN-Android-App'},
+        ).timeout(const Duration(seconds: 4));
+
+        if (res.statusCode == 200) {
+          final data = jsonDecode(res.body) as Map<String, dynamic>;
+          final latest = (data['version'] as String? ?? '').replaceFirst('v', '').trim();
+          final name = data['name'] as String? ?? 'SAYN Update';
+          final body = data['releaseNotes'] as String? ?? '';
+          final downloadUrl = data['downloadUrl'] as String? ??
+              'https://github.com/allanmaaz/sayn/releases/latest/download/sayn-release.apk';
+
+          return UpdateInfo(
+            hasUpdate: _isNewer(latest, currentVersion),
+            latestVersion: latest,
+            currentVersion: currentVersion,
+            downloadUrl: downloadUrl,
+            title: name,
+            releaseNotes: body,
+          );
+        }
+      } catch (_) {}
+
+      // 2. Secondary: Fallback to GitHub Releases API with explicit User-Agent
       final response = await http.get(
         Uri.parse(_githubReleasesUrl),
-        headers: {'Accept': 'application/vnd.github.v3+json'},
-      ).timeout(const Duration(seconds: 8));
+        headers: {
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'SAYN-Android-App',
+        },
+      ).timeout(const Duration(seconds: 6));
 
       if (response.statusCode != 200) return null;
 

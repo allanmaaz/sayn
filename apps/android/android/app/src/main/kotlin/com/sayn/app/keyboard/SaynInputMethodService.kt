@@ -100,9 +100,15 @@ class SaynInputMethodService : InputMethodService() {
     private var isListening = false
     private var currentSpokenText = ""
 
-    // Delete repeat handler
+    // Dedicated Handlers for delete repeat and long press
     private val deleteHandler = Handler(Looper.getMainLooper())
     private var deleteRunnable: Runnable? = null
+    private val longPressHandler = Handler(Looper.getMainLooper())
+
+    // In-place references for zero-allocation case shifting
+    private val letterKeyViews = mutableMapOf<String, TextView>()
+    private var shiftKeyContainer: FrameLayout? = null
+    private var shiftKeyIcon: ImageView? = null
 
     // Long-press key hints from user reference screenshot
     private val keyHintMap = mapOf(
@@ -458,12 +464,19 @@ class SaynInputMethodService : InputMethodService() {
         symbolLayoutMode = 0
         isCapsLock = false
         val ic = currentInputConnection
-        val info = currentInputEditorInfo
-        val capsMode = if (ic != null && info != null) ic.getCursorCapsMode(info.inputType) else 0
+        val reqModes = android.text.TextUtils.CAP_MODE_CHARACTERS or
+                       android.text.TextUtils.CAP_MODE_WORDS or
+                       android.text.TextUtils.CAP_MODE_SENTENCES
+        val capsMode = if (ic != null) ic.getCursorCapsMode(reqModes) else 0
         val before = ic?.getTextBeforeCursor(4, 0)?.toString() ?: ""
         isShifted = !isSensitiveField && (capsMode != 0 || before.isEmpty() || before.endsWith("\n") || 
                      before.endsWith(". ") || before.endsWith("? ") || before.endsWith("! "))
-        renderKeys()
+
+        if (!::keysContainer.isInitialized || keysContainer.childCount == 0 || letterKeyViews.isEmpty()) {
+            renderKeys()
+        } else {
+            updateShiftState()
+        }
         checkAutoCapitalization()
     }
 
@@ -751,23 +764,25 @@ class SaynInputMethodService : InputMethodService() {
     }
 
     private fun checkAutoCapitalization() {
-        if (isCapsLock) return
+        if (isCapsLock || symbolLayoutMode != 0) return
         val ic = currentInputConnection ?: return
         if (isSensitiveField) {
             if (isShifted) {
                 isShifted = false
-                renderKeys()
+                updateShiftState()
             }
             return
         }
-        val info = currentInputEditorInfo
-        val capsMode = if (info != null) ic.getCursorCapsMode(info.inputType) else 0
+        val reqModes = android.text.TextUtils.CAP_MODE_CHARACTERS or
+                       android.text.TextUtils.CAP_MODE_WORDS or
+                       android.text.TextUtils.CAP_MODE_SENTENCES
+        val capsMode = ic.getCursorCapsMode(reqModes)
         val before = ic.getTextBeforeCursor(4, 0)?.toString() ?: ""
         val shouldShift = (capsMode != 0) || before.isEmpty() || before.endsWith("\n") || 
                           before.endsWith(". ") || before.endsWith("? ") || before.endsWith("! ")
         if (shouldShift != isShifted) {
             isShifted = shouldShift
-            renderKeys()
+            updateShiftState()
         }
     }
 
@@ -1921,6 +1936,9 @@ class SaynInputMethodService : InputMethodService() {
 
     private fun renderKeys() {
         keysContainer.removeAllViews()
+        letterKeyViews.clear()
+        shiftKeyContainer = null
+        shiftKeyIcon = null
 
         when (symbolLayoutMode) {
             0 -> renderQwertyLayout()
@@ -1930,7 +1948,27 @@ class SaynInputMethodService : InputMethodService() {
         }
     }
 
+    private fun updateShiftState() {
+        if (symbolLayoutMode != 0) return
+        val isUpper = isShifted || isCapsLock
+        for ((baseKey, tv) in letterKeyViews) {
+            tv.text = if (isUpper) baseKey.uppercase() else baseKey.lowercase()
+        }
+        updateShiftKeyVisuals()
+    }
+
+    private fun updateShiftKeyVisuals() {
+        val isActive = isShifted || isCapsLock
+        shiftKeyContainer?.background = createObsidianKeyDrawable("SHIFT", true)
+        val tint = if (isActive) COLOR_BG else COLOR_WARM_CREAM
+        shiftKeyIcon?.setColorFilter(tint, PorterDuff.Mode.SRC_IN)
+    }
+
     private fun renderQwertyLayout() {
+        letterKeyViews.clear()
+        shiftKeyContainer = null
+        shiftKeyIcon = null
+
         // Row 1: Q W E R T Y U I O P (10 keys - weight: 1.0 each = 10.0f)
         val row1 = listOf("Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P")
         keysContainer.addView(createRowView(row1, hasSpacer = false))
@@ -2108,6 +2146,10 @@ class SaynInputMethodService : InputMethodService() {
                 layoutParams = FrameLayout.LayoutParams(dpToPx(19), dpToPx(19), Gravity.CENTER)
             }
             container.addView(iconView)
+            if (key == "SHIFT" && symbolLayoutMode == 0) {
+                shiftKeyContainer = container
+                shiftKeyIcon = iconView
+            }
         } else {
             val textView = TextView(this).apply {
                 text = displayText
@@ -2141,6 +2183,9 @@ class SaynInputMethodService : InputMethodService() {
                 )
             }
             container.addView(textView)
+            if (key.length == 1 && symbolLayoutMode == 0 && key[0].isLetter()) {
+                letterKeyViews[key.uppercase()] = textView
+            }
         }
 
         // 2. Top-Right Corner Hint (1..0, !, ?, etc. as shown in reference screenshot)
@@ -2251,13 +2296,13 @@ class SaynInputMethodService : InputMethodService() {
                     v.isPressed = true
                     isLongPressed = false
                     if (hintChar != null) {
-                        deleteHandler.postDelayed(longPressRunnable, 320)
+                        longPressHandler.postDelayed(longPressRunnable, 320)
                     }
                     true
                 }
                 MotionEvent.ACTION_UP -> {
                     v.isPressed = false
-                    deleteHandler.removeCallbacks(longPressRunnable)
+                    longPressHandler.removeCallbacks(longPressRunnable)
                     if (!isLongPressed) {
                         triggerKeyFeedback(key)
                         handleKeyAction(key)
@@ -2266,7 +2311,7 @@ class SaynInputMethodService : InputMethodService() {
                 }
                 MotionEvent.ACTION_CANCEL -> {
                     v.isPressed = false
-                    deleteHandler.removeCallbacks(longPressRunnable)
+                    longPressHandler.removeCallbacks(longPressRunnable)
                     isLongPressed = false
                     true
                 }
@@ -2400,10 +2445,15 @@ class SaynInputMethodService : InputMethodService() {
                 val before = ic.getTextBeforeCursor(2, 0)?.toString() ?: ""
                 if (now - lastSpacePressTime < 450 && before.endsWith(" ")) {
                     // Double space for period
-                    ic.deleteSurroundingText(1, 0)
-                    ic.commitText(". ", 1)
-                    isShifted = true
-                    renderKeys()
+                    ic.beginBatchEdit()
+                    try {
+                        ic.deleteSurroundingText(1, 0)
+                        ic.commitText(". ", 1)
+                        isShifted = true
+                        updateShiftState()
+                    } finally {
+                        ic.endBatchEdit()
+                    }
                     lastSpacePressTime = 0L
                     updateCandidates()
                 } else {
@@ -2471,7 +2521,7 @@ class SaynInputMethodService : InputMethodService() {
                     }
                 }
                 lastShiftPressTime = now
-                renderKeys()
+                updateShiftState()
             }
             "GLOBE" -> {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -2487,11 +2537,16 @@ class SaynInputMethodService : InputMethodService() {
                 } else {
                     key
                 }
-                ic.commitText(charToCommit, 1)
+                ic.beginBatchEdit()
+                try {
+                    ic.commitText(charToCommit, 1)
 
-                if (isShifted && !isCapsLock) {
-                    isShifted = false
-                    renderKeys()
+                    if (isShifted && !isCapsLock) {
+                        isShifted = false
+                        updateShiftState()
+                    }
+                } finally {
+                    ic.endBatchEdit()
                 }
                 updateCandidates()
             }
@@ -2631,6 +2686,8 @@ class SaynInputMethodService : InputMethodService() {
         if (instance == this) instance = null
         destroySpeechRecognizer()
         deleteRunnable?.let { deleteHandler.removeCallbacks(it) }
+        deleteHandler.removeCallbacksAndMessages(null)
+        longPressHandler.removeCallbacksAndMessages(null)
     }
 
     private fun dpToPx(dp: Float): Int = (dp * resources.displayMetrics.density).toInt()

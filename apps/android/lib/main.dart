@@ -79,9 +79,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   Widget _buildFloatingBottomNav() {
     final navItems = [
       {'label': 'Flow', 'icon': Icons.graphic_eq_rounded},
-      {'label': 'Workspace', 'icon': Icons.edit_note_rounded},
+      {'label': 'Studio', 'icon': Icons.edit_note_rounded},
       {'label': 'Overlay', 'icon': Icons.layers_rounded},
-      {'label': 'Keyboard', 'icon': Icons.keyboard_rounded},
+      {'label': 'Keys', 'icon': Icons.keyboard_rounded},
     ];
 
     return SafeArea(

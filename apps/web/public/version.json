@@ -1,0 +1,6 @@
+{
+  "version": "1.1.2",
+  "name": "SAYN v1.1.2",
+  "releaseNotes": "Zero-latency in-place keyboard typing fix, terminal installer bifurcation, and guided restricted settings assistant.",
+  "downloadUrl": "https://github.com/allanmaaz/sayn/releases/latest/download/sayn-release.apk"
+}

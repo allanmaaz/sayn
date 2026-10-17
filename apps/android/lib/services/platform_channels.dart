@@ -68,6 +68,12 @@ class PlatformChannels {
     } catch (_) {}
   }
 
+  static Future<void> openAppDetailsSettings() async {
+    try {
+      await _overlayChannel.invokeMethod('openAppDetailsSettings');
+    } catch (_) {}
+  }
+
   // Keyboard Methods
   static Future<void> openKeyboardSettings() async {
     try {
