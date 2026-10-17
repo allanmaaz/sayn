@@ -3,6 +3,9 @@ name: Build SAYN Windows Desktop
 on:
   push:
     branches: [ main, master ]
+    paths:
+      - 'apps/desktop-windows/**'
+      - '.github/workflows/build-windows.yml'
   workflow_dispatch:
 
 permissions:
@@ -58,6 +61,7 @@ jobs:
         with:
           name: sayn-windows-binaries
           path: release/windows/*.exe
+          retention-days: 1
 
       - name: Attach Windows Exe to Release
         uses: softprops/action-gh-release@v2

@@ -3,6 +3,9 @@ name: Build SAYN Android APK
 on:
   push:
     branches: [ main, master ]
+    paths:
+      - 'apps/android/**'
+      - '.github/workflows/build-android.yml'
   workflow_dispatch:
 
 permissions:
@@ -55,6 +58,7 @@ jobs:
         with:
           name: sayn-release-apk
           path: release/sayn-release.apk
+          retention-days: 1
 
       - name: Create or Update GitHub Release
         uses: softprops/action-gh-release@v2
