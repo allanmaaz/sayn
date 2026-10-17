@@ -10,6 +10,7 @@ class SaynColors {
   static const Color darkSecondary = Color(0xFFD6C7B2);
   static const Color darkMuted = Color(0xFFA89F91);
   static const Color darkDivider = Color(0xFF3D1520);
+  static const Color darkBorder = Color(0xFF3D1520);
   
   // Brand Primary & Accents
   static const Color deepMaroon = Color(0xFF6F1025);

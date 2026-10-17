@@ -186,7 +186,7 @@ class _OverlaySettingsScreenState extends State<OverlaySettingsScreen> {
                     decoration: BoxDecoration(
                       color: SaynColors.darkSurface,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: SaynColors.darkBorder),
+                      border: Border.all(color: SaynColors.darkDivider),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -248,7 +248,7 @@ class _OverlaySettingsScreenState extends State<OverlaySettingsScreen> {
                               _checkStatus();
                             },
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: SaynColors.darkBorder),
+                              side: const BorderSide(color: SaynColors.darkDivider),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
