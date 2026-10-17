@@ -217,6 +217,22 @@ struct SanPillView: View {
                     }
                 }
                 
+                // Style & Angle Chiclet Badge
+                Button(action: {
+                    waveformEngine.cycleNextStyle()
+                }) {
+                    Text(waveformEngine.activeStyleBadge)
+                        .font(.system(size: 9.5, weight: .bold, design: .rounded))
+                        .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(
+                            Capsule().fill(Color.white.opacity(0.12))
+                        )
+                }
+                .buttonStyle(PlainButtonStyle())
+                .help("Cycle style (⌥1–⌥4). Tab changes angle.")
+                
                 // 9 Dynamic Warm-Cream Equalizer Bars reacting in real-time
                 HStack(spacing: 3) {
                     ForEach(0..<9, id: \.self) { index in

@@ -19,7 +19,8 @@ export class GeminiProvider implements LLMProvider {
       params.mode,
       params.tone,
       params.targetLanguage,
-      params.customInstruction
+      params.customInstruction,
+      params.angle
     );
     const userPrompt = buildUserPrompt(params.text);
 

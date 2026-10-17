@@ -26,18 +26,66 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
     private var lastSpokenTimestamp: Date? = nil
     private var hasTriggeredSilenceCommit: Bool = false
     
+    @Published var activeStyle: String = "flow"
+    @Published var activeAngle: String = "normal"
+    
+    var activeStyleBadge: String {
+        let styleName: String
+        switch activeStyle {
+        case "flow", "fluent", "natural": styleName = "Flow"
+        case "professional": styleName = "Pro"
+        case "humanize": styleName = "Human"
+        case "mammals": styleName = "Mammal"
+        default: styleName = "Flow"
+        }
+        
+        let angleName: String
+        switch activeAngle {
+        case "normal": angleName = "Norm"
+        case "professional": angleName = "Pro"
+        case "alternative_english": angleName = "Alt"
+        default: angleName = "Norm"
+        }
+        
+        return "\(styleName) · \(angleName)"
+    }
+    
     override init() {
         super.init()
         let savedRaw = UserDefaults.standard.string(forKey: "SaynCurrentMode") ?? UserDefaults.standard.string(forKey: "SanCurrentMode") ?? "dictate"
         self.currentMode = SanExecutionMode(rawValue: savedRaw) ?? .dictate
+        let savedStyle = UserDefaults.standard.string(forKey: "SaynActiveStyle") ?? "flow"
+        self.activeStyle = savedStyle == "natural" ? "flow" : savedStyle
+        self.activeAngle = UserDefaults.standard.string(forKey: "SaynActiveAngle") ?? "normal"
     }
     
-    var activeStyle: String {
-        get {
-            return UserDefaults.standard.string(forKey: "SaynActiveStyle") ?? UserDefaults.standard.string(forKey: "SanActiveStyle") ?? "natural"
+    func setStyle(_ style: String) {
+        self.activeStyle = style
+        UserDefaults.standard.set(style, forKey: "SaynActiveStyle")
+    }
+    
+    func cycleNextStyle() {
+        let styles = ["flow", "professional", "humanize", "mammals"]
+        if let idx = styles.firstIndex(of: activeStyle) {
+            let next = styles[(idx + 1) % styles.count]
+            setStyle(next)
+        } else {
+            setStyle("flow")
         }
-        set {
-            UserDefaults.standard.set(newValue, forKey: "SaynActiveStyle")
+    }
+    
+    func setAngle(_ angle: String) {
+        self.activeAngle = angle
+        UserDefaults.standard.set(angle, forKey: "SaynActiveAngle")
+    }
+    
+    func cycleNextAngle() {
+        let angles = ["normal", "professional", "alternative_english"]
+        if let idx = angles.firstIndex(of: activeAngle) {
+            let next = angles[(idx + 1) % angles.count]
+            setAngle(next)
+        } else {
+            setAngle("normal")
         }
     }
     
@@ -160,6 +208,7 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
         
         // 3. High-Capacity Groq Whisper Turbo & LPU Polish with Mode & Vocabulary Biasing
         let styleToUse = activeStyle
+        let angleToUse = activeAngle
         let modeToUse = currentMode
         let contextToUse = selectedContextText
         
@@ -167,6 +216,7 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
             audioFileURL: tempAudioURL,
             mode: modeToUse,
             style: styleToUse,
+            angle: angleToUse,
             contextText: contextToUse,
             activeAppBundleId: activeAppBundleId
         ) { [weak self] result in
@@ -180,12 +230,12 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
                     if !trimmed.isEmpty {
                         completion(trimmed)
                     } else {
-                        let fallback = SaynVoicePolisher.shared.polishLocally(self?.lastAppleTranscript ?? "", appBundleId: activeAppBundleId)
+                        let fallback = SaynVoicePolisher.shared.polishLocally(self?.lastAppleTranscript ?? "", appBundleId: activeAppBundleId, style: styleToUse, angle: angleToUse)
                         completion(fallback)
                     }
                 case .failure(let err):
                     print("Groq transcription note: \(err). Falling back to local polish.")
-                    let fallback = SaynVoicePolisher.shared.polishLocally(self?.lastAppleTranscript ?? "", appBundleId: activeAppBundleId)
+                    let fallback = SaynVoicePolisher.shared.polishLocally(self?.lastAppleTranscript ?? "", appBundleId: activeAppBundleId, style: styleToUse, angle: angleToUse)
                     completion(fallback)
                 }
             }

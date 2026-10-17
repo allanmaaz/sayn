@@ -1,4 +1,4 @@
-import { WritingMode, WritingTone } from '@sayn/shared-types';
+import { WritingMode, WritingTone, WritingAngle } from '@sayn/shared-types';
 
 export interface Env {
   ENVIRONMENT?: string;
@@ -23,6 +23,7 @@ export interface Env {
 export interface InternalRefineParams {
   text: string;
   mode: WritingMode;
+  angle?: WritingAngle | string;
   tone?: WritingTone;
   targetLanguage?: string;
   customInstruction?: string;

@@ -1,10 +1,11 @@
-import { WRITING_MODES, WritingMode, WritingTone } from '@sayn/shared-types';
+import { WRITING_MODES, WritingMode, WritingTone, WritingAngle } from '@sayn/shared-types';
 
 export function buildSystemPrompt(
   mode: WritingMode,
   tone?: WritingTone,
   targetLanguage?: string,
-  customInstruction?: string
+  customInstruction?: string,
+  angle?: WritingAngle | string
 ): string {
   const modeInfo = WRITING_MODES[mode] || WRITING_MODES.grammar;
 
@@ -21,11 +22,25 @@ CORE OPERATIONAL RULES:
    - DO NOT OVERUSE COMMAS. Only place a comma where strictly needed to avoid confusion or at natural breathing points. Never pepper commas after every short introductory word or clause.
    - DO NOT OVERUSE FULL STOPS. Avoid choppy, fragmented, robotic sentences. Keep thoughts flowing smoothly.
    - NO UNDERSCORES OR ARTIFICIAL ARTIFACTS: Never insert underscores '_', unnatural markdown symbols, or robotic punctuation unless explicitly asked for code identifiers.
+   - STRICT ZERO TRAILING PERIODS: If the mode is 'mammals', you must NEVER append a full stop or period (.) at the very end of a single sentence or text message.
 
 SELECTED TRANSFORMATION MODE: ${modeInfo.label.toUpperCase()}
 MODE GUIDELINES:
 ${modeInfo.promptGuidance}
 `;
+
+  if (angle) {
+    if (angle === 'professional') {
+      prompt += `\nSELECTED ANGLE VARIATION: PROFESSIONAL
+Elevate clarity, structure, and formal precision. Frame ideas decisively for high-stakes business or leadership alignment.\n`;
+    } else if (angle === 'alternative_english') {
+      prompt += `\nSELECTED ANGLE VARIATION: ALTERNATIVE ENGLISH
+Infuse creative, international, or colloquial English idioms and turns of phrase. Keep the phrasing dynamic, engaging, and culturally expressive.\n`;
+    } else {
+      prompt += `\nSELECTED ANGLE VARIATION: NORMAL
+Provide the balanced, accessible, standard baseline interpretation of this style.\n`;
+    }
+  }
 
   if (tone && tone !== 'neutral') {
     prompt += `\nREQUESTED TONE ADJUSTMENT:

@@ -204,29 +204,29 @@ class FloatingBubbleService : Service() {
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // 1. Idle Squircle View (50dp x 50dp translucent dark glass)
+        // 1. Idle Squircle View (38dp x 38dp translucent dark glass)
         // ─────────────────────────────────────────────────────────────────────
         squircleView = FrameLayout(this).apply {
             val bg = GradientDrawable().apply {
                 shape = GradientDrawable.RECTANGLE
-                cornerRadius = dpToPx(16f).toFloat()
+                cornerRadius = dpToPx(11f).toFloat()
                 setColor(Color.parseColor("#E6180B0F")) // Translucent dark obsidian glass
                 setStroke(dpToPx(1.2f), Color.parseColor("#4DA83249"))
             }
             background = bg
-            elevation = dpToPx(8).toFloat()
-            layoutParams = FrameLayout.LayoutParams(dpToPx(50), dpToPx(50))
+            elevation = dpToPx(6).toFloat()
+            layoutParams = FrameLayout.LayoutParams(dpToPx(38), dpToPx(38))
 
             val micIcon = ImageView(this@FloatingBubbleService).apply {
                 setImageResource(R.drawable.ic_sayn_mic)
                 setColorFilter(Color.parseColor("#F5EBDD")) // Warm Cream
-                layoutParams = FrameLayout.LayoutParams(dpToPx(24), dpToPx(24), Gravity.CENTER)
+                layoutParams = FrameLayout.LayoutParams(dpToPx(18), dpToPx(18), Gravity.CENTER)
             }
             addView(micIcon)
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // 2. The Wispr 3-Piece Pill View ([ Close ] [ ılıll Capsule ] [ Confirm ])
+        // 2. The Wispr 3-Piece Micro-Pill View ([ Close ] [ ılıll Capsule ] [ Confirm ])
         // ─────────────────────────────────────────────────────────────────────
         wisprPillView = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -234,7 +234,7 @@ class FloatingBubbleService : Service() {
             visibility = View.GONE
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.WRAP_CONTENT,
-                dpToPx(50)
+                dpToPx(36)
             )
 
             // A. Cancel / Wrong Circle [ Close ]
@@ -246,14 +246,14 @@ class FloatingBubbleService : Service() {
                 }
                 background = bg
                 isClickable = true
-                layoutParams = LinearLayout.LayoutParams(dpToPx(44), dpToPx(44))
+                layoutParams = LinearLayout.LayoutParams(dpToPx(30), dpToPx(30))
 
                 val cancelIcon = ImageView(this@FloatingBubbleService).apply {
                     setImageResource(R.drawable.ic_sayn_close)
                     setColorFilter(Color.parseColor("#F5EBDD"))
                     layoutParams = FrameLayout.LayoutParams(
-                        dpToPx(18),
-                        dpToPx(18),
+                        dpToPx(13),
+                        dpToPx(13),
                         Gravity.CENTER
                     )
                 }
@@ -272,15 +272,15 @@ class FloatingBubbleService : Service() {
                 gravity = Gravity.CENTER_VERTICAL
                 val bg = GradientDrawable().apply {
                     shape = GradientDrawable.RECTANGLE
-                    cornerRadius = dpToPx(23f).toFloat()
+                    cornerRadius = dpToPx(16f).toFloat()
                     setColor(Color.parseColor("#E6180B0F")) // Rich frosted obsidian glass
                     setStroke(dpToPx(1.2f), Color.parseColor("#4DA83249"))
                 }
                 background = bg
-                setPadding(dpToPx(12), 0, dpToPx(14), 0)
-                layoutParams = LinearLayout.LayoutParams(dpToPx(220), dpToPx(44)).apply {
-                    marginStart = dpToPx(8)
-                    marginEnd = dpToPx(8)
+                setPadding(dpToPx(8), 0, dpToPx(8), 0)
+                layoutParams = LinearLayout.LayoutParams(dpToPx(110), dpToPx(30)).apply {
+                    marginStart = dpToPx(5)
+                    marginEnd = dpToPx(5)
                 }
 
                 // Waveform Equalizer Container ("The Wavy Thing")
@@ -298,12 +298,12 @@ class FloatingBubbleService : Service() {
                 // Live Transcript Streaming Text (No placeholder wording!)
                 transcriptText = TextView(this@FloatingBubbleService).apply {
                     text = ""
-                    textSize = 13.5f
+                    textSize = 12f
                     setTextColor(Color.parseColor("#F5EBDD"))
                     gravity = Gravity.CENTER_VERTICAL
                     isSingleLine = true
                     ellipsize = android.text.TextUtils.TruncateAt.END
-                    setPadding(dpToPx(10), 0, 0, 0)
+                    setPadding(dpToPx(6), 0, 0, 0)
                     layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
                 }
                 addView(transcriptText)
@@ -319,14 +319,14 @@ class FloatingBubbleService : Service() {
                 }
                 background = bg
                 isClickable = true
-                layoutParams = LinearLayout.LayoutParams(dpToPx(44), dpToPx(44))
+                layoutParams = LinearLayout.LayoutParams(dpToPx(30), dpToPx(30))
 
                 val confirmIcon = ImageView(this@FloatingBubbleService).apply {
                     setImageResource(R.drawable.ic_sayn_check)
-                    setColorFilter(Color.parseColor("#100709")) // Contrast dark checkmark
+                    setColorFilter(Color.parseColor("#6F1025"))
                     layoutParams = FrameLayout.LayoutParams(
-                        dpToPx(20),
-                        dpToPx(20),
+                        dpToPx(13),
+                        dpToPx(13),
                         Gravity.CENTER
                     )
                 }
@@ -334,12 +334,10 @@ class FloatingBubbleService : Service() {
 
                 setOnClickListener {
                     performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                    commitVoiceDictation()
+                    confirmVoiceDictation()
                 }
             }
             addView(confirmCircle)
-        }
-
         rootContainer?.addView(squircleView)
         rootContainer?.addView(wisprPillView)
 
@@ -351,16 +349,16 @@ class FloatingBubbleService : Service() {
 
     private fun buildWaveformBars() {
         waveformContainer.removeAllViews()
-        for (i in 0..6) {
+        for (i in 0..3) {
             val bar = View(this).apply {
                 val bg = GradientDrawable().apply {
-                    cornerRadius = dpToPx(2).toFloat()
+                    cornerRadius = dpToPx(1.5f).toFloat()
                     setColor(Color.parseColor("#A83249")) // Rose-Maroon soundwave
                 }
                 background = bg
-                layoutParams = LinearLayout.LayoutParams(dpToPx(3), dpToPx(10 + (i % 3) * 4)).apply {
-                    marginStart = dpToPx(2)
-                    marginEnd = dpToPx(2)
+                layoutParams = LinearLayout.LayoutParams(dpToPx(2.5f), dpToPx(8 + (i % 3) * 3)).apply {
+                    marginStart = dpToPx(1.5f)
+                    marginEnd = dpToPx(1.5f)
                 }
             }
             waveformContainer.addView(bar)
@@ -368,10 +366,10 @@ class FloatingBubbleService : Service() {
     }
 
     private fun updateWaveformBars(rmsdB: Float) {
-        val boost = Math.max(8, (rmsdB * 2.8f).toInt())
+        val boost = Math.max(6, (rmsdB * 2.2f).toInt())
         for (i in 0 until waveformContainer.childCount) {
             val bar = waveformContainer.getChildAt(i)
-            bar.layoutParams.height = dpToPx(Math.min(30, boost + (i % 3) * 4))
+            bar.layoutParams.height = dpToPx(Math.min(20, boost + (i % 3) * 3))
             bar.requestLayout()
         }
     }

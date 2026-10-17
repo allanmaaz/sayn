@@ -122,14 +122,14 @@ class SaynInputMethodService : InputMethodService() {
         "." to "..."
     )
 
-    // Writing Modes (Including signature Mammals mode)
+    // 4 Core AI Writing Styles + Utilities
     private val modes = listOf(
+        "flow" to "Fluency",
+        "professional" to "Professional",
+        "humanize" to "Humanize",
         "mammals" to "Mammals",
         "grammar" to "Grammar",
         "rewrite" to "Rewrite",
-        "humanize" to "Humanize",
-        "flow" to "Flow",
-        "professional" to "Professional",
         "casual" to "Casual",
         "shorten" to "Shorten"
     )
@@ -544,10 +544,12 @@ class SaynInputMethodService : InputMethodService() {
             isFocusable = false
             setOnClickListener {
                 triggerKeyFeedback("ENTER")
-                // Delegate voice & smart polishing to the floating microphone overlay
-                com.sayn.app.overlay.FloatingBubbleService.instance?.let { bubble ->
-                    bubble.updateVisibility(true)
-                } ?: run {
+                val ic = currentInputConnection
+                val before = ic?.getTextBeforeCursor(40, 0)?.toString() ?: ""
+                val selected = ic?.getSelectedText(0)?.toString() ?: ""
+                if (before.isNotBlank() || selected.isNotBlank()) {
+                    openFullAiPanel(activeMode)
+                } else {
                     toggleInKeyboardVoice()
                 }
             }
@@ -728,8 +730,8 @@ class SaynInputMethodService : InputMethodService() {
             val emojiMatch = emojiSuggestions[lower]
 
             val center = if (matches.isNotEmpty()) matches[0] else typed
-            val left = if (matches.size > 1) matches[1] else typed
-            val right = emojiMatch ?: if (matches.size > 2) matches[2] else ""
+            val left = if (matches.isNotEmpty()) typed else ""
+            val right = emojiMatch ?: if (matches.size > 1) matches[1] else ""
 
             val isCapitalized = typed.isNotEmpty() && typed[0].isUpperCase()
             val finalCenter = if (isCapitalized && center.isNotEmpty()) center.replaceFirstChar { it.uppercase() } else center
@@ -800,11 +802,11 @@ class SaynInputMethodService : InputMethodService() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             visibility = View.GONE
-            setPadding(dpToPx(8), dpToPx(3), dpToPx(8), dpToPx(5))
+            setPadding(dpToPx(6), dpToPx(2), dpToPx(6), dpToPx(2))
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                dpToPx(52)
-            ).apply { bottomMargin = dpToPx(2) }
+                dpToPx(38)
+            ).apply { bottomMargin = dpToPx(4) }
         }
 
         // 1. Left Circle: Frosted Glass Cancel Button [ Close ]
@@ -817,15 +819,15 @@ class SaynInputMethodService : InputMethodService() {
             background = bg
             isClickable = true
             isFocusable = false
-            layoutParams = LinearLayout.LayoutParams(dpToPx(44), dpToPx(44))
+            layoutParams = LinearLayout.LayoutParams(dpToPx(30), dpToPx(30))
         }
 
         val cancelIcon = ImageView(this).apply {
             setImageResource(R.drawable.ic_sayn_close)
             setColorFilter(COLOR_WARM_CREAM)
             layoutParams = FrameLayout.LayoutParams(
-                dpToPx(18),
-                dpToPx(18),
+                dpToPx(13),
+                dpToPx(13),
                 Gravity.CENTER
             )
         }
@@ -843,21 +845,21 @@ class SaynInputMethodService : InputMethodService() {
             gravity = Gravity.CENTER_VERTICAL
             val bg = GradientDrawable().apply {
                 shape = GradientDrawable.RECTANGLE
-                cornerRadius = dpToPx(23f).toFloat()
+                cornerRadius = dpToPx(15f).toFloat()
                 setColor(COLOR_SURFACE)
                 setStroke(dpToPx(1f), COLOR_BORDER)
             }
             background = bg
-            setPadding(dpToPx(14), 0, dpToPx(14), 0)
-            layoutParams = LinearLayout.LayoutParams(0, dpToPx(44), 1f).apply {
-                marginStart = dpToPx(8)
-                marginEnd = dpToPx(8)
+            setPadding(dpToPx(10), 0, dpToPx(10), 0)
+            layoutParams = LinearLayout.LayoutParams(0, dpToPx(30), 1f).apply {
+                marginStart = dpToPx(5)
+                marginEnd = dpToPx(5)
             }
         }
 
         voiceTranscriptText = TextView(this).apply {
             text = "Listening..."
-            textSize = 13.5f
+            textSize = 12.5f
             setTextColor(COLOR_WARM_CREAM)
             gravity = Gravity.CENTER_VERTICAL
             isSingleLine = true
@@ -866,12 +868,12 @@ class SaynInputMethodService : InputMethodService() {
         }
 
         voiceStatusDot = TextView(this).apply {
-            text = "• • • • •"
-            textSize = 15f
+            text = "• • •"
+            textSize = 13f
             setTextColor(COLOR_ROSE_MAROON)
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dpToPx(6), 0, 0, 0)
+            setPadding(dpToPx(4), 0, 0, 0)
         }
 
         centerCapsule.addView(voiceTranscriptText)
@@ -888,15 +890,15 @@ class SaynInputMethodService : InputMethodService() {
             background = bg
             isClickable = true
             isFocusable = false
-            layoutParams = LinearLayout.LayoutParams(dpToPx(44), dpToPx(44))
+            layoutParams = LinearLayout.LayoutParams(dpToPx(30), dpToPx(30))
         }
 
         btnCorrectAndInsert = ImageView(this).apply {
             setImageResource(R.drawable.ic_sayn_check)
             setColorFilter(COLOR_WARM_CREAM)
             layoutParams = FrameLayout.LayoutParams(
-                dpToPx(20),
-                dpToPx(20),
+                dpToPx(14),
+                dpToPx(14),
                 Gravity.CENTER
             )
         }
@@ -974,134 +976,137 @@ class SaynInputMethodService : InputMethodService() {
 
     private fun buildSuggestionArea() {
         suggestionArea = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
             visibility = View.GONE
             val bg = GradientDrawable().apply {
-                cornerRadius = dpToPx(10).toFloat()
+                cornerRadius = dpToPx(8).toFloat()
                 setColor(COLOR_SURFACE)
-                setStroke(dpToPx(1.2f), COLOR_BORDER)
+                setStroke(dpToPx(1f), COLOR_BORDER)
             }
             background = bg
-            setPadding(dpToPx(10), dpToPx(8), dpToPx(10), dpToPx(8))
+            setPadding(dpToPx(6), dpToPx(2), dpToPx(6), dpToPx(2))
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
+                dpToPx(38)
             ).apply { bottomMargin = dpToPx(4) }
         }
 
-        val topRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
+        // 1. Left: Mode Chiclet (e.g. "✦ Flow ▾" or "✦ Mammals ▾")
         suggestionBadge = TextView(this).apply {
-            text = "REFINEMENT SUGGESTION"
-            textSize = 10f
-            setTextColor(COLOR_ROSE_MAROON)
+            text = "✦ FLOW ▾"
+            textSize = 11f
+            setTextColor(COLOR_WARM_CREAM)
             typeface = Typeface.DEFAULT_BOLD
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-
-        btnDismiss = ImageView(this).apply {
-            setImageResource(R.drawable.ic_sayn_close)
-            setColorFilter(COLOR_MUTED_CREAM)
-            layoutParams = LinearLayout.LayoutParams(dpToPx(18), dpToPx(18)).apply {
-                marginEnd = dpToPx(4)
+            gravity = Gravity.CENTER
+            val pBg = GradientDrawable().apply {
+                cornerRadius = dpToPx(12).toFloat()
+                setColor(COLOR_MAROON)
             }
-            setOnClickListener { hideSuggestionArea() }
+            background = pBg
+            setPadding(dpToPx(8), 0, dpToPx(8), 0)
+            isClickable = true
+            isFocusable = false
+            setOnClickListener {
+                cycleNextMode()
+            }
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                dpToPx(28)
+            ).apply { marginEnd = dpToPx(6) }
         }
+        suggestionArea.addView(suggestionBadge)
 
-        topRow.addView(suggestionBadge)
-        topRow.addView(btnDismiss)
-        suggestionArea.addView(topRow)
-
+        // 2. Center: One-line preview of the refined text
         suggestionText = TextView(this).apply {
             text = ""
-            textSize = 13.5f
+            textSize = 12.5f
             setTextColor(COLOR_WARM_CREAM)
-            setPadding(0, dpToPx(4), 0, dpToPx(6))
-            maxLines = 4
+            gravity = Gravity.CENTER_VERTICAL
+            isSingleLine = true
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            setPadding(dpToPx(4), 0, dpToPx(4), 0)
+            isClickable = true
+            isFocusable = false
+            setOnClickListener {
+                handleReplace()
+            }
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
         }
         suggestionArea.addView(suggestionText)
 
-        val actionsRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
+        // 3. Right Action 1: [ ✓ ] Apply Button
         btnReplace = TextView(this).apply {
-            text = "Replace"
-            val chk = ContextCompat.getDrawable(this@SaynInputMethodService, R.drawable.ic_sayn_check)?.mutate()
-            chk?.setBounds(0, 0, dpToPx(14), dpToPx(14))
-            chk?.setColorFilter(COLOR_WARM_CREAM, PorterDuff.Mode.SRC_IN)
-            setCompoundDrawables(chk, null, null, null)
-            compoundDrawablePadding = dpToPx(4)
-            textSize = 12f
-            setTextColor(COLOR_WARM_CREAM)
+            text = "✓"
+            textSize = 14f
             typeface = Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER
-            background = createIosKeyDrawable(
-                normalColor = COLOR_MAROON,
-                pressedColor = COLOR_MAROON_PRESSED,
-                shadowColor = COLOR_KEY_SHADOW,
-                cornerRadiusDp = 7f
-            )
-            setOnClickListener { handleReplace() }
-            layoutParams = LinearLayout.LayoutParams(0, dpToPx(32), 1.2f).apply {
-                marginEnd = dpToPx(6)
-            }
-        }
-
-        btnInsert = TextView(this).apply {
-            text = "Insert"
-            textSize = 11.5f
             setTextColor(COLOR_WARM_CREAM)
             gravity = Gravity.CENTER
-            background = createIosKeyDrawable(
-                normalColor = COLOR_KEY_NORMAL,
-                pressedColor = COLOR_KEY_PRESSED,
-                shadowColor = COLOR_KEY_SHADOW,
-                cornerRadiusDp = 7f
-            )
-            setOnClickListener { handleInsert() }
-            layoutParams = LinearLayout.LayoutParams(0, dpToPx(32), 1f).apply {
-                marginEnd = dpToPx(6)
+            val bg = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(COLOR_ROSE_MAROON)
             }
+            background = bg
+            isClickable = true
+            isFocusable = false
+            layoutParams = LinearLayout.LayoutParams(dpToPx(30), dpToPx(30)).apply {
+                marginStart = dpToPx(4)
+            }
+            setOnClickListener { handleReplace() }
         }
+        suggestionArea.addView(btnReplace)
 
-        btnCopy = TextView(this).apply {
-            text = "Copy"
-            textSize = 11.5f
-            setTextColor(COLOR_MUTED_CREAM)
-            gravity = Gravity.CENTER
-            background = createIosKeyDrawable(
-                normalColor = COLOR_KEY_SPECIAL,
-                pressedColor = COLOR_KEY_SPECIAL_PRESSED,
-                shadowColor = COLOR_KEY_SHADOW,
-                cornerRadiusDp = 7f
-            )
-            setOnClickListener { handleCopy() }
-            layoutParams = LinearLayout.LayoutParams(0, dpToPx(32), 0.9f)
+        // 4. Right Action 2: [ ✕ ] Cancel Button
+        btnDismiss = ImageView(this).apply {
+            setImageResource(R.drawable.ic_sayn_close)
+            setColorFilter(COLOR_MUTED_CREAM, PorterDuff.Mode.SRC_IN)
+            layoutParams = LinearLayout.LayoutParams(dpToPx(28), dpToPx(28)).apply {
+                marginStart = dpToPx(4)
+            }
+            setPadding(dpToPx(6), dpToPx(6), dpToPx(6), dpToPx(6))
+            isClickable = true
+            isFocusable = false
+            setOnClickListener { hideSuggestionArea() }
         }
+        suggestionArea.addView(btnDismiss)
 
-        actionsRow.addView(btnReplace)
-        actionsRow.addView(btnInsert)
-        actionsRow.addView(btnCopy)
-        suggestionArea.addView(actionsRow)
+        btnInsert = TextView(this)
+        btnCopy = TextView(this)
 
         rootLayout.addView(suggestionArea)
     }
 
     private fun showSuggestion(refined: String, mode: String) {
         lastSuggestion = refined
-        suggestionBadge.text = "${mode.uppercase()} REFINEMENT"
+        suggestionBadge.text = "✦ ${formatModeTitle(mode).uppercase()} ▾"
         suggestionText.text = refined
         suggestionArea.visibility = View.VISIBLE
+        if (::candidateStrip.isInitialized) candidateStrip.visibility = View.GONE
         hideVoiceLiveBar()
     }
 
     private fun hideSuggestionArea() {
         suggestionArea.visibility = View.GONE
+        if (::candidateStrip.isInitialized && !isSensitiveField) candidateStrip.visibility = View.VISIBLE
+    }
+
+    private fun cycleNextMode() {
+        val coreModes = listOf("flow", "professional", "humanize", "mammals")
+        val currentIndex = coreModes.indexOf(activeMode.lowercase())
+        val nextMode = if (currentIndex != -1) {
+            coreModes[(currentIndex + 1) % coreModes.size]
+        } else {
+            coreModes[0]
+        }
+        activeMode = nextMode
+        getSharedPreferences("com.sayn.app.PREFS", Context.MODE_PRIVATE)
+            .edit().putString("default_mode", nextMode).apply()
+
+        if (lastOriginalText.isNotBlank()) {
+            runFullAiRefinement(nextMode)
+        } else {
+            suggestionBadge.text = "✦ ${formatModeTitle(nextMode).uppercase()} ▾"
+        }
     }
 
     private fun handleReplace() {
@@ -1125,7 +1130,7 @@ class SaynInputMethodService : InputMethodService() {
         }
 
         hideSuggestionArea()
-        Toast.makeText(this, "Replaced with refined text", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Polished text applied", Toast.LENGTH_SHORT).show()
     }
 
     private fun handleInsert() {
@@ -1297,10 +1302,7 @@ class SaynInputMethodService : InputMethodService() {
             }
             background = bg
             setPadding(dpToPx(8), dpToPx(6), dpToPx(8), dpToPx(8))
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                dpToPx(270) // Matches keyboard height perfectly!
-            )
+            layoutParams = LinearLayout.LayoutParams(0, 0)
         }
 
         // 1. Top Strip: Mode Pills (Grammar, Rewrite, Humanize, Flow, Professional, etc.)
@@ -1572,29 +1574,22 @@ class SaynInputMethodService : InputMethodService() {
         }
 
         lastOriginalText = textToTransform
-        keysContainer.visibility = View.GONE
-        aiToolbar.visibility = View.GONE
-        voiceLiveBar.visibility = View.GONE
-        suggestionArea.visibility = View.GONE
-        if (::candidateStrip.isInitialized) candidateStrip.visibility = View.GONE
-        fullAiPanelContainer.visibility = View.VISIBLE
-
         if (textToTransform.isBlank()) {
-            aiCardTitle.text = "• Input Empty"
-            aiCardDiffWord.text = "Type some words first"
-            aiCardDiffBadge.text = ""
-            aiCardPreview.text = "Tap the keyboard icon at bottom left to type a message, then tap the AI sparkle icon to polish it."
+            Toast.makeText(this, "Type some text to polish first", Toast.LENGTH_SHORT).show()
             return
         }
 
+        // Keys stay 100% visible and interactive!
+        if (::keysContainer.isInitialized) keysContainer.visibility = View.VISIBLE
+        if (::fullAiPanelContainer.isInitialized) fullAiPanelContainer.visibility = View.GONE
+        showSuggestion("Polishing with SAYN AI...", mode)
         runFullAiRefinement(mode)
     }
 
     private fun closeFullAiPanel() {
-        fullAiPanelContainer.visibility = View.GONE
-        keysContainer.visibility = View.VISIBLE
-        aiToolbar.visibility = if (isSensitiveField) View.GONE else View.VISIBLE
-        if (::candidateStrip.isInitialized && !isSensitiveField) candidateStrip.visibility = View.VISIBLE
+        if (::fullAiPanelContainer.isInitialized) fullAiPanelContainer.visibility = View.GONE
+        if (::keysContainer.isInitialized) keysContainer.visibility = View.VISIBLE
+        hideSuggestionArea()
     }
 
     private fun formatModeTitle(mode: String): String {
@@ -1607,34 +1602,19 @@ class SaynInputMethodService : InputMethodService() {
 
     private fun runFullAiRefinement(mode: String) {
         if (lastOriginalText.isBlank()) return
-        aiCardTitle.text = "• Refining (${formatModeTitle(mode)})..."
-        aiCardDiffWord.text = "Analyzing..."
-        aiCardDiffBadge.text = ""
-        aiCardPreview.text = "SAYN AI is polishing your text..."
+        suggestionBadge.text = "✦ ${formatModeTitle(mode).uppercase()} ▾"
+        suggestionText.text = "Polishing with SAYN AI..."
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val refined = requestAiRefinement(lastOriginalText, mode)
                 withContext(Dispatchers.Main) {
                     lastSuggestion = refined
-                    aiCardTitle.text = when (mode) {
-                        "grammar" -> "• Grammar correction"
-                        "flow" -> "• Flow optimization"
-                        "professional" -> "• Professional polish"
-                        "humanize" -> "• Humanized tone"
-                        else -> "• ${formatModeTitle(mode)} Polish"
-                    }
-                    val diff = extractDiffSnippet(lastOriginalText, refined)
-                    aiCardDiffWord.text = diff.first
-                    aiCardDiffBadge.text = diff.second
-                    aiCardPreview.text = refined
+                    showSuggestion(refined, mode)
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    aiCardTitle.text = "• Offline Mode"
-                    aiCardDiffWord.text = "Could not reach AI"
-                    aiCardDiffBadge.text = ""
-                    aiCardPreview.text = lastOriginalText
+                    showSuggestion(lastOriginalText, mode)
                 }
             }
         }

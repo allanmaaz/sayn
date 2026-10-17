@@ -122,9 +122,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 2. Tone / Style Submenu
         let styleSubmenu = NSMenu()
         let styles = [
-            ("natural", "Natural (Authentic & Conversational)"),
-            ("fluent", "Fluent (Natural & Polished Grammar)"),
-            ("professional", "Professional (Executive & Formal)")
+            ("flow", "Fluency (⌥1) — Natural, flowing cadence"),
+            ("professional", "Professionalism (⌥2) — Executive boardroom clarity"),
+            ("humanize", "Humanization (⌥3) — Authentic conversational nuance"),
+            ("mammals", "Mammals (⌥4) — Zero periods, direct & active")
         ]
         
         for (id, label) in styles {
@@ -136,9 +137,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             styleSubmenu.addItem(item)
         }
         
-        let styleMenuItem = NSMenuItem(title: "Tone & Style Mode", action: nil, keyEquivalent: "")
+        let styleMenuItem = NSMenuItem(title: "AI Style: \(waveformEngine.activeStyle.capitalized)", action: nil, keyEquivalent: "")
         styleMenuItem.submenu = styleSubmenu
         menu.addItem(styleMenuItem)
+        
+        // 3. Angle Variation Submenu
+        let angleSubmenu = NSMenu()
+        let angles = [
+            ("normal", "Normal (Standard balanced expression)"),
+            ("professional", "Professional (Articulate & executive angle)"),
+            ("alternative_english", "Alternative English (Rich vocabulary & vibrant cadence)")
+        ]
+        for (id, label) in angles {
+            let item = NSMenuItem(title: label, action: #selector(selectAngle(_:)), keyEquivalent: "")
+            item.representedObject = id
+            if id == waveformEngine.activeAngle {
+                item.state = .on
+            }
+            angleSubmenu.addItem(item)
+        }
+        let angleMenuItem = NSMenuItem(title: "Angle: \(waveformEngine.activeAngle.replacingOccurrences(of: "_", with: " ").capitalized)", action: nil, keyEquivalent: "")
+        angleMenuItem.submenu = angleSubmenu
+        menu.addItem(angleMenuItem)
         
         menu.addItem(NSMenuItem.separator())
         
@@ -179,7 +199,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     @objc func selectStyle(_ sender: NSMenuItem) {
         if let styleId = sender.representedObject as? String {
-            waveformEngine.activeStyle = styleId
+            waveformEngine.setStyle(styleId)
+            setupStatusItem()
+        }
+    }
+    
+    @objc func selectAngle(_ sender: NSMenuItem) {
+        if let angleId = sender.representedObject as? String {
+            waveformEngine.setAngle(angleId)
             setupStatusItem()
         }
     }
@@ -280,36 +307,108 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return event
         }
         
-        // 2. Global Monitor for Option + Space (Toggle) & Option + M (Cycle Mode)
+        // 2. Global Monitor for Option Shortcuts (Space, M, 1–4, Tab/A)
         eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            if event.modifierFlags.contains(.option) && event.keyCode == 49 { // Option + Space
-                DispatchQueue.main.async {
-                    self?.togglePill()
+            guard let self = self else { return }
+            if event.modifierFlags.contains(.option) {
+                switch event.keyCode {
+                case 49: // Option + Space
+                    DispatchQueue.main.async { self.togglePill() }
+                case 46: // Option + M
+                    DispatchQueue.main.async {
+                        self.waveformEngine.cycleNextMode()
+                        self.setupStatusItem()
+                    }
+                case 18: // Option + 1 -> Fluency
+                    DispatchQueue.main.async {
+                        self.waveformEngine.setStyle("flow")
+                        self.setupStatusItem()
+                    }
+                case 19: // Option + 2 -> Professionalism
+                    DispatchQueue.main.async {
+                        self.waveformEngine.setStyle("professional")
+                        self.setupStatusItem()
+                    }
+                case 20: // Option + 3 -> Humanization
+                    DispatchQueue.main.async {
+                        self.waveformEngine.setStyle("humanize")
+                        self.setupStatusItem()
+                    }
+                case 21: // Option + 4 -> Mammals
+                    DispatchQueue.main.async {
+                        self.waveformEngine.setStyle("mammals")
+                        self.setupStatusItem()
+                    }
+                case 48, 0: // Option + Tab or Option + A -> Cycle Angle
+                    DispatchQueue.main.async {
+                        self.waveformEngine.cycleNextAngle()
+                        self.setupStatusItem()
+                    }
+                default:
+                    break
                 }
-            } else if event.modifierFlags.contains(.option) && event.keyCode == 46 { // Option + M
+            } else if event.keyCode == 48 && (self.pillWindow?.isVisible == true) { // Tab key while recording
                 DispatchQueue.main.async {
-                    self?.waveformEngine.cycleNextMode()
-                    self?.setupStatusItem()
+                    self.waveformEngine.cycleNextAngle()
                 }
             }
         }
         
-        // 3. Local Monitor for Escape to dismiss, Option+Space, Option+M
+        // 3. Local Monitor for Escape to dismiss, Option+Space, Option+M, Option+1–4, Tab
         localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            if event.modifierFlags.contains(.option) && event.keyCode == 49 {
-                DispatchQueue.main.async {
-                    self?.togglePill()
+            guard let self = self else { return event }
+            if event.modifierFlags.contains(.option) {
+                switch event.keyCode {
+                case 49:
+                    DispatchQueue.main.async { self.togglePill() }
+                    return nil
+                case 46:
+                    DispatchQueue.main.async {
+                        self.waveformEngine.cycleNextMode()
+                        self.setupStatusItem()
+                    }
+                    return nil
+                case 18:
+                    DispatchQueue.main.async {
+                        self.waveformEngine.setStyle("flow")
+                        self.setupStatusItem()
+                    }
+                    return nil
+                case 19:
+                    DispatchQueue.main.async {
+                        self.waveformEngine.setStyle("professional")
+                        self.setupStatusItem()
+                    }
+                    return nil
+                case 20:
+                    DispatchQueue.main.async {
+                        self.waveformEngine.setStyle("humanize")
+                        self.setupStatusItem()
+                    }
+                    return nil
+                case 21:
+                    DispatchQueue.main.async {
+                        self.waveformEngine.setStyle("mammals")
+                        self.setupStatusItem()
+                    }
+                    return nil
+                case 48, 0:
+                    DispatchQueue.main.async {
+                        self.waveformEngine.cycleNextAngle()
+                        self.setupStatusItem()
+                    }
+                    return nil
+                default:
+                    break
                 }
-                return nil
-            } else if event.modifierFlags.contains(.option) && event.keyCode == 46 {
+            } else if event.keyCode == 48 && (self.pillWindow?.isVisible == true) {
                 DispatchQueue.main.async {
-                    self?.waveformEngine.cycleNextMode()
-                    self?.setupStatusItem()
+                    self.waveformEngine.cycleNextAngle()
                 }
                 return nil
             } else if event.keyCode == 53 { // Escape
                 DispatchQueue.main.async {
-                    self?.hidePill()
+                    self.hidePill()
                 }
                 return nil
             }

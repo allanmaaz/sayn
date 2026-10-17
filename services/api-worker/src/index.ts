@@ -17,10 +17,13 @@ const router = new ProviderRouter();
 const RefineSchema = z.object({
   text: z.string().min(1, 'Text cannot be empty').max(8000, 'Text exceeds 8000 character maximum'),
   mode: z.enum([
+    'flow',
+    'professional',
+    'humanize',
+    'mammals',
     'standard',
     'fluent',
     'natural',
-    'professional',
     'casual',
     'shorten',
     'expand',
@@ -36,6 +39,7 @@ const RefineSchema = z.object({
     'academic',
     'translate',
   ] as const),
+  angle: z.enum(['normal', 'professional', 'alternative_english'] as const).optional(),
   tone: z
     .enum(['neutral', 'professional', 'casual', 'friendly', 'confident', 'academic', 'direct'] as const)
     .optional(),
@@ -96,6 +100,19 @@ export default {
         };
 
         return jsonResponse(health, 200, origin);
+      }
+
+      // 1b. PUBLIC APP VERSION CHECK & UPDATE SERVER
+      if (url.pathname === '/api/v1/version' && request.method === 'GET') {
+        const updatePayload = {
+          version: '1.1.3',
+          versionCode: 14,
+          name: 'SAYN v1.1.3',
+          releaseNotes: 'Zero-view-destruction chiclet keycaps, resolved first-letter auto-clear typing glitch, ultra-compact mic pill, and multi-angle voice tones.',
+          downloadUrl: 'https://github.com/allanmaaz/sayn/releases/download/v1.1.3/sayn-release.apk',
+          publishedAt: new Date().toISOString(),
+        };
+        return jsonResponse(updatePayload, 200, origin);
       }
 
       // 2. USAGE STATUS
@@ -185,9 +202,14 @@ export default {
           const originalWords = parsed.data.text.trim().split(/\s+/).filter(Boolean).length;
           const refinedWords = providerResult.refinedText.trim().split(/\s+/).filter(Boolean).length;
 
+          let finalRefinedText = providerResult.refinedText;
+          if (parsed.data.mode === 'mammals' && finalRefinedText.endsWith('.')) {
+            finalRefinedText = finalRefinedText.slice(0, -1).trimEnd();
+          }
+
           const responsePayload: RefineResponse = {
             success: true,
-            refinedText: providerResult.refinedText,
+            refinedText: finalRefinedText,
             mode: parsed.data.mode,
             tone: parsed.data.tone,
             stats: {

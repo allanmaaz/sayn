@@ -22,6 +22,8 @@ class UpdateInfo {
 }
 
 class UpdateService {
+  static const String _workerVersionUrl =
+      'https://sayn-api-worker.allanmaazimdad.workers.dev/api/v1/version';
   static const String _saynVersionUrl = 'https://sayn.ai/version.json';
   static const String _githubReleasesUrl =
       'https://api.github.com/repos/allanmaaz/sayn/releases/latest';
@@ -30,31 +32,33 @@ class UpdateService {
     try {
       final currentVersion = await PlatformChannels.getAppVersion();
 
-      // 1. Primary: Check sayn.ai/version.json (fast, unauthenticated, zero rate-limit)
-      try {
-        final res = await http.get(
-          Uri.parse(_saynVersionUrl),
-          headers: {'Accept': 'application/json', 'User-Agent': 'SAYN-Android-App'},
-        ).timeout(const Duration(seconds: 4));
+      // 1. Primary: Check live Cloudflare Worker endpoint (always-on, unauthenticated, zero rate-limit)
+      for (final endpoint in [_workerVersionUrl, _saynVersionUrl]) {
+        try {
+          final res = await http.get(
+            Uri.parse(endpoint),
+            headers: {'Accept': 'application/json', 'User-Agent': 'SAYN-Android-App'},
+          ).timeout(const Duration(seconds: 4));
 
-        if (res.statusCode == 200) {
-          final data = jsonDecode(res.body) as Map<String, dynamic>;
-          final latest = (data['version'] as String? ?? '').replaceFirst('v', '').trim();
-          final name = data['name'] as String? ?? 'SAYN Update';
-          final body = data['releaseNotes'] as String? ?? '';
-          final downloadUrl = data['downloadUrl'] as String? ??
-              'https://github.com/allanmaaz/sayn/releases/latest/download/sayn-release.apk';
+          if (res.statusCode == 200) {
+            final data = jsonDecode(res.body) as Map<String, dynamic>;
+            final latest = (data['version'] as String? ?? '').replaceFirst('v', '').trim();
+            final name = data['name'] as String? ?? 'SAYN Update';
+            final body = data['releaseNotes'] as String? ?? '';
+            final downloadUrl = data['downloadUrl'] as String? ??
+                'https://github.com/allanmaaz/sayn/releases/download/v1.1.3/sayn-release.apk';
 
-          return UpdateInfo(
-            hasUpdate: _isNewer(latest, currentVersion),
-            latestVersion: latest,
-            currentVersion: currentVersion,
-            downloadUrl: downloadUrl,
-            title: name,
-            releaseNotes: body,
-          );
-        }
-      } catch (_) {}
+            return UpdateInfo(
+              hasUpdate: _isNewer(latest, currentVersion),
+              latestVersion: latest,
+              currentVersion: currentVersion,
+              downloadUrl: downloadUrl,
+              title: name,
+              releaseNotes: body,
+            );
+          }
+        } catch (_) {}
+      }
 
       // 2. Secondary: Fallback to GitHub Releases API with explicit User-Agent
       final response = await http.get(

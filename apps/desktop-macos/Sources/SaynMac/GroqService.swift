@@ -107,7 +107,8 @@ final class GroqService {
     func transcribeAndPolish(
         audioFileURL: URL,
         mode: SanExecutionMode = .dictate,
-        style: String = "natural",
+        style: String = "flow",
+        angle: String = "normal",
         contextText: String? = nil,
         activeAppBundleId: String? = nil,
         completion: @escaping (Result<String, Error>) -> Void
@@ -126,6 +127,7 @@ final class GroqService {
                         rawText: rawText,
                         mode: mode,
                         style: style,
+                        angle: angle,
                         contextText: contextText,
                         appBundleId: activeAppBundleId,
                         completion: completion
@@ -139,6 +141,7 @@ final class GroqService {
                                 rawText: rawText,
                                 mode: mode,
                                 style: style,
+                                angle: angle,
                                 contextText: contextText,
                                 appBundleId: activeAppBundleId,
                                 completion: completion
@@ -160,6 +163,7 @@ final class GroqService {
                     rawText: rawText,
                     mode: mode,
                     style: style,
+                    angle: angle,
                     contextText: contextText,
                     appBundleId: activeAppBundleId,
                     completion: completion
@@ -270,6 +274,7 @@ final class GroqService {
         rawText: String,
         mode: SanExecutionMode,
         style: String,
+        angle: String = "normal",
         contextText: String?,
         appBundleId: String?,
         completion: @escaping (Result<String, Error>) -> Void
@@ -287,15 +292,15 @@ final class GroqService {
         }
         
         // 2. Direct Dictate Mode: Fast Local Natural Polish (Sub-5ms, Zero Excessive Punctuation)
-        if mode == .dictate && style == "natural" {
-            let polished = SaynVoicePolisher.shared.polishLocally(clean, appBundleId: appBundleId)
+        if mode == .dictate && (style == "natural" || style == "flow") && angle == "normal" {
+            let polished = SaynVoicePolisher.shared.polishLocally(clean, appBundleId: appBundleId, style: style, angle: angle)
             completion(.success(polished))
             return
         }
         
-        // 3. Cloud Polish for Complex Modes (Prompt, Translate, Code, Proofread)
-        refineViaGateway(text: clean, mode: mode, style: style, contextText: contextText) { result in
-            let finalOutput = result.isEmpty ? SaynVoicePolisher.shared.polishLocally(clean, appBundleId: appBundleId) : result
+        // 3. Cloud Polish for Modes & Styles (Flow, Professional, Humanize, Mammals with Angles)
+        refineViaGateway(text: clean, mode: mode, style: style, angle: angle, contextText: contextText) { result in
+            let finalOutput = result.isEmpty ? SaynVoicePolisher.shared.polishLocally(clean, appBundleId: appBundleId, style: style, angle: angle) : result
             completion(.success(finalOutput))
         }
     }
@@ -304,7 +309,8 @@ final class GroqService {
     func refineText(
         text: String,
         mode: SanExecutionMode = .dictate,
-        style: String = "natural",
+        style: String = "flow",
+        angle: String = "normal",
         completion: @escaping (String) -> Void
     ) {
         let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -313,11 +319,11 @@ final class GroqService {
             return
         }
         
-        refineViaGateway(text: clean, mode: mode, style: style, contextText: nil) { result in
+        refineViaGateway(text: clean, mode: mode, style: style, angle: angle, contextText: nil) { result in
             if !result.isEmpty {
                 completion(result)
             } else {
-                let local = SaynVoicePolisher.shared.polishLocally(clean)
+                let local = SaynVoicePolisher.shared.polishLocally(clean, style: style, angle: angle)
                 completion(local)
             }
         }
@@ -327,6 +333,7 @@ final class GroqService {
         text: String,
         mode: SanExecutionMode,
         style: String,
+        angle: String = "normal",
         contextText: String?,
         completion: @escaping (String) -> Void
     ) {
@@ -348,12 +355,14 @@ final class GroqService {
         case .translate: apiMode = "translate"
         case .code: apiMode = "standard"
         case .proofread: apiMode = "grammar"
-        case .dictate: apiMode = style == "professional" ? "professional" : (style == "fluent" ? "fluent" : "standard")
+        case .dictate:
+            apiMode = style // flow, professional, humanize, mammals
         }
         
         var payload: [String: Any] = [
             "text": text,
             "mode": apiMode,
+            "angle": angle,
             "tone": style == "professional" ? "professional" : "neutral"
         ]
         if let ctx = contextText, !ctx.isEmpty {
@@ -370,7 +379,13 @@ final class GroqService {
                 completion("")
                 return
             }
-            completion(refined.trimmingCharacters(in: .whitespacesAndNewlines))
+            var output = refined.trimmingCharacters(in: .whitespacesAndNewlines)
+            if style == "mammals" {
+                while output.hasSuffix(".") {
+                    output = String(output.dropLast()).trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+            }
+            completion(output)
         }.resume()
     }
 }

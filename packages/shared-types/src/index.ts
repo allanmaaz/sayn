@@ -4,11 +4,15 @@
  */
 
 export type WritingMode =
-  // Core QuillBot & Keyboard Writing Modes
+  // 4 Core AI Writing Styles
+  | 'flow'
+  | 'professional'
+  | 'humanize'
+  | 'mammals'
+  // Core Writing Modes
   | 'standard'
   | 'fluent'
   | 'natural'
-  | 'professional'
   | 'casual'
   | 'shorten'
   | 'expand'
@@ -24,6 +28,8 @@ export type WritingMode =
   | 'confident'
   | 'academic'
   | 'translate';
+
+export type WritingAngle = 'normal' | 'professional' | 'alternative_english';
 
 export type WritingTone =
   | 'neutral'
@@ -42,6 +48,24 @@ export interface WritingModeMetadata {
 }
 
 export const WRITING_MODES: Record<WritingMode, WritingModeMetadata> = {
+  flow: {
+    id: 'flow',
+    label: 'Fluency',
+    description: 'Effortless cognitive flow and rhythm without altering original voice.',
+    promptGuidance: 'Improve flow, rhythm, and sentence transitions so the prose reads naturally and effortlessly. Eliminate speech disfluencies, false starts, and hesitation words while preserving the author\'s original vocabulary and voice. Keep punctuation light and balanced.'
+  },
+  humanize: {
+    id: 'humanize',
+    label: 'Humanization',
+    description: 'Warm, organic human resonance with dynamic rhythm and zero AI clichés.',
+    promptGuidance: 'Infuse authentic, empathetic human warmth. Strictly strip away all synthetic AI markers (ban "delve", "testament", "tapestry", "beacon", "furthermore", "moreover"). Use dynamic, asymmetric sentence lengths like a real thoughtful person speaking to a peer.'
+  },
+  mammals: {
+    id: 'mammals',
+    label: 'Mammals',
+    description: 'Modern low-friction messaging and casual texting with strictly zero trailing periods.',
+    promptGuidance: 'Transform into modern, high-bandwidth digital texting cadence. Fix typos and grammar seamlessly while preserving casual shorthand and natural flow. CRITICAL RULE: STRICTLY NEVER append a full stop or period (.) at the very end of single sentences or text message bursts.'
+  },
   standard: {
     id: 'standard',
     label: 'Standard',

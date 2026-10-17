@@ -110,7 +110,7 @@ final class SaynVoicePolisher {
         return nil
     }
     
-    func polishLocally(_ text: String, appBundleId: String? = nil) -> String {
+    func polishLocally(_ text: String, appBundleId: String? = nil, style: String = "flow", angle: String = "normal") -> String {
         var result = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !result.isEmpty, result != ".", !result.allSatisfy({ $0.isPunctuation || $0.isWhitespace }) else { return "" }
         
@@ -247,6 +247,15 @@ final class SaynVoicePolisher {
         }
         
         // 9. Natural Human Flow Punctuation
+        // In Mammals mode: strictly zero trailing periods
+        if style.lowercased() == "mammals" {
+            while result.hasSuffix(".") {
+                result.removeLast()
+            }
+            result = result.trimmingCharacters(in: .whitespacesAndNewlines)
+            return result
+        }
+
         // Avoid forcing full stops on short spoken utterances or single thoughts
         let isChatApp = (appBundleId?.lowercased().contains("slack") == true) ||
                         (appBundleId?.lowercased().contains("whatsapp") == true) ||

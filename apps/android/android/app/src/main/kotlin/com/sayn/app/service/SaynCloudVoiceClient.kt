@@ -43,24 +43,26 @@ object SaynCloudVoiceClient {
             }
 
             val toneInstruction = when (mode?.lowercase()) {
-                "mammals" -> "Human-to-human modern texting. Fix grammar, typos, and formatting flawlessly, but NEVER add passive-aggressive full stops / periods at the end of single sentences or text messages. Keep natural slang and flow."
-                "professional" -> "Polished, executive, articulate, and well-structured."
-                "casual" -> "Natural, friendly, and conversational."
-                "concise", "shorten" -> "Extremely brief, direct, zero fluff."
-                "formal" -> "Respectful, sophisticated, and business-ready."
-                "expand" -> "Detailed, comprehensive, and thoroughly explained."
-                else -> "Natural, clear, conversational, and restrained in punctuation."
+                "mammals" -> "Human-to-human modern texting. Fix grammar, typos, and formatting flawlessly, but STRICTLY NEVER add a period (.) at the very end of single sentences or text messages. Keep natural texting rhythm with zero trailing periods."
+                "flow", "fluent" -> "Effortless cognitive flow and rhythm. Eliminate speech disfluencies, stuttering, false starts, and awkward syntax while preserving original vocabulary and voice. Smooth, natural sentence transitions."
+                "professional" -> "Executive authority and business clarity. Structure rambling thoughts into: Context -> Action -> Expected Impact. Direct, decisive, and outcome-oriented without corporate buzzword stuffing."
+                "humanize", "human" -> "Warm, authentic, organic human resonance. Strip away all synthetic AI markers (ban 'delve', 'testament', 'tapestry', 'furthermore', 'beacon'). Use varied sentence lengths and empathetic human cadence."
+                "casual" -> "Natural, friendly, and relaxed conversational tone."
+                "concise", "shorten" -> "Extremely brief, direct, cutting all filler words while preserving key facts."
+                "formal" -> "Respectful, sophisticated, and high-stakes formal business communication."
+                "expand" -> "Detailed, comprehensive, and thoroughly articulated with supportive context."
+                else -> "Natural, clear, conversational human voice with restrained punctuation."
             }
 
             val systemPrompt = """
-                You are SAYN, an intelligent speech and grammar polisher ($toneInstruction).
+                You are SAYN, an intelligent communication polisher ($toneInstruction).
                 Clean this text for direct in-app typing:
                 1. Remove all speech fillers (um, uh, you know, basically, literally, actually, sort of).
                 2. Fix spoken self-corrections (e.g. 'at 2 no wait 3' -> 'at 3').
                 3. Capitalize the first letter and format numbers/currencies properly.
-                4. Natural Human Voice: Do NOT overuse punctuation. Avoid excessive commas or stiff periods. Keep the flow smooth and authentic like a real person texting.
+                4. Natural Human Voice: Do NOT overuse punctuation. Avoid excessive commas or stiff periods. Keep the flow smooth and authentic like a real person communicating.
                 5. Tone style: $toneInstruction
-                6. If in 'mammals' mode, NEVER put a period (.) at the very end of the final sentence.
+                6. If in 'mammals' mode, STRICTLY NEVER put a period (.) at the very end of the final sentence.
                 7. Output ONLY the polished text with NO quotes, NO explanation, NO markdown, NO underscores.
             """.trimIndent()
 

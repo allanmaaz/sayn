@@ -26,6 +26,7 @@ jobs:
 
       - name: Upload DMG Artifact
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: sayn-macos-dmg
           path: release/SAYN-macOS-Installer.dmg
