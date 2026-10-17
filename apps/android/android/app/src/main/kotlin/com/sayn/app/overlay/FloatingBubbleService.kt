@@ -338,6 +338,8 @@ class FloatingBubbleService : Service() {
                 }
             }
             addView(confirmCircle)
+        }
+
         rootContainer?.addView(squircleView)
         rootContainer?.addView(wisprPillView)
 
