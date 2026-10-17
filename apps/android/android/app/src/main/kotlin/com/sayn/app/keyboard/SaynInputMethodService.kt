@@ -438,8 +438,13 @@ class SaynInputMethodService : InputMethodService() {
         }
 
         symbolLayoutMode = 0
-        isShifted = false
         isCapsLock = false
+        val ic = currentInputConnection
+        val info = currentInputEditorInfo
+        val capsMode = if (ic != null && info != null) ic.getCursorCapsMode(info.inputType) else 0
+        val before = ic?.getTextBeforeCursor(4, 0)?.toString() ?: ""
+        isShifted = !isSensitiveField && (capsMode != 0 || before.isEmpty() || before.endsWith("\n") || 
+                     before.endsWith(". ") || before.endsWith("? ") || before.endsWith("! "))
         renderKeys()
         checkAutoCapitalization()
     }
@@ -681,8 +686,17 @@ class SaynInputMethodService : InputMethodService() {
     private fun checkAutoCapitalization() {
         if (isCapsLock) return
         val ic = currentInputConnection ?: return
+        if (isSensitiveField) {
+            if (isShifted) {
+                isShifted = false
+                renderKeys()
+            }
+            return
+        }
+        val info = currentInputEditorInfo
+        val capsMode = if (info != null) ic.getCursorCapsMode(info.inputType) else 0
         val before = ic.getTextBeforeCursor(4, 0)?.toString() ?: ""
-        val shouldShift = before.isEmpty() || before.endsWith("\n") || 
+        val shouldShift = (capsMode != 0) || before.isEmpty() || before.endsWith("\n") || 
                           before.endsWith(". ") || before.endsWith("? ") || before.endsWith("! ")
         if (shouldShift != isShifted) {
             isShifted = shouldShift
