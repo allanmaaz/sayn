@@ -128,7 +128,7 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
     @Published var dictionaryWords: [String] = []
     @Published var firstName: String = "Allan"
     @Published var lastName: String = "Maaz"
-    @Published var phone: String = ""
+    @Published var phone: String = "+91 98765 43210"
     @Published var writingRole: String = "Engineering & Voice"
     @Published var email: String = "allanmaazimdad@gmail.com"
     @Published var cleanupLevel: String = "Light" // None, Light, Medium, Aggressive

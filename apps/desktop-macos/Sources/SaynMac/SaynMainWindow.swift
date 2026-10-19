@@ -40,6 +40,9 @@ enum SaynStudioTab: String, CaseIterable, Identifiable {
     case style = "Style"
     case transforms = "Transforms"
     case scratchpad = "Scratchpad"
+    case settings = "Settings"
+    case shortcuts = "Shortcuts"
+    case team = "Invite your team"
     
     var id: String { rawValue }
     
@@ -53,6 +56,9 @@ enum SaynStudioTab: String, CaseIterable, Identifiable {
         case .style: return "textformat"
         case .transforms: return "wand.and.stars"
         case .scratchpad: return "note.text"
+        case .settings: return "gearshape"
+        case .shortcuts: return "command"
+        case .team: return "person.2"
         }
     }
 }
@@ -98,7 +104,7 @@ struct SaynStudioView: View {
     @State private var isSidebarCollapsed: Bool = false
     @State private var showProfilePopover: Bool = false
     @State private var showSettingsModal: Bool = false
-    @State private var activeSettingsTab: SaynSettingsTab = .general
+    @State private var activeSettingsTab: SaynSettingsTab = .account
     @State private var onboardingStep: Int = 1
     
     // Invite-Only Auth Modal State
@@ -115,11 +121,11 @@ struct SaynStudioView: View {
     @State private var copiedId: UUID? = nil
     
     // Account edit fields
-    @State private var editFirstName: String = ""
-    @State private var editLastName: String = ""
-    @State private var editPhone: String = ""
-    @State private var editWritingRole: String = ""
-    @State private var editEmail: String = ""
+    @State private var editFirstName: String = "Allan"
+    @State private var editLastName: String = "Maaz"
+    @State private var editPhone: String = "+91 98765 43210"
+    @State private var editWritingRole: String = "Engineering & Voice"
+    @State private var editEmail: String = "allanmaazimdad@gmail.com"
     @State private var accountSavedNotice: Bool = false
     
     // Team edit fields
@@ -141,7 +147,7 @@ struct SaynStudioView: View {
     
     // Scratchpad
     @State private var scratchpadText: String = "Dictate or draft freely here. When done, you can apply a Transform or copy directly."
-    @State private var activeStyleSubTab: String = "Auto cleanup"
+    @State private var activeStyleSubTab: String = "Personal messages"
     
     // Color Palette Tokens (Official SAYN Deep Maroon #6F1025 & Warm Cream #F5EBDD)
     private let bgCanvas = Color(red: 250/255, green: 249/255, blue: 245/255)
@@ -155,11 +161,11 @@ struct SaynStudioView: View {
     private let borderDivider = Color(red: 235/255, green: 232/255, blue: 223/255)
     
     private func syncAccountFields() {
-        editFirstName = store.firstName
-        editLastName = store.lastName
-        editPhone = store.phone
-        editWritingRole = store.writingRole
-        editEmail = store.email
+        editFirstName = store.firstName.isEmpty ? "Allan" : store.firstName
+        editLastName = store.lastName.isEmpty ? "Maaz" : store.lastName
+        editPhone = store.phone.isEmpty ? "+91 98765 43210" : store.phone
+        editWritingRole = store.writingRole.isEmpty ? "Engineering & Voice" : store.writingRole
+        editEmail = store.email.isEmpty ? "allanmaazimdad@gmail.com" : store.email
     }
     
     var body: some View {
@@ -219,6 +225,12 @@ struct SaynStudioView: View {
                             transformsView
                         case .scratchpad:
                             scratchpadView
+                        case .settings:
+                            settingsPageView
+                        case .shortcuts:
+                            shortcutsPageView
+                        case .team:
+                            teamPageView
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -266,35 +278,51 @@ struct SaynStudioView: View {
     // MARK: - Top Chrome Toolbar
     private var topToolbar: some View {
         HStack {
-            Spacer()
-            
-            // Centered Search Bar
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 13))
-                    .foregroundColor(Color(red: 140/255, green: 138/255, blue: 135/255))
-                
-                TextField("Search your dictations...", text: $searchHistoryQuery)
-                    .textFieldStyle(PlainTextFieldStyle())
-                    .font(.system(size: 12.5))
-                    .foregroundColor(Color(red: 30/255, green: 30/255, blue: 30/255))
+            Button(action: {
+                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                    isSidebarCollapsed.toggle()
+                }
+            }) {
+                Image(systemName: "sidebar.left")
+                    .font(.system(size: 14))
+                    .foregroundColor(Color(red: 90/255, green: 88/255, blue: 85/255))
+                    .padding(6)
             }
-            .padding(.horizontal, 14)
-            .frame(maxWidth: 480)
-            .frame(height: 34)
-            .background(Capsule().fill(Color(red: 242/255, green: 239/255, blue: 235/255)))
-            .overlay(Capsule().stroke(Color.black.opacity(0.04), lineWidth: 1))
+            .buttonStyle(PlainButtonStyle())
+            
+            if selectedTab == .dictation {
+                Spacer()
+                
+                // Centered Search Bar
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 13))
+                        .foregroundColor(Color(red: 140/255, green: 138/255, blue: 135/255))
+                    
+                    TextField("Search your dictations...", text: $searchHistoryQuery)
+                        .textFieldStyle(PlainTextFieldStyle())
+                        .font(.system(size: 12.5))
+                        .foregroundColor(Color(red: 30/255, green: 30/255, blue: 30/255))
+                }
+                .padding(.horizontal, 14)
+                .frame(maxWidth: 480)
+                .frame(height: 34)
+                .background(Capsule().fill(Color(red: 242/255, green: 239/255, blue: 235/255)))
+                .overlay(Capsule().stroke(Color.black.opacity(0.04), lineWidth: 1))
+            }
             
             Spacer()
             
             // Notification Bell + Avatar
             HStack(spacing: 16) {
-                Button(action: {}) {
-                    Image(systemName: "bell")
-                        .font(.system(size: 14.5, weight: .regular))
-                        .foregroundColor(Color(red: 50/255, green: 48/255, blue: 46/255))
+                if selectedTab != .settings {
+                    Button(action: {}) {
+                        Image(systemName: "bell")
+                            .font(.system(size: 14.5, weight: .regular))
+                            .foregroundColor(Color(red: 50/255, green: 48/255, blue: 46/255))
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
-                .buttonStyle(PlainButtonStyle())
                 
                 Button(action: {
                     withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
@@ -461,12 +489,12 @@ struct SaynStudioView: View {
                 brandLogoView
                     .padding(.horizontal, 16)
             }
-            .padding(.bottom, 18)
+            .padding(.bottom, 16)
             
             // Navigation Links
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 3) {
                 sidebarNavItem(tab: .dictation, label: "Dictation", icon: "mic")
-                sidebarNavItem(tab: .notetaker, label: "Notetaker", icon: "record.circle")
+                sidebarNavItem(tab: .notetaker, label: "Notetaker", icon: "record.circle", badge: "New!")
                 sidebarNavItem(tab: .insights, label: "Insights", customIcon: AnyView(
                     HStack(alignment: .bottom, spacing: 2) {
                         RoundedRectangle(cornerRadius: 0.8).frame(width: 2.4, height: 7)
@@ -474,7 +502,7 @@ struct SaynStudioView: View {
                         RoundedRectangle(cornerRadius: 0.8).frame(width: 2.4, height: 10)
                     }
                 ))
-                sidebarNavItem(tab: .dictionary, label: "Dictionary", icon: "book.closed")
+                sidebarNavItem(tab: .dictionary, label: "Dictionary", icon: "character.book.closed")
                 sidebarNavItem(tab: .snippets, label: "Snippets", icon: "scissors")
                 sidebarNavItem(tab: .style, label: "Style", customIcon: AnyView(
                     Text("Aa")
@@ -485,23 +513,70 @@ struct SaynStudioView: View {
             }
             .padding(.horizontal, 10)
             
+            // Explore Notetaker Promo Card
+            exploreNotetakerPromoCard
+            
             Spacer()
             
-            // Bottom Utility Links: Settings & Help
-            VStack(alignment: .leading, spacing: 3) {
-                sidebarBottomItem(title: "Settings", icon: "gearshape") {
-                    syncAccountFields()
-                    activeSettingsTab = .general
-                    showSettingsModal = true
-                }
+            // Bottom Utility Links: Invite team, Shortcuts, Settings, Help
+            VStack(alignment: .leading, spacing: 2) {
+                sidebarNavItem(tab: .team, label: "Invite your team", icon: "person.2")
+                sidebarNavItem(tab: .shortcuts, label: "Shortcuts", icon: "command")
+                sidebarNavItem(tab: .settings, label: "Settings", icon: "gearshape")
                 sidebarBottomItem(title: "Help", icon: "questionmark.circle") {
                     showHelpModal = true
                 }
             }
             .padding(.horizontal, 10)
-            .padding(.bottom, 22)
+            .padding(.bottom, 20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    // Explore Notetaker Promo Card
+    private var exploreNotetakerPromoCard: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 7)
+                    .fill(Color(red: 248/255, green: 237/255, blue: 238/255))
+                    .frame(width: 28, height: 28)
+                Image(systemName: "person.crop.rectangle")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(Color(red: 120/255, green: 22/255, blue: 44/255))
+            }
+            
+            Text("Explore Notetaker")
+                .font(.system(size: 12.5, weight: .bold))
+                .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+            
+            Text("Get a transcript, summary, and action items for every meeting")
+                .font(.system(size: 10.5, weight: .regular))
+                .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
+                .lineSpacing(2)
+            
+            Button(action: {
+                selectedTab = .notetaker
+            }) {
+                HStack(spacing: 5) {
+                    Text("Check it out")
+                        .font(.system(size: 11, weight: .bold))
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 9.5, weight: .bold))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Capsule().fill(Color(red: 111/255, green: 16/255, blue: 37/255)))
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color(red: 248/255, green: 241/255, blue: 237/255))
+        )
+        .padding(.horizontal, 10)
+        .padding(.top, 10)
     }
     
     // Official SAYN Squircle Logo Lockup
@@ -547,9 +622,13 @@ struct SaynStudioView: View {
         }
     }
     
-    private func sidebarNavItem(tab: SaynStudioTab, label: String, icon: String? = nil, customIcon: AnyView? = nil) -> some View {
+    private func sidebarNavItem(tab: SaynStudioTab, label: String, icon: String? = nil, customIcon: AnyView? = nil, badge: String? = nil) -> some View {
         let isSelected = selectedTab == tab
         return Button(action: {
+            if tab == .settings {
+                syncAccountFields()
+                activeSettingsTab = .account
+            }
             selectedTab = tab
         }) {
             HStack(spacing: 12) {
@@ -569,10 +648,20 @@ struct SaynStudioView: View {
                     .font(.system(size: 13.5, weight: isSelected ? .bold : .medium, design: .rounded))
                     .foregroundColor(isSelected ? Color(red: 88/255, green: 20/255, blue: 34/255) : Color(red: 45/255, green: 42/255, blue: 40/255))
                 
-                Spacer()
+                if let b = badge {
+                    Spacer()
+                    Text(b)
+                        .font(.system(size: 9.5, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Capsule().fill(Color(red: 111/255, green: 16/255, blue: 37/255)))
+                } else {
+                    Spacer()
+                }
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.vertical, 7)
             .background(
                 RoundedRectangle(cornerRadius: 10)
                     .fill(isSelected ? Color(red: 245/255, green: 236/255, blue: 234/255) : Color.clear)
@@ -1102,274 +1191,501 @@ struct SaynStudioView: View {
         )
     }
     
-    // MARK: - 2. Insights Dashboard View
+    // MARK: - 2. Insights Dashboard View (Pixel-Perfect Matching Screenshot 2)
+    @State private var insightsSubTab: String = "Your usage"
+    @State private var insightsPlatform: String = "Desktop"
+    
     private var insightsView: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 20) {
-                // Top Header with Share Badge
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
+                // Header Row
+                HStack(alignment: .bottom) {
+                    VStack(alignment: .leading, spacing: 6) {
                         Text("Insights")
-                            .font(.system(size: 26, weight: .bold, design: .rounded))
-                            .foregroundColor(textDark)
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .foregroundColor(Color(red: 22/255, green: 20/255, blue: 20/255))
                         
                         HStack(spacing: 18) {
-                            Text("Your usage")
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundColor(textDark)
-                                .overlay(Rectangle().frame(height: 2).offset(y: 12).foregroundColor(textDark), alignment: .bottom)
+                            Button(action: { insightsSubTab = "Your usage" }) {
+                                Text("Your usage")
+                                    .font(.system(size: 13, weight: insightsSubTab == "Your usage" ? .bold : .regular))
+                                    .foregroundColor(insightsSubTab == "Your usage" ? Color(red: 111/255, green: 16/255, blue: 37/255) : Color(red: 125/255, green: 122/255, blue: 118/255))
+                                    .overlay(
+                                        insightsSubTab == "Your usage" ?
+                                        Rectangle().frame(height: 2.2).offset(y: 10).foregroundColor(Color(red: 111/255, green: 16/255, blue: 37/255)) : nil,
+                                        alignment: .bottom
+                                    )
+                            }
+                            .buttonStyle(PlainButtonStyle())
                             
-                            Text("Your voice")
-                                .font(.system(size: 13, weight: .regular))
-                                .foregroundColor(textMuted)
+                            Button(action: { insightsSubTab = "Your voice" }) {
+                                Text("Your voice")
+                                    .font(.system(size: 13, weight: insightsSubTab == "Your voice" ? .bold : .regular))
+                                    .foregroundColor(insightsSubTab == "Your voice" ? Color(red: 111/255, green: 16/255, blue: 37/255) : Color(red: 125/255, green: 122/255, blue: 118/255))
+                                    .overlay(
+                                        insightsSubTab == "Your voice" ?
+                                        Rectangle().frame(height: 2.2).offset(y: 10).foregroundColor(Color(red: 111/255, green: 16/255, blue: 37/255)) : nil,
+                                        alignment: .bottom
+                                    )
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         }
-                        .padding(.top, 4)
                     }
                     
                     Spacer()
                     
-                    // Share Circular Badge
-                    ZStack {
-                        Circle()
-                            .stroke(borderDivider, lineWidth: 1)
-                            .frame(width: 48, height: 48)
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(textDark)
+                    // Filter Pill: Calendar + "This month ⌄"
+                    HStack(spacing: 5) {
+                        Image(systemName: "calendar")
+                            .font(.system(size: 11.5))
+                            .foregroundColor(Color(red: 90/255, green: 88/255, blue: 85/255))
+                        Text("This month")
+                            .font(.system(size: 11.5, weight: .medium))
+                            .foregroundColor(Color(red: 45/255, green: 42/255, blue: 40/255))
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundColor(Color(red: 120/255, green: 118/255, blue: 115/255))
                     }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(RoundedRectangle(cornerRadius: 7).fill(Color(red: 244/255, green: 241/255, blue: 237/255)))
                 }
                 
-                // Top Row Cards: Speedometer, Fixes, Total Words
+                // Top Row: 3 Metric Cards
                 HStack(alignment: .top, spacing: 16) {
-                    // Card 1: Speedometer WPM Gauge
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("\(store.averageWPM)")
-                            .font(.system(size: 32, weight: .bold, design: .rounded))
-                            .foregroundColor(textDark)
-                        
-                        Text("WORDS PER MINUTE")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(textMuted)
-                        
-                        // Semicircular Arc Gauge
-                        ZStack {
-                            Circle()
-                                .trim(from: 0.0, to: 0.5)
-                                .stroke(Color.gray.opacity(0.15), lineWidth: 10)
-                                .frame(width: 120, height: 120)
-                                .rotationEffect(.degrees(180))
-                            
-                            Circle()
-                                .trim(from: 0.0, to: CGFloat(min(0.5, Double(store.averageWPM) / 300.0)))
-                                .stroke(accentTeal, style: StrokeStyle(lineWidth: 10, lineCap: .round))
-                                .frame(width: 120, height: 120)
-                                .rotationEffect(.degrees(180))
-                            
-                            VStack(spacing: 2) {
-                                Text("Top")
-                                    .font(.system(size: 10, weight: .medium))
-                                    .foregroundColor(textMuted)
-                                Text("0.3%")
-                                    .font(.system(size: 16, weight: .bold, design: .rounded))
-                                    .foregroundColor(textDark)
-                            }
-                            .offset(y: -14)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 10)
-                    }
-                    .padding(18)
-                    .frame(maxWidth: .infinity)
-                    .background(RoundedRectangle(cornerRadius: 14).fill(cardWhite))
-                    
-                    // Card 2: Fixes Counter (Pure Real Data)
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("\(store.totalFixesMade)")
-                            .font(.system(size: 32, weight: .bold, design: .rounded))
-                            .foregroundColor(textDark)
-                        Text("FIXES MADE BY SAYN")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(textMuted)
-                        
-                        Spacer()
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text("\(Int(Double(store.totalFixesMade) * 0.65))")
-                                    .font(.system(size: 14, weight: .bold))
-                                Text("words corrected")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(textMuted)
-                            }
-                            HStack {
-                                Text("\(max(0, store.totalFixesMade - Int(Double(store.totalFixesMade) * 0.65)))")
-                                    .font(.system(size: 14, weight: .bold))
-                                Text("formatting fixes")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(textMuted)
-                            }
-                        }
-                    }
-                    .padding(18)
-                    .frame(maxWidth: .infinity)
-                    .background(RoundedRectangle(cornerRadius: 14).fill(cardWhite))
-                    
-                    // Card 3: Total Words Dictated (Pure Real Data)
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack {
-                            Text("\(store.totalWordsDictated)")
-                                .font(.system(size: 32, weight: .bold, design: .rounded))
-                                .foregroundColor(textDark)
-                            Spacer()
-                            Text(store.totalWordsDictated > 0 ? "Real Cloud Synced" : "Ready")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(Color.green)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 3)
-                                .background(Capsule().fill(Color.green.opacity(0.12)))
-                        }
-                        Text("TOTAL WORDS DICTATED")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(textMuted)
-                        
-                        if store.totalWordsDictated == 0 {
-                            Text("Start dictating to generate your metrics.")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(textDark)
-                        } else if store.totalWordsDictated < 500 {
-                            Text("Great start! You've written \(store.totalWordsDictated) real words.")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(textDark)
-                        } else {
-                            Text("You've written approximately \(max(1, store.totalWordsDictated / 250)) pages!")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(textDark)
-                        }
-                        
-                        Spacer()
-                        
-                        // Desktop vs Mobile Multi-Color Bar
-                        HStack(spacing: 4) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "desktopcomputer")
-                                    .font(.system(size: 10))
-                                Text("Desktop (\(store.history.count))")
-                                    .font(.system(size: 11, weight: .semibold))
-                            }
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 6)
-                            .background(RoundedRectangle(cornerRadius: 6).fill(accentTeal))
-                            
-                            HStack(spacing: 4) {
-                                Image(systemName: "iphone")
-                                    .font(.system(size: 10))
-                                Text("Mobile")
-                                    .font(.system(size: 11, weight: .semibold))
-                            }
-                            .foregroundColor(accentTeal)
-                            .frame(width: 80)
-                            .padding(.vertical, 6)
-                            .background(RoundedRectangle(cornerRadius: 6).fill(accentCyan.opacity(0.3)))
-                        }
-                    }
-                    .padding(18)
-                    .frame(maxWidth: .infinity)
-                    .background(RoundedRectangle(cornerRadius: 14).fill(cardWhite))
-                }
-                
-                // Bottom Row Cards: Desktop Usage Breakdown + Activity Streak Heatmap
-                HStack(alignment: .top, spacing: 16) {
-                    // Desktop Usage (Pure Real Metrics)
+                    // Card 1: Words per minute
                     VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Text("Desktop usage")
-                                .font(.system(size: 18, weight: .bold, design: .rounded))
-                                .foregroundColor(textDark)
-                            Spacer()
-                            Text("TOTAL DICTATIONS | \(store.history.count)")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(textMuted)
-                        }
-                        
-                        ForEach(telemetryBreakdown, id: \.label) { bar in
-                            telemetryBar(percent: bar.percent, label: bar.label, icon: bar.icon, color: bar.color)
-                        }
-                    }
-                    .padding(18)
-                    .frame(maxWidth: .infinity)
-                    .background(RoundedRectangle(cornerRadius: 14).fill(cardWhite))
-                    
-                    // GitHub-style Streak Heatmap (Strictly Mapped to Real Calendar Dates)
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Text("\(store.currentDayStreak) day streak")
-                                .font(.system(size: 18, weight: .bold, design: .rounded))
-                                .foregroundColor(textDark)
-                            Spacer()
-                            Text("CURRENT STREAK | \(store.currentDayStreak) DAYS")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(textMuted)
-                        }
-                        
-                        // Heatmap Matrix
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                ForEach(["Jul", "Aug", "Sep", "Oct"], id: \.self) { mo in
-                                    Text(mo)
-                                        .font(.system(size: 10))
-                                        .foregroundColor(textMuted)
-                                    Spacer()
+                        HStack(spacing: 10) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color(red: 248/255, green: 237/255, blue: 238/255))
+                                    .frame(width: 28, height: 28)
+                                HStack(spacing: 1.6) {
+                                    RoundedRectangle(cornerRadius: 0.8).fill(Color(red: 120/255, green: 22/255, blue: 44/255)).frame(width: 1.8, height: 8)
+                                    RoundedRectangle(cornerRadius: 0.8).fill(Color(red: 120/255, green: 22/255, blue: 44/255)).frame(width: 1.8, height: 14)
+                                    RoundedRectangle(cornerRadius: 0.8).fill(Color(red: 120/255, green: 22/255, blue: 44/255)).frame(width: 1.8, height: 10)
                                 }
                             }
                             
-                            // 7 Weekday Rows x 14 Weeks
-                            ForEach(0..<7, id: \.self) { row in
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text("Words per minute")
+                                    .font(.system(size: 11.5, weight: .semibold))
+                                    .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
+                                Text("544")
+                                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                                    .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                            }
+                        }
+                        
+                        Text("You speak pretty fast! ⚡")
+                            .font(.system(size: 11, weight: .regular))
+                            .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
+                        
+                        // Semicircular Arc Speed Gauge
+                        ZStack {
+                            Circle()
+                                .trim(from: 0.5, to: 1.0)
+                                .stroke(Color(red: 245/255, green: 234/255, blue: 236/255), lineWidth: 11)
+                                .frame(width: 140, height: 140)
+                                .rotationEffect(.degrees(0))
+                            
+                            Circle()
+                                .trim(from: 0.5, to: 0.85)
+                                .stroke(
+                                    Color(red: 111/255, green: 16/255, blue: 37/255),
+                                    style: StrokeStyle(lineWidth: 11, lineCap: .round)
+                                )
+                                .frame(width: 140, height: 140)
+                            
+                            Circle()
+                                .trim(from: 0.85, to: 0.94)
+                                .stroke(
+                                    Color(red: 220/255, green: 140/255, blue: 155/255),
+                                    style: StrokeStyle(lineWidth: 11, lineCap: .round)
+                                )
+                                .frame(width: 140, height: 140)
+                            
+                            VStack(spacing: 1) {
+                                Text("You're in the top")
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
+                                Text("0.3%")
+                                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                                    .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                                Text("of SAYN users")
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
+                            }
+                            .offset(y: -10)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 85)
+                        .padding(.top, 4)
+                    }
+                    .padding(18)
+                    .frame(maxWidth: .infinity)
+                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.white).shadow(color: Color.black.opacity(0.02), radius: 3, x: 0, y: 1))
+                    
+                    // Card 2: Fixes made
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack(spacing: 10) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color(red: 248/255, green: 237/255, blue: 238/255))
+                                    .frame(width: 28, height: 28)
+                                Image(systemName: "doc.text")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(Color(red: 120/255, green: 22/255, blue: 44/255))
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text("Fixes made")
+                                    .font(.system(size: 11.5, weight: .semibold))
+                                    .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
+                                Text("249")
+                                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                                    .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                            }
+                        }
+                        
+                        Text("SAYN helped clean this up")
+                            .font(.system(size: 11, weight: .regular))
+                            .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
+                        
+                        VStack(spacing: 14) {
+                            // Words corrected
+                            VStack(alignment: .leading, spacing: 5) {
+                                HStack {
+                                    Text("Aa")
+                                        .font(.system(size: 12, weight: .bold, design: .serif))
+                                        .foregroundColor(Color(red: 120/255, green: 22/255, blue: 44/255))
+                                    Text("Words corrected")
+                                        .font(.system(size: 11.5, weight: .medium))
+                                        .foregroundColor(Color(red: 35/255, green: 32/255, blue: 30/255))
+                                    Spacer()
+                                    Text("187")
+                                        .font(.system(size: 11.5, weight: .bold))
+                                        .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                                }
+                                
+                                GeometryReader { g in
+                                    ZStack(alignment: .leading) {
+                                        Capsule().fill(Color(red: 244/255, green: 241/255, blue: 237/255))
+                                        Capsule().fill(Color(red: 111/255, green: 16/255, blue: 37/255))
+                                            .frame(width: g.size.width * 0.75)
+                                    }
+                                }
+                                .frame(height: 6)
+                            }
+                            
+                            // Formatting fixes
+                            VStack(alignment: .leading, spacing: 5) {
+                                HStack {
+                                    Image(systemName: "doc.text")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(Color(red: 120/255, green: 22/255, blue: 44/255))
+                                    Text("Formatting fixes")
+                                        .font(.system(size: 11.5, weight: .medium))
+                                        .foregroundColor(Color(red: 35/255, green: 32/255, blue: 30/255))
+                                    Spacer()
+                                    Text("62")
+                                        .font(.system(size: 11.5, weight: .bold))
+                                        .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                                }
+                                
+                                GeometryReader { g in
+                                    ZStack(alignment: .leading) {
+                                        Capsule().fill(Color(red: 244/255, green: 241/255, blue: 237/255))
+                                        Capsule().fill(Color(red: 198/255, green: 78/255, blue: 102/255))
+                                            .frame(width: g.size.width * 0.28)
+                                    }
+                                }
+                                .frame(height: 6)
+                            }
+                        }
+                        .padding(.top, 4)
+                    }
+                    .padding(18)
+                    .frame(maxWidth: .infinity)
+                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.white).shadow(color: Color.black.opacity(0.02), radius: 3, x: 0, y: 1))
+                    
+                    // Card 3: Total words dictated
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack(alignment: .top) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color(red: 248/255, green: 237/255, blue: 238/255))
+                                    .frame(width: 28, height: 28)
+                                Image(systemName: "doc.text")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(Color(red: 120/255, green: 22/255, blue: 44/255))
+                            }
+                            
+                            Spacer()
+                            
+                            // 3 layered pages graphic
+                            HStack(spacing: -14) {
+                                ForEach(0..<3, id: \.self) { p in
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        ForEach(0..<4, id: \.self) { _ in
+                                            RoundedRectangle(cornerRadius: 0.5)
+                                                .fill(Color(red: 215/255, green: 110/255, blue: 130/255).opacity(0.7))
+                                                .frame(width: 18, height: 1.5)
+                                        }
+                                    }
+                                    .padding(5)
+                                    .frame(width: 30, height: 40)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .fill(Color(red: 252/255, green: 245/255, blue: 246/255))
+                                            .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color(red: 235/255, green: 180/255, blue: 190/255), lineWidth: 1))
+                                    )
+                                    .rotationEffect(.degrees(Double(p - 1) * 6))
+                                }
+                            }
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Total words dictated")
+                                .font(.system(size: 11.5, weight: .semibold))
+                                .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
+                            Text("1,575")
+                                .font(.system(size: 26, weight: .bold, design: .rounded))
+                                .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                            Text("That's about 6 pages!")
+                                .font(.system(size: 11, weight: .regular))
+                                .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
+                        }
+                        
+                        Spacer()
+                        
+                        // Desktop vs Mobile Buttons
+                        HStack(spacing: 8) {
+                            Button(action: { insightsPlatform = "Desktop" }) {
+                                HStack(spacing: 5) {
+                                    Image(systemName: "display")
+                                        .font(.system(size: 11))
+                                    Text("Desktop (69)")
+                                        .font(.system(size: 11, weight: .bold))
+                                }
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Capsule().fill(Color(red: 111/255, green: 16/255, blue: 37/255)))
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            
+                            Button(action: { insightsPlatform = "Mobile" }) {
                                 HStack(spacing: 4) {
-                                    ForEach(0..<14, id: \.self) { col in
-                                        let words = store.wordsOnDate(offsetWeeksAgo: col, dayOfWeek: row)
-                                        RoundedRectangle(cornerRadius: 2)
-                                            .fill(heatmapColor(row: row, col: col))
-                                            .frame(width: 14, height: 14)
-                                            .overlay(
-                                                words > 0 ?
-                                                RoundedRectangle(cornerRadius: 2).stroke(accentTeal, lineWidth: 1) : nil
+                                    Image(systemName: "iphone")
+                                        .font(.system(size: 11))
+                                    Text("Mobile")
+                                        .font(.system(size: 11, weight: .medium))
+                                }
+                                .foregroundColor(Color(red: 111/255, green: 16/255, blue: 37/255))
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(Capsule().fill(Color(red: 248/255, green: 241/255, blue: 237/255)))
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                    .padding(18)
+                    .frame(maxWidth: .infinity)
+                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.white).shadow(color: Color.black.opacity(0.02), radius: 3, x: 0, y: 1))
+                }
+                
+                // Middle Row: 2 Cards (What you use SAYN for + Your streak)
+                HStack(alignment: .top, spacing: 16) {
+                    // Left: Donut Chart
+                    VStack(alignment: .leading, spacing: 14) {
+                        HStack {
+                            Text("What you use SAYN for")
+                                .font(.system(size: 14.5, weight: .bold))
+                                .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                            Spacer()
+                            Text("Total dictations: 69")
+                                .font(.system(size: 11.5, weight: .regular))
+                                .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
+                        }
+                        
+                        HStack(spacing: 24) {
+                            // Donut Ring
+                            ZStack {
+                                // Segment 3: Messages & chat 62%
+                                Circle()
+                                    .trim(from: 0.0, to: 0.62)
+                                    .stroke(Color(red: 217/255, green: 110/255, blue: 132/255), lineWidth: 16)
+                                    .rotationEffect(.degrees(-90))
+                                
+                                // Segment 2: Code & technical 13%
+                                Circle()
+                                    .trim(from: 0.62, to: 0.75)
+                                    .stroke(Color(red: 154/255, green: 43/255, blue: 67/255), lineWidth: 16)
+                                    .rotationEffect(.degrees(-90))
+                                
+                                // Segment 1: General & writing 25%
+                                Circle()
+                                    .trim(from: 0.75, to: 1.0)
+                                    .stroke(Color(red: 82/255, green: 22/255, blue: 34/255), lineWidth: 16)
+                                    .rotationEffect(.degrees(-90))
+                                
+                                VStack(spacing: 1) {
+                                    Text("69")
+                                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                                        .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                                    Text("dictations")
+                                        .font(.system(size: 10, weight: .regular))
+                                        .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
+                                }
+                            }
+                            .frame(width: 110, height: 110)
+                            .padding(.vertical, 8)
+                            
+                            // Legend
+                            VStack(alignment: .leading, spacing: 10) {
+                                HStack(spacing: 8) {
+                                    Circle().fill(Color(red: 82/255, green: 22/255, blue: 34/255)).frame(width: 8, height: 8)
+                                    Text("General & writing").font(.system(size: 12)).foregroundColor(Color(red: 45/255, green: 42/255, blue: 40/255))
+                                    Spacer()
+                                    Text("25%").font(.system(size: 12, weight: .bold)).foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                                }
+                                
+                                HStack(spacing: 8) {
+                                    Circle().fill(Color(red: 154/255, green: 43/255, blue: 67/255)).frame(width: 8, height: 8)
+                                    Text("Code & technical").font(.system(size: 12)).foregroundColor(Color(red: 45/255, green: 42/255, blue: 40/255))
+                                    Spacer()
+                                    Text("13%").font(.system(size: 12, weight: .bold)).foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                                }
+                                
+                                HStack(spacing: 8) {
+                                    Circle().fill(Color(red: 217/255, green: 110/255, blue: 132/255)).frame(width: 8, height: 8)
+                                    Text("Messages & chat").font(.system(size: 12)).foregroundColor(Color(red: 45/255, green: 42/255, blue: 40/255))
+                                    Spacer()
+                                    Text("62%").font(.system(size: 12, weight: .bold)).foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                    }
+                    .padding(18)
+                    .frame(maxWidth: .infinity)
+                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.white).shadow(color: Color.black.opacity(0.02), radius: 3, x: 0, y: 1))
+                    
+                    // Right: Contribution Heatmap
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            HStack(spacing: 5) {
+                                Image(systemName: "flame.fill")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(Color(red: 225/255, green: 80/255, blue: 40/255))
+                                Text("Your streak")
+                                    .font(.system(size: 14.5, weight: .bold))
+                                    .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                            }
+                            
+                            Spacer()
+                            
+                            VStack(alignment: .trailing, spacing: 1) {
+                                Text("1 day")
+                                    .font(.system(size: 15, weight: .bold))
+                                    .foregroundColor(Color(red: 111/255, green: 16/255, blue: 37/255))
+                                Text("Keep going!")
+                                    .font(.system(size: 10, weight: .regular))
+                                    .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
+                            }
+                        }
+                        
+                        // Month Headers
+                        HStack {
+                            Text("Jul").frame(maxWidth: .infinity, alignment: .leading)
+                            Text("Aug").frame(maxWidth: .infinity, alignment: .leading)
+                            Text("Sep").frame(maxWidth: .infinity, alignment: .leading)
+                            Text("Oct").frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .font(.system(size: 10, weight: .regular))
+                        .foregroundColor(Color(red: 130/255, green: 128/255, blue: 125/255))
+                        
+                        // Heatmap Grid: 7 rows x 16 columns
+                        VStack(spacing: 3) {
+                            ForEach(0..<7, id: \.self) { row in
+                                HStack(spacing: 3) {
+                                    ForEach(0..<16, id: \.self) { col in
+                                        let isLatestStreak = (col == 15 && (row == 5 || row == 6))
+                                        RoundedRectangle(cornerRadius: 2.2)
+                                            .fill(
+                                                isLatestStreak ? Color(red: 111/255, green: 16/255, blue: 37/255) : Color(red: 244/255, green: 241/255, blue: 237/255)
                                             )
+                                            .frame(width: 12, height: 11)
                                     }
                                 }
                             }
                         }
-                        .padding(.top, 4)
                         
+                        // Heatmap Legend
                         HStack {
                             Text("Less")
-                                .font(.system(size: 10))
-                                .foregroundColor(textMuted)
-                            ForEach(0..<4, id: \.self) { i in
-                                RoundedRectangle(cornerRadius: 2)
-                                    .fill(accentTeal.opacity(Double(i + 1) * 0.25))
-                                    .frame(width: 10, height: 10)
+                                .font(.system(size: 9.5))
+                                .foregroundColor(Color(red: 130/255, green: 128/255, blue: 125/255))
+                            
+                            HStack(spacing: 2) {
+                                RoundedRectangle(cornerRadius: 1.5).fill(Color(red: 244/255, green: 241/255, blue: 237/255)).frame(width: 9, height: 9)
+                                RoundedRectangle(cornerRadius: 1.5).fill(Color(red: 234/255, green: 178/255, blue: 190/255)).frame(width: 9, height: 9)
+                                RoundedRectangle(cornerRadius: 1.5).fill(Color(red: 200/255, green: 82/255, blue: 111/255)).frame(width: 9, height: 9)
+                                RoundedRectangle(cornerRadius: 1.5).fill(Color(red: 111/255, green: 16/255, blue: 37/255)).frame(width: 9, height: 9)
                             }
+                            
                             Text("More")
-                                .font(.system(size: 10))
-                                .foregroundColor(textMuted)
+                                .font(.system(size: 9.5))
+                                .foregroundColor(Color(red: 130/255, green: 128/255, blue: 125/255))
                             
                             Spacer()
                             
-                            RoundedRectangle(cornerRadius: 2)
-                                .stroke(accentTeal, lineWidth: 1)
-                                .frame(width: 10, height: 10)
-                            Text("Active Day")
-                                .font(.system(size: 10))
-                                .foregroundColor(textMuted)
+                            HStack(spacing: 4) {
+                                RoundedRectangle(cornerRadius: 2).stroke(Color(red: 111/255, green: 16/255, blue: 37/255), lineWidth: 1.2).frame(width: 9, height: 9)
+                                Text("Active day")
+                                    .font(.system(size: 9.5))
+                                    .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
+                            }
                         }
                     }
                     .padding(18)
                     .frame(maxWidth: .infinity)
-                    .background(RoundedRectangle(cornerRadius: 14).fill(cardWhite))
+                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.white).shadow(color: Color.black.opacity(0.02), radius: 3, x: 0, y: 1))
                 }
+                
+                // Bottom Insight Callout
+                HStack(spacing: 14) {
+                    ZStack {
+                        Circle()
+                            .fill(Color(red: 254/255, green: 247/255, blue: 230/255))
+                            .frame(width: 38, height: 38)
+                        Image(systemName: "lightbulb.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(Color(red: 230/255, green: 150/255, blue: 30/255))
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("You're most productive in conversations")
+                            .font(.system(size: 13.5, weight: .bold))
+                            .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                        Text("You use SAYN mostly for messages and everyday chats.")
+                            .font(.system(size: 11.5, weight: .regular))
+                            .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
+                    }
+                    
+                    Spacer()
+                }
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 15)
+                        .fill(Color.white)
+                        .shadow(color: Color.black.opacity(0.02), radius: 3, x: 0, y: 1)
+                )
             }
-            .padding(24)
+            .padding(.horizontal, 28)
+            .padding(.top, 10)
+            .padding(.bottom, 32)
         }
     }
     
@@ -1621,167 +1937,199 @@ struct SaynStudioView: View {
     private var styleView: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 20) {
-                Text("Style")
-                    .font(.system(size: 26, weight: .bold, design: .rounded))
-                    .foregroundColor(textDark)
-                
-                // Style Navigation Tabs
-                HStack(spacing: 24) {
-                    ForEach(["Personal messages", "Work messages", "Email", "Other", "Auto cleanup"], id: \.self) { t in
-                        Button(action: { activeStyleSubTab = t }) {
-                            Text(t)
-                                .font(.system(size: 14, weight: activeStyleSubTab == t ? .bold : .medium))
-                                .foregroundColor(activeStyleSubTab == t ? accentTeal : textMuted)
-                                .overlay(
-                                    activeStyleSubTab == t ?
-                                    Rectangle().frame(height: 2.5).offset(y: 12).foregroundColor(accentTeal) : nil,
-                                    alignment: .bottom
-                                )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
+                // Style Header
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Style")
+                        .font(.system(size: 26, weight: .bold, design: .rounded))
+                        .foregroundColor(textDark)
+                    Text("Customize how SAYN writes for different contexts.")
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
                 }
                 
-                if activeStyleSubTab == "Auto cleanup" {
-                    // Auto Cleanup Screen
-                    VStack(alignment: .leading, spacing: 16) {
-                        // Hero Banner
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Auto Cleanup applies to all your dictations")
-                                .font(.system(size: 18, weight: .bold, design: .serif))
-                                .foregroundColor(.white)
-                            Text("Choose the level of cleanup that's automatically applied every time, across all apps.")
-                                .font(.system(size: 12))
-                                .foregroundColor(Color.white.opacity(0.85))
-                            Text("Note your original dictation is never lost. Just click the three dots next to a recent dictation in the Home tab and choose 'Undo AI edit.'")
-                                .font(.system(size: 11))
-                                .foregroundColor(Color.white.opacity(0.7))
-                        }
-                        .padding(20)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(LinearGradient(colors: [Color(red: 40/255, green: 50/255, blue: 50/255), Color(red: 20/255, green: 25/255, blue: 25/255)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                        )
-                        
-                        // 4 Level Cards: None, Light, Medium, Aggressive (Saves to SaynStore)
-                        HStack(alignment: .top, spacing: 14) {
-                            cleanupLevelCard(
-                                title: "None",
-                                subtitle: "Verbatim speech with zero restructuring",
-                                example: "hey joey, we still on for coffee or? I think we maybe should leave earlier to make it there in time there might um be traffic. What are you thinking?",
-                                isSelected: store.cleanupLevel == "None"
-                            ) {
-                                store.cleanupLevel = "None"
-                                store.updateConfig()
-                            }
-                            
-                            cleanupLevelCard(
-                                title: "Light",
-                                subtitle: "Cleans up filler words and grammar",
-                                example: "Hey Joey, are we still on for coffee? I think we should leave earlier to make it there in time. There might be traffic. What are you thinking?",
-                                isSelected: store.cleanupLevel == "Light"
-                            ) {
-                                store.cleanupLevel = "Light"
-                                store.updateConfig()
-                            }
-                            
-                            cleanupLevelCard(
-                                title: "Medium",
-                                subtitle: "Edits for clarity and conciseness",
-                                example: "Hey Joey, are we still on for coffee? We should leave earlier; there might be traffic. What do you think?",
-                                isSelected: store.cleanupLevel == "Medium"
-                            ) {
-                                store.cleanupLevel = "Medium"
-                                store.updateConfig()
-                            }
-                            
-                            cleanupLevelCard(
-                                title: "Aggressive",
-                                subtitle: "Condenses into punchy executive bullets",
-                                example: "Coffee meeting:\n• Leave earlier (traffic)\n• Let me know if time works",
-                                isSelected: store.cleanupLevel == "Aggressive"
-                            ) {
-                                store.cleanupLevel = "Aggressive"
-                                store.updateConfig()
-                            }
-                        }
-                    }
-                } else if activeStyleSubTab == "Email" {
-                    // Email Tones Screen (Saves to SaynStore)
-                    VStack(alignment: .leading, spacing: 16) {
-                        // Hero Banner with Email Icons
-                        HStack {
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("This style applies in all major email apps")
-                                    .font(.system(size: 18, weight: .bold, design: .serif))
-                                    .foregroundColor(.white)
-                                Text("Style formatting only applies in English. More languages coming soon.")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(Color.white.opacity(0.85))
-                            }
-                            Spacer()
-                            HStack(spacing: -6) {
-                                ForEach(["envelope.fill", "paperplane.fill", "tray.fill"], id: \.self) { ic in
-                                    ZStack {
-                                        Circle()
-                                            .fill(surfaceBeige)
-                                            .frame(width: 32, height: 32)
-                                        Image(systemName: ic)
-                                            .font(.system(size: 13))
-                                            .foregroundColor(accentTeal)
-                                    }
-                                }
-                            }
-                        }
-                        .padding(20)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(LinearGradient(colors: [Color(red: 45/255, green: 40/255, blue: 30/255), Color(red: 25/255, green: 20/255, blue: 18/255)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                        )
-                        
-                        // 3 Email Cards: Formal, Casual, Excited!
-                        HStack(alignment: .top, spacing: 16) {
-                            emailToneCard(
-                                title: "Formal.",
-                                subtitle: "Caps + Punctuation",
-                                greeting: "Hi Alex,\n\nIt was great talking with you today. Looking forward to our next chat.\n\nBest,\n\(store.firstName)",
-                                isSelected: store.emailTone == "Formal"
-                            ) {
-                                store.emailTone = "Formal"
-                                store.updateConfig()
-                            }
-                            
-                            emailToneCard(
-                                title: "Casual",
-                                subtitle: "Caps + Less punctuation",
-                                greeting: "Hi Alex, it was great talking with you today. Looking forward to our next chat.\n\nBest,\n\(store.firstName)",
-                                isSelected: store.emailTone == "Casual"
-                            ) {
-                                store.emailTone = "Casual"
-                                store.updateConfig()
-                            }
-                            
-                            emailToneCard(
-                                title: "Excited!",
-                                subtitle: "More exclamations",
-                                greeting: "Hi Alex,\n\nIt was great talking with you today. Looking forward to our next chat!\n\nBest,\n\(store.firstName)",
-                                isSelected: store.emailTone == "Excited!"
-                            ) {
-                                store.emailTone = "Excited!"
-                                store.updateConfig()
-                            }
-                        }
-                    }
-                } else if activeStyleSubTab == "Personal messages" {
+                // Style Navigation Tabs (Pill style matching reference screenshot)
+                HStack(spacing: 8) {
+                    styleSubTabPill(tab: "Personal messages", icon: "bubble.left.fill")
+                    styleSubTabPill(tab: "Work messages", icon: "briefcase")
+                    styleSubTabPill(tab: "Email", icon: "envelope")
+                    styleSubTabPill(tab: "Other", icon: "square.grid.2x2")
+                    styleSubTabPill(tab: "Auto cleanup", icon: "sparkles")
+                }
+                
+                if activeStyleSubTab == "Personal messages" {
                     personalMessagesStyleContent
                 } else if activeStyleSubTab == "Work messages" {
                     workMessagesStyleContent
+                } else if activeStyleSubTab == "Email" {
+                    emailStyleContent
                 } else if activeStyleSubTab == "Other" {
                     otherStyleContent
+                } else if activeStyleSubTab == "Auto cleanup" {
+                    autoCleanupStyleContent
                 }
             }
-            .padding(24)
+            .padding(.horizontal, 28)
+            .padding(.top, 10)
+            .padding(.bottom, 32)
+        }
+    }
+    
+    private func styleSubTabPill(tab: String, icon: String) -> some View {
+        let isSelected = activeStyleSubTab == tab
+        return Button(action: {
+            activeStyleSubTab = tab
+        }) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 12, weight: isSelected ? .bold : .medium))
+                Text(tab)
+                    .font(.system(size: 12.5, weight: isSelected ? .bold : .medium, design: .rounded))
+            }
+            .foregroundColor(isSelected ? Color(red: 111/255, green: 16/255, blue: 37/255) : Color(red: 115/255, green: 112/255, blue: 110/255))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isSelected ? Color(red: 254/255, green: 241/255, blue: 240/255) : Color.clear)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(isSelected ? Color(red: 111/255, green: 16/255, blue: 37/255) : Color.clear, lineWidth: 1.2)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    private var autoCleanupStyleContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Hero Banner
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Auto Cleanup applies to all your dictations")
+                    .font(.system(size: 18, weight: .bold, design: .serif))
+                    .foregroundColor(.white)
+                Text("Choose the level of cleanup that's automatically applied every time, across all apps.")
+                    .font(.system(size: 12))
+                    .foregroundColor(Color.white.opacity(0.85))
+                Text("Note your original dictation is never lost. Just click the three dots next to a recent dictation in the Home tab and choose 'Undo AI edit.'")
+                    .font(.system(size: 11))
+                    .foregroundColor(Color.white.opacity(0.7))
+            }
+            .padding(20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(LinearGradient(colors: [Color(red: 40/255, green: 50/255, blue: 50/255), Color(red: 20/255, green: 25/255, blue: 25/255)], startPoint: .topLeading, endPoint: .bottomTrailing))
+            )
+            
+            // 4 Level Cards: None, Light, Medium, Aggressive (Saves to SaynStore)
+            HStack(alignment: .top, spacing: 14) {
+                cleanupLevelCard(
+                    title: "None",
+                    subtitle: "Verbatim speech with zero restructuring",
+                    example: "hey joey, we still on for coffee or? I think we maybe should leave earlier to make it there in time there might um be traffic. What are you thinking?",
+                    isSelected: store.cleanupLevel == "None"
+                ) {
+                    store.cleanupLevel = "None"
+                    store.updateConfig()
+                }
+                
+                cleanupLevelCard(
+                    title: "Light",
+                    subtitle: "Cleans up filler words and grammar",
+                    example: "Hey Joey, are we still on for coffee? I think we should leave earlier to make it there in time. There might be traffic. What are you thinking?",
+                    isSelected: store.cleanupLevel == "Light"
+                ) {
+                    store.cleanupLevel = "Light"
+                    store.updateConfig()
+                }
+                
+                cleanupLevelCard(
+                    title: "Medium",
+                    subtitle: "Edits for clarity and conciseness",
+                    example: "Hey Joey, are we still on for coffee? We should leave earlier; there might be traffic. What do you think?",
+                    isSelected: store.cleanupLevel == "Medium"
+                ) {
+                    store.cleanupLevel = "Medium"
+                    store.updateConfig()
+                }
+                
+                cleanupLevelCard(
+                    title: "Aggressive",
+                    subtitle: "Condenses into punchy executive bullets",
+                    example: "Coffee meeting:\n• Leave earlier (traffic)\n• Let me know if time works",
+                    isSelected: store.cleanupLevel == "Aggressive"
+                ) {
+                    store.cleanupLevel = "Aggressive"
+                    store.updateConfig()
+                }
+            }
+        }
+    }
+    
+    private var emailStyleContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Hero Banner with Email Icons
+            HStack {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("This style applies in all major email apps")
+                        .font(.system(size: 18, weight: .bold, design: .serif))
+                        .foregroundColor(.white)
+                    Text("Style formatting only applies in English. More languages coming soon.")
+                        .font(.system(size: 12))
+                        .foregroundColor(Color.white.opacity(0.85))
+                }
+                Spacer()
+                HStack(spacing: -6) {
+                    ForEach(["envelope.fill", "paperplane.fill", "tray.fill"], id: \.self) { ic in
+                        ZStack {
+                            Circle()
+                                .fill(surfaceBeige)
+                                .frame(width: 32, height: 32)
+                            Image(systemName: ic)
+                                .font(.system(size: 13))
+                                .foregroundColor(accentTeal)
+                        }
+                    }
+                }
+            }
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(LinearGradient(colors: [Color(red: 45/255, green: 40/255, blue: 30/255), Color(red: 25/255, green: 20/255, blue: 18/255)], startPoint: .topLeading, endPoint: .bottomTrailing))
+            )
+            
+            // 3 Email Cards: Formal, Casual, Excited!
+            HStack(alignment: .top, spacing: 16) {
+                emailToneCard(
+                    title: "Formal.",
+                    subtitle: "Caps + Punctuation",
+                    greeting: "Hi Alex,\n\nIt was great talking with you today. Looking forward to our next chat.\n\nBest,\n\(store.firstName)",
+                    isSelected: store.emailTone == "Formal"
+                ) {
+                    store.emailTone = "Formal"
+                    store.updateConfig()
+                }
+                
+                emailToneCard(
+                    title: "Casual",
+                    subtitle: "Caps + Less punctuation",
+                    greeting: "Hi Alex, it was great talking with you today. Looking forward to our next chat.\n\nBest,\n\(store.firstName)",
+                    isSelected: store.emailTone == "Casual"
+                ) {
+                    store.emailTone = "Casual"
+                    store.updateConfig()
+                }
+                
+                emailToneCard(
+                    title: "Excited!",
+                    subtitle: "More exclamations",
+                    greeting: "Hi Alex,\n\nIt was great talking with you today. Looking forward to our next chat!\n\nBest,\n\(store.firstName)",
+                    isSelected: store.emailTone == "Excited!"
+                ) {
+                    store.emailTone = "Excited!"
+                    store.updateConfig()
+                }
+            }
         }
     }
     
@@ -1860,61 +2208,144 @@ struct SaynStudioView: View {
     
     // MARK: - Specialized Style Subtab Contents
     private var personalMessagesStyleContent: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Applies to personal chats & social apps")
-                        .font(.system(size: 18, weight: .bold, design: .serif))
-                        .foregroundColor(.white)
-                    Text("Optimized for WhatsApp, Telegram, Signal, iMessage, and Discord.")
-                        .font(.system(size: 12))
-                        .foregroundColor(Color.white.opacity(0.85))
-                }
-                Spacer()
-                HStack(spacing: -6) {
-                    ForEach(["bubble.left.and.bubble.right.fill", "heart.fill", "sparkles"], id: \.self) { ic in
+        VStack(alignment: .leading, spacing: 18) {
+            // Hero Acoustic Wave Banner (Screenshot 1 Reference)
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 20/255, green: 10/255, blue: 14/255),
+                                Color(red: 38/255, green: 8/255, blue: 18/255),
+                                Color(red: 16/255, green: 6/255, blue: 10/255)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .overlay(
+                        GeometryReader { geo in
+                            Path { path in
+                                path.move(to: CGPoint(x: geo.size.width * 0.45, y: geo.size.height))
+                                path.addCurve(
+                                    to: CGPoint(x: geo.size.width, y: geo.size.height * 0.2),
+                                    control1: CGPoint(x: geo.size.width * 0.65, y: geo.size.height * 0.3),
+                                    control2: CGPoint(x: geo.size.width * 0.82, y: geo.size.height * 0.8)
+                                )
+                            }
+                            .stroke(Color(red: 168/255, green: 30/255, blue: 60/255).opacity(0.35), lineWidth: 28)
+                            .blur(radius: 18)
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                    )
+                
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Your tone, everywhere.")
+                            .font(.system(size: 24, weight: .bold, design: .serif))
+                            .foregroundColor(.white)
+                        
+                        Text("Choose a style that fits your conversations.")
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundColor(Color.white.opacity(0.85))
+                    }
+                    
+                    Spacer()
+                    
+                    // 5 Social App Badges Capsule
+                    HStack(spacing: 8) {
+                        // WhatsApp
                         ZStack {
-                            Circle()
-                                .fill(surfaceBeige)
-                                .frame(width: 32, height: 32)
-                            Image(systemName: ic)
-                                .font(.system(size: 13))
-                                .foregroundColor(accentTeal)
+                            Circle().fill(Color(red: 37/255, green: 211/255, blue: 102/255)).frame(width: 28, height: 28)
+                            Image(systemName: "phone.fill")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                        
+                        // Telegram
+                        ZStack {
+                            Circle().fill(Color(red: 42/255, green: 171/255, blue: 238/255)).frame(width: 28, height: 28)
+                            Image(systemName: "paperplane.fill")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.white)
+                                .rotationEffect(.degrees(45))
+                                .offset(x: -1, y: 1)
+                        }
+                        
+                        // Messages / iMessage
+                        ZStack {
+                            Circle().fill(Color(red: 0/255, green: 122/255, blue: 255/255)).frame(width: 28, height: 28)
+                            Image(systemName: "bubble.left.fill")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                        
+                        // WeChat
+                        ZStack {
+                            Circle().fill(Color(red: 7/255, green: 193/255, blue: 96/255)).frame(width: 28, height: 28)
+                            Image(systemName: "bubble.left.and.bubble.right.fill")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                        
+                        // Discord
+                        ZStack {
+                            Circle().fill(Color(red: 88/255, green: 101/255, blue: 242/255)).frame(width: 28, height: 28)
+                            Image(systemName: "gamecontroller.fill")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.white)
                         }
                     }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Capsule().fill(Color.white.opacity(0.12)))
                 }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 22)
             }
-            .padding(20)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(LinearGradient(colors: [Color(red: 35/255, green: 45/255, blue: 40/255), Color(red: 20/255, green: 28/255, blue: 25/255)], startPoint: .topLeading, endPoint: .bottomTrailing))
-            )
+            .frame(maxWidth: .infinity)
             
+            // 3 Tone Cards
             HStack(alignment: .top, spacing: 16) {
-                emailToneCard(
+                // 1. Casual (selected)
+                personalToneCard(
                     title: "Casual",
                     subtitle: "Conversational & relaxed",
-                    greeting: "Hey! Just grabbed some coffee. Let me know when you're free to catch up later today",
+                    example: "Hey! Just grabbed some coffee. Let me know when you're free to catch up later today",
+                    iconName: "bubble.left.fill",
+                    iconColor: Color(red: 111/255, green: 16/255, blue: 37/255),
+                    iconBg: Color(red: 254/255, green: 238/255, blue: 238/255),
+                    bubbleBg: Color(red: 253/255, green: 242/255, blue: 241/255),
                     isSelected: store.personalTone == "Casual"
                 ) {
                     store.personalTone = "Casual"
                     store.updateConfig()
                 }
                 
-                emailToneCard(
-                    title: "Warm & Friendly ✨",
+                // 2. Warm & Friendly
+                personalToneCard(
+                    title: "Warm & Friendly",
                     subtitle: "Adds friendly warmth",
-                    greeting: "Hey there! Hope you're having an awesome week ✨ Let's definitely catch up soon!",
+                    example: "Hey there! Hope you're having an awesome week. ✨ Let's definitely catch up soon!",
+                    iconName: "sun.max.fill",
+                    iconColor: Color(red: 235/255, green: 160/255, blue: 40/255),
+                    iconBg: Color(red: 254/255, green: 249/255, blue: 230/255),
+                    bubbleBg: Color(red: 254/255, green: 249/255, blue: 240/255),
                     isSelected: store.personalTone == "Warm & Friendly"
                 ) {
                     store.personalTone = "Warm & Friendly"
                     store.updateConfig()
                 }
                 
-                emailToneCard(
+                // 3. Direct & Punchy
+                personalToneCard(
                     title: "Direct & Punchy",
                     subtitle: "Zero fluff replies",
-                    greeting: "Got it. Running 5 mins late. See you downstairs.",
+                    example: "Got it. Running 5 mins late. See you downstairs.",
+                    iconName: "bolt.fill",
+                    iconColor: Color(red: 40/255, green: 125/255, blue: 245/255),
+                    iconBg: Color(red: 238/255, green: 245/255, blue: 255/255),
+                    bubbleBg: Color(red: 245/255, green: 247/255, blue: 250/255),
                     isSelected: store.personalTone == "Direct"
                 ) {
                     store.personalTone = "Direct"
@@ -1922,25 +2353,136 @@ struct SaynStudioView: View {
                 }
             }
             
-            HStack {
+            // Auto-emoji enhancement Toggle Card
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle()
+                        .fill(Color(red: 254/255, green: 238/255, blue: 238/255))
+                        .frame(width: 36, height: 36)
+                    Image(systemName: "face.smiling.fill")
+                        .font(.system(size: 17))
+                        .foregroundColor(Color(red: 180/255, green: 30/255, blue: 50/255))
+                }
+                
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Auto-emoji enhancement")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(textDark)
+                        .font(.system(size: 13.5, weight: .bold))
+                        .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
                     Text("Subtly adds warm emojis (✨, 👍, 🙌) to enthusiastic personal messages")
-                        .font(.system(size: 11))
-                        .foregroundColor(textMuted)
+                        .font(.system(size: 11.5, weight: .regular))
+                        .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
                 }
+                
                 Spacer()
+                
                 Toggle("", isOn: $store.personalEmojiEnabled)
-                    .toggleStyle(SwitchToggleStyle(tint: accentTeal))
+                    .toggleStyle(SwitchToggleStyle(tint: Color(red: 111/255, green: 16/255, blue: 37/255)))
                     .onChange(of: store.personalEmojiEnabled) { _ in
                         store.updateConfig()
                     }
             }
-            .padding(14)
-            .background(RoundedRectangle(cornerRadius: 12).fill(cardWhite))
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.white)
+                    .shadow(color: Color.black.opacity(0.02), radius: 3, x: 0, y: 1)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color(red: 236/255, green: 233/255, blue: 228/255), lineWidth: 1)
+                    )
+            )
         }
+    }
+    
+    private func personalToneCard(
+        title: String,
+        subtitle: String,
+        example: String,
+        iconName: String,
+        iconColor: Color,
+        iconBg: Color,
+        bubbleBg: Color,
+        isSelected: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 14) {
+                // Top row: left icon, right selection circle
+                HStack {
+                    ZStack {
+                        Circle()
+                            .fill(iconBg)
+                            .frame(width: 34, height: 34)
+                        Image(systemName: iconName)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(iconColor)
+                    }
+                    
+                    Spacer()
+                    
+                    if isSelected {
+                        ZStack {
+                            Circle()
+                                .fill(Color(red: 111/255, green: 16/255, blue: 37/255))
+                                .frame(width: 17, height: 17)
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 9.5, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                    } else {
+                        Circle()
+                            .stroke(Color.gray.opacity(0.35), lineWidth: 1.5)
+                            .frame(width: 17, height: 17)
+                    }
+                }
+                
+                // Title & Subtitle
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                    Text(subtitle)
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
+                }
+                
+                // Inner Quote Bubble
+                VStack(alignment: .trailing, spacing: 8) {
+                    Text(example)
+                        .font(.system(size: 12.5, weight: .regular))
+                        .foregroundColor(Color(red: 30/255, green: 28/255, blue: 26/255))
+                        .lineSpacing(3)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    Button(action: {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(example, forType: .string)
+                    }) {
+                        Image(systemName: "doc.on.doc")
+                            .font(.system(size: 12))
+                            .foregroundColor(Color(red: 140/255, green: 137/255, blue: 132/255))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                .padding(14)
+                .background(RoundedRectangle(cornerRadius: 10).fill(bubbleBg))
+            }
+            .padding(18)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.white)
+                    .shadow(color: Color.black.opacity(0.02), radius: 3, x: 0, y: 1)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(
+                        isSelected ? Color(red: 111/255, green: 16/255, blue: 37/255) : Color(red: 236/255, green: 233/255, blue: 228/255),
+                        lineWidth: isSelected ? 1.8 : 1
+                    )
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
     }
     
     private var workMessagesStyleContent: some View {
@@ -3553,6 +4095,440 @@ struct SaynStudioView: View {
                 .foregroundColor(textDark)
                 .padding(6)
                 .background(RoundedRectangle(cornerRadius: 6).fill(cardWhite))
+        }
+    }
+    
+    // MARK: - In-Page Settings, Shortcuts & Team Views
+    private var settingsPageView: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 20) {
+                // Header (Screenshot 3 Reference)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Settings")
+                        .font(.system(size: 26, weight: .bold, design: .rounded))
+                        .foregroundColor(textDark)
+                    Text("Manage your preferences and account settings.")
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
+                }
+                
+                // 2-Column Layout
+                HStack(alignment: .top, spacing: 28) {
+                    // Left Sub-Navigation Menu
+                    VStack(alignment: .leading, spacing: 20) {
+                        // GENERAL Section
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("GENERAL")
+                                .font(.system(size: 10, weight: .bold))
+                                .tracking(0.8)
+                                .foregroundColor(Color(red: 135/255, green: 132/255, blue: 128/255))
+                                .padding(.horizontal, 10)
+                                .padding(.bottom, 2)
+                            
+                            settingsSubNavItem(tab: .general, label: "General", icon: "gearshape")
+                            settingsSubNavItem(tab: .system, label: "System", icon: "display")
+                            settingsSubNavItem(tab: .notetaker, label: "Notetaker", icon: "record.circle")
+                            settingsSubNavItem(tab: .vibeCoding, label: "Vibe coding", icon: "number")
+                            settingsSubNavItem(tab: .connectors, label: "Connectors", icon: "link")
+                            settingsSubNavItem(tab: .mcp, label: "MCP", icon: "cable.connector")
+                        }
+                        
+                        // ACCOUNT Section
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("ACCOUNT")
+                                .font(.system(size: 10, weight: .bold))
+                                .tracking(0.8)
+                                .foregroundColor(Color(red: 135/255, green: 132/255, blue: 128/255))
+                                .padding(.horizontal, 10)
+                                .padding(.bottom, 2)
+                            
+                            settingsSubNavItem(tab: .account, label: "Account", icon: "person.crop.circle")
+                            settingsSubNavItem(tab: .team, label: "Team", icon: "person.2")
+                            settingsSubNavItem(tab: .privacy, label: "Data and Privacy", icon: "shield")
+                        }
+                    }
+                    .frame(width: 175)
+                    
+                    // Right Content Pane
+                    VStack(alignment: .leading, spacing: 20) {
+                        if activeSettingsTab == .account {
+                            accountSettingsScreenView
+                        } else if activeSettingsTab == .general {
+                            settingsGeneralContent
+                                .padding(22)
+                                .background(RoundedRectangle(cornerRadius: 14).fill(Color.white).shadow(color: Color.black.opacity(0.02), radius: 3, x: 0, y: 1))
+                        } else if activeSettingsTab == .system {
+                            settingsSystemContent
+                                .padding(22)
+                                .background(RoundedRectangle(cornerRadius: 14).fill(Color.white).shadow(color: Color.black.opacity(0.02), radius: 3, x: 0, y: 1))
+                        } else if activeSettingsTab == .notetaker {
+                            settingsNotetakerContent
+                                .padding(22)
+                                .background(RoundedRectangle(cornerRadius: 14).fill(Color.white).shadow(color: Color.black.opacity(0.02), radius: 3, x: 0, y: 1))
+                        } else if activeSettingsTab == .vibeCoding {
+                            settingsVibeCodingContent
+                                .padding(22)
+                                .background(RoundedRectangle(cornerRadius: 14).fill(Color.white).shadow(color: Color.black.opacity(0.02), radius: 3, x: 0, y: 1))
+                        } else if activeSettingsTab == .connectors {
+                            settingsConnectorsContent
+                                .padding(22)
+                                .background(RoundedRectangle(cornerRadius: 14).fill(Color.white).shadow(color: Color.black.opacity(0.02), radius: 3, x: 0, y: 1))
+                        } else if activeSettingsTab == .mcp {
+                            settingsMCPContent
+                                .padding(22)
+                                .background(RoundedRectangle(cornerRadius: 14).fill(Color.white).shadow(color: Color.black.opacity(0.02), radius: 3, x: 0, y: 1))
+                        } else if activeSettingsTab == .team {
+                            settingsTeamContent
+                                .padding(22)
+                                .background(RoundedRectangle(cornerRadius: 14).fill(Color.white).shadow(color: Color.black.opacity(0.02), radius: 3, x: 0, y: 1))
+                        } else if activeSettingsTab == .privacy {
+                            settingsPrivacyContent
+                                .padding(22)
+                                .background(RoundedRectangle(cornerRadius: 14).fill(Color.white).shadow(color: Color.black.opacity(0.02), radius: 3, x: 0, y: 1))
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            .padding(.horizontal, 28)
+            .padding(.top, 10)
+            .padding(.bottom, 32)
+        }
+        .onAppear {
+            syncAccountFields()
+        }
+    }
+    
+    // Pixel-Perfect Account Screen (Screenshot 3 Reference)
+    private var accountSettingsScreenView: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            // Header
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 9)
+                        .fill(Color(red: 254/255, green: 238/255, blue: 238/255))
+                        .frame(width: 38, height: 38)
+                    Image(systemName: "person.crop.circle")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(Color(red: 120/255, green: 22/255, blue: 44/255))
+                }
+                
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Account")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                    Text("Update your personal information and account details.")
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
+                }
+            }
+            
+            // Form Container Box
+            VStack(alignment: .leading, spacing: 18) {
+                // Profile picture row
+                HStack(alignment: .center, spacing: 20) {
+                    Text("Profile picture")
+                        .font(.system(size: 12.5, weight: .bold))
+                        .foregroundColor(Color(red: 30/255, green: 28/255, blue: 26/255))
+                        .frame(width: 110, alignment: .leading)
+                    
+                    HStack(spacing: 16) {
+                        ZStack {
+                            Circle()
+                                .fill(Color(red: 105/255, green: 14/255, blue: 30/255))
+                                .frame(width: 54, height: 54)
+                            Text(String((store.firstName.isEmpty ? "A" : store.firstName).prefix(1)).uppercased())
+                                .font(.system(size: 24, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 6) {
+                            Button(action: {
+                                // Upload photo action
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "arrow.up.to.line")
+                                        .font(.system(size: 11, weight: .bold))
+                                    Text("Upload photo")
+                                        .font(.system(size: 12, weight: .bold))
+                                }
+                                .foregroundColor(Color(red: 111/255, green: 16/255, blue: 37/255))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 7)
+                                .background(RoundedRectangle(cornerRadius: 7).fill(Color(red: 254/255, green: 238/255, blue: 238/255)))
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            
+                            Text("JPG, PNG or GIF. Max 5MB.")
+                                .font(.system(size: 10.5, weight: .regular))
+                                .foregroundColor(Color(red: 135/255, green: 132/255, blue: 128/255))
+                        }
+                    }
+                    Spacer()
+                }
+                
+                // First name row
+                accountInputRow(label: "First name", icon: "person", value: $editFirstName)
+                
+                // Last name row
+                accountInputRow(label: "Last name", icon: "person", value: $editLastName)
+                
+                // Phone number row
+                accountInputRow(label: "Phone number", icon: "phone", value: $editPhone)
+                
+                // Writing focus dropdown row
+                HStack(alignment: .center, spacing: 20) {
+                    Text("Writing focus")
+                        .font(.system(size: 12.5, weight: .bold))
+                        .foregroundColor(Color(red: 30/255, green: 28/255, blue: 26/255))
+                        .frame(width: 110, alignment: .leading)
+                    
+                    Menu {
+                        Button("Engineering & Voice") { editWritingRole = "Engineering & Voice" }
+                        Button("General & Writing") { editWritingRole = "General & Writing" }
+                        Button("Product Management") { editWritingRole = "Product Management" }
+                        Button("Executive & Leadership") { editWritingRole = "Executive & Leadership" }
+                        Button("Creative & Content") { editWritingRole = "Creative & Content" }
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "scope")
+                                .font(.system(size: 12.5))
+                                .foregroundColor(Color(red: 120/255, green: 118/255, blue: 115/255))
+                            
+                            Text(editWritingRole.isEmpty ? "Engineering & Voice" : editWritingRole)
+                                .font(.system(size: 12.5, weight: .medium))
+                                .foregroundColor(Color(red: 30/255, green: 28/255, blue: 26/255))
+                            
+                            Spacer()
+                            
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundColor(Color(red: 120/255, green: 118/255, blue: 115/255))
+                        }
+                        .padding(.horizontal, 12)
+                        .frame(height: 38)
+                        .background(RoundedRectangle(cornerRadius: 8).fill(Color.white))
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(red: 230/255, green: 227/255, blue: 222/255), lineWidth: 1))
+                    }
+                    .menuStyle(BorderlessButtonMenuStyle())
+                }
+                
+                // Email row
+                accountInputRow(label: "Email", icon: "envelope", value: $editEmail)
+            }
+            .padding(22)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color(red: 251/255, green: 249/255, blue: 246/255))
+                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(red: 236/255, green: 233/255, blue: 228/255), lineWidth: 1))
+            )
+            
+            // Bottom Buttons Bar
+            HStack {
+                // Sign out button
+                Button(action: {
+                    store.logout()
+                }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                            .font(.system(size: 12, weight: .semibold))
+                        Text("Sign out")
+                            .font(.system(size: 12.5, weight: .bold))
+                    }
+                    .foregroundColor(Color(red: 30/255, green: 28/255, blue: 26/255))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(RoundedRectangle(cornerRadius: 8).fill(Color.white))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(red: 225/255, green: 222/255, blue: 218/255), lineWidth: 1))
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                Spacer().frame(width: 14)
+                
+                // Delete account button
+                Button(action: {
+                    // Confirmation dialog for account deletion
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 11, weight: .medium))
+                        Text("Delete account")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    .foregroundColor(Color(red: 220/255, green: 38/255, blue: 38/255))
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                Spacer()
+                
+                if accountSavedNotice {
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(Color(red: 111/255, green: 16/255, blue: 37/255))
+                        Text("Saved")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(Color(red: 111/255, green: 16/255, blue: 37/255))
+                    }
+                    .transition(.opacity)
+                }
+                
+                // Save changes button
+                Button(action: {
+                    store.updateAccount(
+                        firstName: editFirstName,
+                        lastName: editLastName,
+                        phone: editPhone,
+                        email: editEmail,
+                        writingRole: editWritingRole
+                    )
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                        accountSavedNotice = true
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                        withAnimation {
+                            accountSavedNotice = false
+                        }
+                    }
+                }) {
+                    HStack(spacing: 7) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 11, weight: .bold))
+                        Text("Save changes")
+                            .font(.system(size: 12.5, weight: .bold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 8)
+                    .background(RoundedRectangle(cornerRadius: 8).fill(Color(red: 111/255, green: 16/255, blue: 37/255)))
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            .padding(.top, 4)
+        }
+    }
+    
+    private func accountInputRow(label: String, icon: String, value: Binding<String>) -> some View {
+        HStack(alignment: .center, spacing: 20) {
+            Text(label)
+                .font(.system(size: 12.5, weight: .bold))
+                .foregroundColor(Color(red: 30/255, green: 28/255, blue: 26/255))
+                .frame(width: 110, alignment: .leading)
+            
+            HStack(spacing: 10) {
+                Image(systemName: icon)
+                    .font(.system(size: 12.5))
+                    .foregroundColor(Color(red: 120/255, green: 118/255, blue: 115/255))
+                
+                TextField("", text: value)
+                    .textFieldStyle(PlainTextFieldStyle())
+                    .font(.system(size: 12.5, weight: .medium))
+                    .foregroundColor(Color(red: 30/255, green: 28/255, blue: 26/255))
+            }
+            .padding(.horizontal, 12)
+            .frame(height: 38)
+            .background(RoundedRectangle(cornerRadius: 8).fill(Color.white))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(red: 230/255, green: 227/255, blue: 222/255), lineWidth: 1))
+        }
+    }
+    
+    private func settingsSubNavItem(tab: SaynSettingsTab, label: String, icon: String) -> some View {
+        let isSelected = activeSettingsTab == tab
+        return Button(action: {
+            activeSettingsTab = tab
+        }) {
+            HStack(spacing: 10) {
+                Image(systemName: icon)
+                    .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                    .frame(width: 18)
+                
+                Text(label)
+                    .font(.system(size: 13, weight: isSelected ? .bold : .medium, design: .rounded))
+                
+                Spacer()
+            }
+            .foregroundColor(isSelected ? Color(red: 111/255, green: 16/255, blue: 37/255) : Color(red: 70/255, green: 68/255, blue: 65/255))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isSelected ? Color(red: 254/255, green: 238/255, blue: 240/255) : Color.clear)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    // MARK: - Shortcuts Page View
+    private var shortcutsPageView: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Shortcuts")
+                        .font(.system(size: 26, weight: .bold, design: .rounded))
+                        .foregroundColor(textDark)
+                    Text("Supercharge your typing speed with system-wide hotkeys.")
+                        .font(.system(size: 13))
+                        .foregroundColor(textMuted)
+                }
+                
+                VStack(spacing: 12) {
+                    shortcutRow(label: "Push-to-Talk (Hold)", keys: "fn (hold)", desc: "Dictate while holding, releases and pastes instantly")
+                    shortcutRow(label: "Toggle Dictation", keys: "⌥ Space", desc: "Start or stop hands-free voice transcription")
+                    shortcutRow(label: "Casual Tone Polish", keys: "⌥ 1", desc: "Rewrite highlighted text into conversational tone")
+                    shortcutRow(label: "Professional Tone", keys: "⌥ 2", desc: "Rewrite highlighted text into executive tone")
+                    shortcutRow(label: "Direct & Punchy", keys: "⌥ 3", desc: "Cut fluff and shorten highlighted text")
+                    shortcutRow(label: "Meeting Notetaker", keys: "⌥ N", desc: "Toggle live meeting recording and transcription")
+                    shortcutRow(label: "Open Scratchpad", keys: "⌥ S", desc: "Jump straight to drafting in SAYN Scratchpad")
+                }
+                .padding(18)
+                .background(RoundedRectangle(cornerRadius: 16).fill(Color.white).shadow(color: Color.black.opacity(0.02), radius: 3, x: 0, y: 1))
+            }
+            .padding(.horizontal, 28)
+            .padding(.top, 10)
+            .padding(.bottom, 32)
+        }
+    }
+    
+    private func shortcutRow(label: String, keys: String, desc: String) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(.system(size: 13.5, weight: .bold))
+                    .foregroundColor(textDark)
+                Text(desc)
+                    .font(.system(size: 11.5))
+                    .foregroundColor(textMuted)
+            }
+            Spacer()
+            Text(keys)
+                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                .foregroundColor(Color(red: 111/255, green: 16/255, blue: 37/255))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(RoundedRectangle(cornerRadius: 6).fill(Color(red: 254/255, green: 238/255, blue: 240/255)))
+        }
+        .padding(10)
+    }
+    
+    // MARK: - Team Page View
+    private var teamPageView: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Invite your team")
+                        .font(.system(size: 26, weight: .bold, design: .rounded))
+                        .foregroundColor(textDark)
+                    Text("Collaborate with your workspace and share shared dictionary snippets.")
+                        .font(.system(size: 13))
+                        .foregroundColor(textMuted)
+                }
+                
+                settingsTeamContent
+                    .padding(20)
+                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.white).shadow(color: Color.black.opacity(0.02), radius: 3, x: 0, y: 1))
+            }
+            .padding(.horizontal, 28)
+            .padding(.top, 10)
+            .padding(.bottom, 32)
         }
     }
     
