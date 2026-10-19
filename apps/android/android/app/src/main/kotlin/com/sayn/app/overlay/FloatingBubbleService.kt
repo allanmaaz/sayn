@@ -721,7 +721,7 @@ class FloatingBubbleService : Service() {
                             .putLong("flutter.sayn_stat_total_words", currentTotal + words)
                             .putLong("flutter.sayn_stat_weekly_words", (currentWeekly + words) % 1000)
                             .apply()
-                    } catch (_: Exception) {}
+                    } catch (e: Exception) {}
                 }
 
                 // 1. If SAYN Keyboard is actively connected, inject directly via InputConnection

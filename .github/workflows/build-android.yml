@@ -57,7 +57,15 @@ jobs:
       - name: Build Release APK
         run: |
           cd apps/android
-          flutter build apk --release
+          touch build.log
+          flutter build apk --release 2>&1 | tee build.log
+          STATUS="${PIPESTATUS[0]}"
+          if [ "$STATUS" -ne 0 ]; then
+            FAIL_LINES=$(grep -E "(e: |error:|FAILED|Exception|FAILURE:)" build.log | tail -n 25 | tr '\n' ' | ' | tr '"' "'")
+            echo "::error::BUILD: $FAIL_LINES"
+            tail -n 120 build.log
+            exit "$STATUS"
+          fi
 
       - name: Upload Build Log on Failure
         if: failure()
