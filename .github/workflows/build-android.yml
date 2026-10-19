@@ -43,18 +43,15 @@ jobs:
           cd apps/android
           flutter pub get
 
+      - name: Flutter Analyze
+        run: |
+          cd apps/android
+          flutter analyze
+
       - name: Build Release APK
         run: |
           cd apps/android
-          if ! flutter build apk --release -v > build.log 2>&1; then
-            ERR=$(grep -E "(e: |FAILURE:|error:|Exception:)" build.log | tail -n 10 | tr '\n' ' ' | tr '"' "'")
-            if [ -z "$ERR" ]; then
-              ERR=$(tail -n 25 build.log | tr '\n' ' ' | tr '"' "'")
-            fi
-            echo "::error::BUILD_FAILED: $ERR"
-            tail -n 300 build.log
-            exit 1
-          fi
+          flutter build apk --release
 
       - name: Upload Build Log on Failure
         if: failure()
