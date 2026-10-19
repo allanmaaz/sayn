@@ -534,49 +534,71 @@ struct SaynStudioView: View {
     }
     
     // Explore Notetaker Promo Card
+    @ViewBuilder
     private var exploreNotetakerPromoCard: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 7)
-                    .fill(Color(red: 248/255, green: 237/255, blue: 238/255))
-                    .frame(width: 28, height: 28)
-                Image(systemName: "person.crop.rectangle")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(Color(red: 120/255, green: 22/255, blue: 44/255))
-            }
-            
-            Text("Explore Notetaker")
-                .font(.system(size: 12.5, weight: .bold))
-                .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
-            
-            Text("Get a transcript, summary, and action items for every meeting")
-                .font(.system(size: 10.5, weight: .regular))
-                .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
-                .lineSpacing(2)
-            
-            Button(action: {
-                selectedTab = .notetaker
-            }) {
-                HStack(spacing: 5) {
-                    Text("Check it out")
-                        .font(.system(size: 11, weight: .bold))
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 9.5, weight: .bold))
+        if !store.isNotetakerPromoDismissed {
+            VStack(alignment: .leading, spacing: 9) {
+                HStack(alignment: .top) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 7)
+                            .fill(Color(red: 248/255, green: 237/255, blue: 238/255))
+                            .frame(width: 28, height: 28)
+                        Image(systemName: "person.crop.rectangle")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(Color(red: 120/255, green: 22/255, blue: 44/255))
+                    }
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            store.isNotetakerPromoDismissed = true
+                            store.updateConfig()
+                        }
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 9.5, weight: .bold))
+                            .foregroundColor(Color(red: 140/255, green: 135/255, blue: 130/255))
+                            .padding(4)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
-                .foregroundColor(.white)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(Capsule().fill(Color(red: 111/255, green: 16/255, blue: 37/255)))
+                
+                Text("Explore Notetaker")
+                    .font(.system(size: 12.5, weight: .bold))
+                    .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                
+                Text("Get a transcript, summary, and action items for every meeting")
+                    .font(.system(size: 10.5, weight: .regular))
+                    .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
+                    .lineSpacing(2)
+                
+                Button(action: {
+                    selectedTab = .notetaker
+                }) {
+                    HStack(spacing: 5) {
+                        Text("Check it out")
+                            .font(.system(size: 11, weight: .bold))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 9.5, weight: .bold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Capsule().fill(Color(red: 111/255, green: 16/255, blue: 37/255)))
+                }
+                .buttonStyle(PlainButtonStyle())
             }
-            .buttonStyle(PlainButtonStyle())
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color(red: 248/255, green: 241/255, blue: 237/255))
+            )
+            .padding(.horizontal, 10)
+            .padding(.top, 10)
+            .transition(.opacity.combined(with: .scale(scale: 0.95)))
         }
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color(red: 248/255, green: 241/255, blue: 237/255))
-        )
-        .padding(.horizontal, 10)
-        .padding(.top, 10)
     }
     
     // Official SAYN Squircle Logo Lockup
