@@ -200,7 +200,9 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 13),
                         side: BorderSide(color: Colors.white.withOpacity(0.18)),
-                        shape: RoundedRectangle(BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
                       child: const Text(
                         'Previous',
@@ -230,7 +232,9 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
                       foregroundColor: Colors.black,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 13),
-                      shape: RoundedRectangle(BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                     child: Text(
                       _currentStep < _totalSteps - 1 ? 'Next' : 'Get Started',
