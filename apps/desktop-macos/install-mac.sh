@@ -4,22 +4,19 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR"
 
-echo "⚡ Compiling SAYN Universal 2 Binary (Apple Silicon + Intel)..."
-swiftc -O -target arm64-apple-macos11.0 -framework Cocoa -framework SwiftUI -framework Carbon -framework AVFoundation -framework Speech \
-  Sources/SaynMac/*.swift -o /tmp/sayn_mac_arm64
-
-swiftc -O -target x86_64-apple-macos11.0 -framework Cocoa -framework SwiftUI -framework Carbon -framework AVFoundation -framework Speech \
-  Sources/SaynMac/*.swift -o /tmp/sayn_mac_x86_64
-
-lipo -create -output /tmp/sayn_mac_universal /tmp/sayn_mac_arm64 /tmp/sayn_mac_x86_64
-file /tmp/sayn_mac_universal
+echo "⚡ Building SAYN production release binary..."
+swift build -c release
+BIN_SOURCE=".build/release/SaynMac"
+if [ ! -f "$BIN_SOURCE" ]; then
+    BIN_SOURCE=".build/debug/SaynMac"
+fi
 
 APP_DIR="/Applications/SAYN.app/Contents/MacOS"
 RES_DIR="/Applications/SAYN.app/Contents/Resources"
 mkdir -p "$APP_DIR"
 mkdir -p "$RES_DIR"
 
-cp /tmp/sayn_mac_universal "$APP_DIR/SAYN"
+cp "$BIN_SOURCE" "$APP_DIR/SAYN"
 chmod +x "$APP_DIR/SAYN"
 
 # Copy Icon and Logo resources
