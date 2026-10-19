@@ -100,7 +100,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     if (text.isEmpty) {
       setState(() {
         _wordCount = 0;
-        _charCount = 0;
         _readabilityScore = 100;
       });
       return;
