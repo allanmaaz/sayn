@@ -717,115 +717,130 @@ struct SaynStudioView: View {
                     }
                     
                     // 2. Crimson Acoustic Hero Banner
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        Color(red: 48/255, green: 8/255, blue: 18/255),
-                                        Color(red: 26/255, green: 4/255, blue: 10/255)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
+                    if !store.isHeroBannerDismissed {
+                        ZStack(alignment: .topTrailing) {
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            Color(red: 48/255, green: 8/255, blue: 18/255),
+                                            Color(red: 26/255, green: 4/255, blue: 10/255)
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
                                 )
-                            )
-                        
-                        // Luminous fluid acoustic wave contours
-                        GeometryReader { geo in
-                            let w = geo.size.width
-                            let h = geo.size.height
                             
-                            // Wave Ribbon 1 (Deep Rose Glow)
-                            Path { p in
-                                p.move(to: CGPoint(x: w * 0.32, y: h))
-                                p.addCurve(
-                                    to: CGPoint(x: w * 0.98, y: h * 0.18),
-                                    control1: CGPoint(x: w * 0.52, y: h * 0.08),
-                                    control2: CGPoint(x: w * 0.76, y: h * 0.88)
-                                )
-                            }
-                            .stroke(Color(red: 185/255, green: 45/255, blue: 75/255).opacity(0.42), lineWidth: 2.2)
-                            
-                            // Wave Ribbon 2 (Soft Rose Wave)
-                            Path { p in
-                                p.move(to: CGPoint(x: w * 0.40, y: h))
-                                p.addCurve(
-                                    to: CGPoint(x: w, y: h * 0.36),
-                                    control1: CGPoint(x: w * 0.60, y: h * 0.18),
-                                    control2: CGPoint(x: w * 0.84, y: h * 0.78)
-                                )
-                            }
-                            .stroke(Color(red: 215/255, green: 65/255, blue: 95/255).opacity(0.30), lineWidth: 1.6)
-                            
-                            // Wave Ribbon 3 (Outer Accent Wave)
-                            Path { p in
-                                p.move(to: CGPoint(x: w * 0.48, y: h))
-                                p.addCurve(
-                                    to: CGPoint(x: w * 0.96, y: h * 0.52),
-                                    control1: CGPoint(x: w * 0.68, y: h * 0.28),
-                                    control2: CGPoint(x: w * 0.88, y: h * 0.70)
-                                )
-                            }
-                            .stroke(Color(red: 235/255, green: 110/255, blue: 135/255).opacity(0.20), lineWidth: 1.2)
-                        }
-                        
-                        HStack(alignment: .center) {
-                            VStack(alignment: .leading, spacing: 14) {
-                                Text("Turn your voice into\nclear, actionable notes.")
-                                    .font(.system(size: 21, weight: .medium, design: .serif))
-                                    .foregroundColor(Color(red: 252/255, green: 249/255, blue: 246/255))
-                                    .lineSpacing(4)
+                            // Luminous fluid acoustic wave contours
+                            GeometryReader { geo in
+                                let w = geo.size.width
+                                let h = geo.size.height
                                 
-                                Button(action: {
-                                    onToggleDictation()
-                                }) {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "mic.fill")
-                                            .font(.system(size: 12.5))
-                                            .foregroundColor(Color(red: 100/255, green: 16/255, blue: 34/255))
-                                        
-                                        Text("Start dictating")
-                                            .font(.system(size: 13, weight: .bold))
-                                            .foregroundColor(Color(red: 28/255, green: 22/255, blue: 22/255))
-                                        
-                                        Text("⌘ D")
-                                            .font(.system(size: 10.5, weight: .bold, design: .monospaced))
-                                            .foregroundColor(Color(red: 130/255, green: 35/255, blue: 55/255))
-                                            .padding(.horizontal, 6)
-                                            .padding(.vertical, 2.8)
-                                            .background(RoundedRectangle(cornerRadius: 4.5).fill(Color(red: 245/255, green: 236/255, blue: 238/255)))
-                                    }
-                                    .padding(.horizontal, 15)
-                                    .padding(.vertical, 8.5)
-                                    .background(Capsule().fill(Color.white))
-                                    .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
+                                // Wave Ribbon 1 (Deep Rose Glow)
+                                Path { p in
+                                    p.move(to: CGPoint(x: w * 0.32, y: h))
+                                    p.addCurve(
+                                        to: CGPoint(x: w * 0.98, y: h * 0.18),
+                                        control1: CGPoint(x: w * 0.52, y: h * 0.08),
+                                        control2: CGPoint(x: w * 0.76, y: h * 0.88)
+                                    )
                                 }
-                                .buttonStyle(PlainButtonStyle())
+                                .stroke(Color(red: 185/255, green: 45/255, blue: 75/255).opacity(0.42), lineWidth: 2.2)
+                                
+                                // Wave Ribbon 2 (Soft Rose Wave)
+                                Path { p in
+                                    p.move(to: CGPoint(x: w * 0.40, y: h))
+                                    p.addCurve(
+                                        to: CGPoint(x: w, y: h * 0.36),
+                                        control1: CGPoint(x: w * 0.60, y: h * 0.18),
+                                        control2: CGPoint(x: w * 0.84, y: h * 0.78)
+                                    )
+                                }
+                                .stroke(Color(red: 215/255, green: 65/255, blue: 95/255).opacity(0.30), lineWidth: 1.6)
+                                
+                                // Wave Ribbon 3 (Outer Accent Wave)
+                                Path { p in
+                                    p.move(to: CGPoint(x: w * 0.48, y: h))
+                                    p.addCurve(
+                                        to: CGPoint(x: w * 0.96, y: h * 0.52),
+                                        control1: CGPoint(x: w * 0.68, y: h * 0.28),
+                                        control2: CGPoint(x: w * 0.88, y: h * 0.70)
+                                    )
+                                }
+                                .stroke(Color(red: 235/255, green: 110/255, blue: 135/255).opacity(0.20), lineWidth: 1.2)
                             }
                             
-                            Spacer()
-                            
-                            // Translucent Glassmorphism Pill with 4 subtle icons
-                            HStack(spacing: 16) {
-                                Image(systemName: "bubble.left.and.bubble.right.fill")
-                                Image(systemName: "doc.text.fill")
-                                Image(systemName: "envelope.fill")
-                                Image(systemName: "sparkles")
+                            HStack(alignment: .center) {
+                                VStack(alignment: .leading, spacing: 14) {
+                                    Text("Turn your voice into\nclear, actionable notes.")
+                                        .font(.system(size: 21, weight: .medium, design: .serif))
+                                        .foregroundColor(Color(red: 252/255, green: 249/255, blue: 246/255))
+                                        .lineSpacing(4)
+                                    
+                                    Button(action: {
+                                        onToggleDictation()
+                                    }) {
+                                        HStack(spacing: 8) {
+                                            Image(systemName: "mic.fill")
+                                                .font(.system(size: 12.5))
+                                                .foregroundColor(Color(red: 100/255, green: 16/255, blue: 34/255))
+                                            
+                                            Text("Start dictating")
+                                                .font(.system(size: 13, weight: .bold))
+                                                .foregroundColor(Color(red: 28/255, green: 22/255, blue: 22/255))
+                                        }
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 8.5)
+                                        .background(Capsule().fill(Color.white))
+                                        .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                }
+                                
+                                Spacer()
+                                
+                                // Translucent Glassmorphism Pill with 4 subtle icons
+                                HStack(spacing: 16) {
+                                    Image(systemName: "bubble.left.and.bubble.right.fill")
+                                    Image(systemName: "doc.text.fill")
+                                    Image(systemName: "envelope.fill")
+                                    Image(systemName: "sparkles")
+                                }
+                                .font(.system(size: 16))
+                                .foregroundColor(Color.white.opacity(0.70))
+                                .padding(.horizontal, 18)
+                                .padding(.vertical, 14)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .fill(Color.white.opacity(0.08))
+                                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.12), lineWidth: 1))
+                                )
                             }
-                            .font(.system(size: 16))
-                            .foregroundColor(Color.white.opacity(0.70))
-                            .padding(.horizontal, 18)
-                            .padding(.vertical, 14)
-                            .background(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .fill(Color.white.opacity(0.08))
-                                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.12), lineWidth: 1))
-                            )
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 22)
+                            
+                            // Dismiss Cross Mark (✕) Button
+                            Button(action: {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                    store.isHeroBannerDismissed = true
+                                    store.updateConfig()
+                                }
+                            }) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.black.opacity(0.28))
+                                        .frame(width: 24, height: 24)
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 9.5, weight: .bold))
+                                        .foregroundColor(Color.white.opacity(0.85))
+                                }
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .padding(14)
                         }
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 22)
+                        .frame(height: 144)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
                     }
-                    .frame(height: 144)
                     
                     // 3. Recent Dictations Section
                     VStack(alignment: .leading, spacing: 12) {
