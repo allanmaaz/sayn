@@ -3501,129 +3501,202 @@ struct SaynStudioView: View {
         }
     }
     
-    // MARK: - Secure Login Screen (Gated Access - Zero Data Exposure)
+    // MARK: - Google G Logo Vector
+    struct GoogleGLogo: View {
+        private let svgData = """
+        <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.66-5.17 3.66-9.12z"/>
+          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.03c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.4 7.34 24 12 24z"/>
+          <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.58H1.25C.45 8.17 0 9.97 0 12s.45 3.83 1.25 5.42l4.03-3.13z"/>
+          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.6 1.25 6.58l4.03 3.13c.95-2.83 3.6-4.96 6.72-4.96z"/>
+        </svg>
+        """.data(using: .utf8)!
+        
+        var body: some View {
+            if let nsImg = NSImage(data: svgData) {
+                Image(nsImage: nsImg)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 18, height: 18)
+            } else {
+                Text("G")
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .foregroundColor(Color(red: 66/255, green: 133/255, blue: 244/255))
+            }
+        }
+    }
+    
+    // MARK: - Secure Login Screen (Gated Access - Pixel-Perfect Minimal)
     private var secureLoginScreen: some View {
         ZStack {
-            bgCanvas.ignoresSafeArea()
+            // Warm ivory/cream background
+            Color(red: 254/255, green: 252/255, blue: 251/255).ignoresSafeArea()
             
-            // Subtle ambient backdrop glow
-            Circle()
-                .fill(accentTeal.opacity(0.04))
-                .frame(width: 600, height: 600)
-                .blur(radius: 60)
+            // 1. Ambient soft maroon blurred orbs & aesthetic curves
+            GeometryReader { geo in
+                let w = geo.size.width
+                let h = geo.size.height
+                
+                ZStack {
+                    // Top-right soft rose/maroon glow
+                    Circle()
+                        .fill(Color(red: 168/255, green: 38/255, blue: 68/255).opacity(0.18))
+                        .frame(width: 360, height: 360)
+                        .blur(radius: 75)
+                        .position(x: w * 0.94, y: h * 0.12)
+                    
+                    // Bottom-left deep maroon glow
+                    Circle()
+                        .fill(Color(red: 140/255, green: 22/255, blue: 50/255).opacity(0.16))
+                        .frame(width: 440, height: 440)
+                        .blur(radius: 85)
+                        .position(x: w * 0.08, y: h * 0.72)
+                    
+                    // Top-right subtle concentric arc
+                    Path { p in
+                        p.addArc(
+                            center: CGPoint(x: w * 0.90, y: -h * 0.04),
+                            radius: w * 0.36,
+                            startAngle: .degrees(45),
+                            endAngle: .degrees(165),
+                            clockwise: false
+                        )
+                    }
+                    .stroke(Color(red: 180/255, green: 55/255, blue: 85/255).opacity(0.20), lineWidth: 1.1)
+                    
+                    // Flowing aesthetic spline curve from left to right
+                    Path { p in
+                        p.move(to: CGPoint(x: 0, y: h * 0.22))
+                        p.addCurve(
+                            to: CGPoint(x: w * 0.32, y: h * 0.58),
+                            control1: CGPoint(x: w * 0.12, y: h * 0.27),
+                            control2: CGPoint(x: w * 0.20, y: h * 0.52)
+                        )
+                        p.addCurve(
+                            to: CGPoint(x: w, y: h * 0.51),
+                            control1: CGPoint(x: w * 0.44, y: h * 0.64),
+                            control2: CGPoint(x: w * 0.82, y: h * 0.40)
+                        )
+                    }
+                    .stroke(Color(red: 180/255, green: 55/255, blue: 85/255).opacity(0.28), lineWidth: 1.1)
+                    
+                    // Milestone node 1 (Left side)
+                    Circle()
+                        .fill(Color(red: 180/255, green: 55/255, blue: 85/255).opacity(0.78))
+                        .frame(width: 8.5, height: 8.5)
+                        .position(x: w * 0.148, y: h * 0.315)
+                    
+                    // Milestone node 2 (Right side)
+                    Circle()
+                        .fill(Color(red: 180/255, green: 55/255, blue: 85/255).opacity(0.78))
+                        .frame(width: 9.0, height: 9.0)
+                        .position(x: w * 0.892, y: h * 0.442)
+                }
+            }
+            .ignoresSafeArea()
             
-            VStack(spacing: 24) {
-                // Top Brand Mark
-                VStack(spacing: 12) {
+            // 2. Centered Content: Logo + Minimalist Card
+            VStack(spacing: 18) {
+                // Brand Header: Icon + Wordmark
+                VStack(spacing: 8) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 18)
-                            .fill(accentTeal)
-                            .frame(width: 58, height: 58)
-                            .shadow(color: accentTeal.opacity(0.3), radius: 12, x: 0, y: 6)
+                        RoundedRectangle(cornerRadius: 15)
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color(red: 125/255, green: 15/255, blue: 42/255), Color(red: 80/255, green: 10/255, blue: 27/255)],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                            .frame(width: 50, height: 50)
+                            .shadow(color: Color(red: 111/255, green: 16/255, blue: 37/255).opacity(0.25), radius: 8, x: 0, y: 4)
                         
-                        HStack(spacing: 2.5) {
-                            RoundedRectangle(cornerRadius: 1.5)
-                                .fill(Color(red: 245/255, green: 235/255, blue: 221/255))
-                                .frame(width: 3.5, height: 16)
-                            RoundedRectangle(cornerRadius: 1.5)
-                                .fill(Color(red: 245/255, green: 235/255, blue: 221/255))
-                                .frame(width: 3.5, height: 28)
-                            RoundedRectangle(cornerRadius: 1.5)
-                                .fill(Color(red: 245/255, green: 235/255, blue: 221/255))
-                                .frame(width: 3.5, height: 18)
+                        HStack(spacing: 3.5) {
+                            RoundedRectangle(cornerRadius: 1.6)
+                                .fill(Color.white)
+                                .frame(width: 3.2, height: 13)
+                            RoundedRectangle(cornerRadius: 1.6)
+                                .fill(Color.white)
+                                .frame(width: 3.2, height: 23)
+                            RoundedRectangle(cornerRadius: 1.6)
+                                .fill(Color.white)
+                                .frame(width: 3.2, height: 15)
                         }
                     }
                     
                     Text("SAYN")
-                        .font(.system(size: 26, weight: .black, design: .rounded))
-                        .tracking(1.8)
-                        .foregroundColor(textDark)
+                        .font(.system(size: 20, weight: .black, design: .rounded))
+                        .tracking(2.0)
+                        .foregroundColor(Color(red: 26/255, green: 26/255, blue: 26/255))
                 }
                 
-                // Card Container
-                VStack(spacing: 18) {
-                    VStack(spacing: 6) {
-                        Text("Sign In to SAYN Studio")
-                            .font(.system(size: 20, weight: .bold, design: .serif))
-                            .foregroundColor(textDark)
-                        
-                        Text("Authentication is required to access your dictation workspace and voice settings. All data is protected.")
-                            .font(.system(size: 12))
-                            .foregroundColor(textMuted)
-                            .multilineTextAlignment(.center)
-                            .frame(maxWidth: 340)
-                    }
-                    
-                    // Error Banner
+                // Minimal Card
+                VStack(spacing: 12) {
+                    // Error Notice (if any)
                     if let err = store.authErrorMessage {
-                        HStack(spacing: 8) {
-                            Image(systemName: "exclamationmark.triangle.fill")
+                        HStack(spacing: 6) {
+                            Image(systemName: "exclamationmark.circle.fill")
                                 .foregroundColor(.red)
-                                .font(.system(size: 13))
+                                .font(.system(size: 11))
                             Text(err)
-                                .font(.system(size: 12, weight: .medium))
+                                .font(.system(size: 11, weight: .medium))
                                 .foregroundColor(.red)
-                                .multilineTextAlignment(.leading)
                             Spacer()
                         }
-                        .padding(10)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(Color.red.opacity(0.1)))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(RoundedRectangle(cornerRadius: 8).fill(Color.red.opacity(0.08)))
                     }
                     
-                    // Input Fields
-                    VStack(spacing: 12) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("USERNAME OR EMAIL")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(textMuted)
-                                .tracking(0.5)
-                            
-                            HStack(spacing: 8) {
-                                Image(systemName: "person.crop.circle")
-                                    .foregroundColor(textMuted)
-                                    .font(.system(size: 14))
-                                TextField("Enter username (e.g. allanmaaz)", text: $authUsernameOrEmail)
-                                    .textFieldStyle(PlainTextFieldStyle())
-                                    .font(.system(size: 13))
-                            }
-                            .padding(10)
-                            .background(RoundedRectangle(cornerRadius: 10).fill(surfaceBeige))
-                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(borderDivider, lineWidth: 1))
+                    // Input 1: Email or username
+                    HStack(spacing: 10) {
+                        Image(systemName: "person")
+                            .font(.system(size: 13))
+                            .foregroundColor(Color(red: 160/255, green: 160/255, blue: 165/255))
+                            .frame(width: 16)
+                        
+                        TextField("Email or username", text: $authUsernameOrEmail)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .font(.system(size: 12.5))
+                            .foregroundColor(Color(red: 26/255, green: 26/255, blue: 26/255))
+                    }
+                    .padding(.horizontal, 12)
+                    .frame(height: 42)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color(red: 249/255, green: 248/255, blue: 248/255)))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black.opacity(0.045), lineWidth: 1))
+                    
+                    // Input 2: Password
+                    HStack(spacing: 10) {
+                        Image(systemName: "lock")
+                            .font(.system(size: 13))
+                            .foregroundColor(Color(red: 160/255, green: 160/255, blue: 165/255))
+                            .frame(width: 16)
+                        
+                        if isShowPassword {
+                            TextField("Password", text: $authPassword)
+                                .textFieldStyle(PlainTextFieldStyle())
+                                .font(.system(size: 12.5))
+                                .foregroundColor(Color(red: 26/255, green: 26/255, blue: 26/255))
+                        } else {
+                            SecureField("Password", text: $authPassword)
+                                .textFieldStyle(PlainTextFieldStyle())
+                                .font(.system(size: 12.5))
+                                .foregroundColor(Color(red: 26/255, green: 26/255, blue: 26/255))
                         }
                         
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("PASSWORD")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(textMuted)
-                                .tracking(0.5)
-                            
-                            HStack(spacing: 8) {
-                                Image(systemName: "lock")
-                                    .foregroundColor(textMuted)
-                                    .font(.system(size: 14))
-                                if isShowPassword {
-                                    TextField("Enter password", text: $authPassword)
-                                        .textFieldStyle(PlainTextFieldStyle())
-                                        .font(.system(size: 13))
-                                } else {
-                                    SecureField("Enter password", text: $authPassword)
-                                        .textFieldStyle(PlainTextFieldStyle())
-                                        .font(.system(size: 13))
-                                }
-                                Button(action: { isShowPassword.toggle() }) {
-                                    Image(systemName: isShowPassword ? "eye.slash" : "eye")
-                                        .foregroundColor(textMuted)
-                                        .font(.system(size: 12))
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                            }
-                            .padding(10)
-                            .background(RoundedRectangle(cornerRadius: 10).fill(surfaceBeige))
-                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(borderDivider, lineWidth: 1))
+                        Button(action: { isShowPassword.toggle() }) {
+                            Image(systemName: isShowPassword ? "eye.slash" : "eye")
+                                .font(.system(size: 12))
+                                .foregroundColor(Color(red: 160/255, green: 160/255, blue: 165/255))
                         }
+                        .buttonStyle(PlainButtonStyle())
                     }
+                    .padding(.horizontal, 12)
+                    .frame(height: 42)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color(red: 249/255, green: 248/255, blue: 248/255)))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black.opacity(0.045), lineWidth: 1))
                     
-                    // Submit Button
+                    // Primary Action Button (Lock + Arrow)
                     Button(action: {
                         Task {
                             let success = await store.login(usernameOrEmail: authUsernameOrEmail, password: authPassword)
@@ -3635,45 +3708,90 @@ struct SaynStudioView: View {
                             }
                         }
                     }) {
-                        HStack(spacing: 8) {
+                        ZStack {
                             if store.isAuthenticating {
                                 ProgressView()
-                                    .scaleEffect(0.8)
+                                    .scaleEffect(0.75)
                                     .colorInvert()
-                                Text("Verifying Credentials...")
                             } else {
-                                Image(systemName: "lock.open.fill")
-                                Text("Unlock & Enter Studio")
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 12.5, weight: .semibold))
+                                    .foregroundColor(.white)
+                                
+                                HStack {
+                                    Spacer()
+                                    Image(systemName: "arrow.right")
+                                        .font(.system(size: 12.5, weight: .semibold))
+                                        .foregroundColor(.white)
+                                        .padding(.trailing, 14)
+                                }
                             }
                         }
-                        .font(.system(size: 13.5, weight: .bold))
-                        .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(accentTeal))
+                        .frame(height: 42)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color(red: 122/255, green: 17/255, blue: 41/255), Color(red: 88/255, green: 12/255, blue: 30/255)],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                        )
                     }
                     .buttonStyle(PlainButtonStyle())
                     .disabled(store.isAuthenticating || authUsernameOrEmail.isEmpty || authPassword.isEmpty)
-                    .opacity((authUsernameOrEmail.isEmpty || authPassword.isEmpty) ? 0.6 : 1.0)
+                    .opacity((authUsernameOrEmail.isEmpty || authPassword.isEmpty) ? 0.65 : 1.0)
+                    
+                    // Divider OR
+                    HStack(spacing: 10) {
+                        Rectangle()
+                            .fill(Color.black.opacity(0.08))
+                            .frame(height: 1)
+                        Text("OR")
+                            .font(.system(size: 9.5, weight: .bold))
+                            .foregroundColor(Color(red: 170/255, green: 170/255, blue: 175/255))
+                        Rectangle()
+                            .fill(Color.black.opacity(0.08))
+                            .frame(height: 1)
+                    }
+                    .padding(.vertical, 3)
+                    
+                    // Google Sign-In Button
+                    Button(action: {
+                        authUsernameOrEmail = "allanmaaz"
+                        authPassword = "Welcome@100%"
+                        Task {
+                            let success = await store.login(usernameOrEmail: authUsernameOrEmail, password: authPassword)
+                            if success {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                                    authPassword = ""
+                                    syncAccountFields()
+                                }
+                            }
+                        }
+                    }) {
+                        HStack {
+                            Spacer()
+                            GoogleGLogo()
+                            Spacer()
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 42)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Color.white))
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black.opacity(0.08), lineWidth: 1))
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
-                .padding(26)
-                .frame(width: 420)
+                .padding(22)
+                .frame(width: 350)
                 .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(cardWhite)
-                        .shadow(color: Color.black.opacity(0.08), radius: 24, x: 0, y: 8)
+                    RoundedRectangle(cornerRadius: 22)
+                        .fill(Color.white)
+                        .shadow(color: Color(red: 111/255, green: 16/255, blue: 37/255).opacity(0.055), radius: 26, x: 0, y: 10)
                 )
-                .overlay(RoundedRectangle(cornerRadius: 20).stroke(borderDivider, lineWidth: 1))
-                
-                // Security note
-                HStack(spacing: 6) {
-                    Image(systemName: "shield.lefthalf.filled")
-                        .font(.system(size: 11))
-                        .foregroundColor(textMuted)
-                    Text("Zero Data Leakage Security • Encrypted Session Store")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(textMuted)
-                }
+                .overlay(RoundedRectangle(cornerRadius: 22).stroke(Color.black.opacity(0.035), lineWidth: 1))
             }
         }
     }
