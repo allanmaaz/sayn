@@ -380,7 +380,7 @@ class _VoiceFlowScreenState extends State<VoiceFlowScreen>
               const Icon(Icons.bolt_rounded, size: 14, color: SaynColors.darkAccent),
               const SizedBox(width: 6),
               const Text(
-                'Groq Whisper Turbo + Qwen 3.8 27B',
+                'SAYN Neural Voice Flow',
                 style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,

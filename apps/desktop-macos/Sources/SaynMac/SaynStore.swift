@@ -131,8 +131,23 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
     @Published var phone: String = "+91 98765 43210"
     @Published var writingRole: String = "Code & Tech"
     @Published var email: String = "allanmaazimdad@gmail.com"
-    @Published var cleanupLevel: String = "Light" // None, Light, Medium
+    @Published var cleanupLevel: String = "Light" // None, Light, Medium, Aggressive
     @Published var emailTone: String = "Formal"   // Formal, Casual, Excited!
+    @Published var personalTone: String = "Casual" // Casual, Warm & Friendly, Direct
+    @Published var personalEmojiEnabled: Bool = true
+    @Published var workTone: String = "Professional" // Professional, Action-Oriented, Executive Brief
+    @Published var customStylePrompt: String = ""
+    @Published var autoPasteEnabled: Bool = true
+    @Published var selectedMicrophone: String = "Auto-detect (System Default)"
+    @Published var dictationLanguage: String = "en-US"
+    @Published var appLanguage: String = "English"
+    @Published var launchAtLogin: Bool = true
+    @Published var showCapsuleAtAllTimes: Bool = true
+    @Published var showInDock: Bool = true
+    @Published var soundFeedbackEnabled: Bool = true
+    @Published var selectedGlobalShortcut: String = "Hold fn (Globe Key)"
+    @Published var hasCompletedOnboarding: Bool = false
+    @Published var showOnboardingWalkthrough: Bool = false
     @Published var transformsOptIn: Bool = true
     @Published var autoApplyTransform: Bool = false
     @Published var selectedAutoTransform: String = "Polish"
@@ -700,6 +715,20 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
         let payload: [String: Any] = [
             "cleanupLevel": cleanupLevel,
             "emailTone": emailTone,
+            "personalTone": personalTone,
+            "personalEmojiEnabled": personalEmojiEnabled,
+            "workTone": workTone,
+            "customStylePrompt": customStylePrompt,
+            "autoPasteEnabled": autoPasteEnabled,
+            "selectedMicrophone": selectedMicrophone,
+            "dictationLanguage": dictationLanguage,
+            "appLanguage": appLanguage,
+            "launchAtLogin": launchAtLogin,
+            "showCapsuleAtAllTimes": showCapsuleAtAllTimes,
+            "showInDock": showInDock,
+            "soundFeedbackEnabled": soundFeedbackEnabled,
+            "selectedGlobalShortcut": selectedGlobalShortcut,
+            "hasCompletedOnboarding": hasCompletedOnboarding,
             "transformsOptIn": transformsOptIn,
             "autoApplyTransform": autoApplyTransform,
             "selectedAutoTransform": selectedAutoTransform,
@@ -718,6 +747,20 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
             self.cleanupLevel = json["cleanupLevel"] as? String ?? "Light"
             self.emailTone = json["emailTone"] as? String ?? "Formal"
+            self.personalTone = json["personalTone"] as? String ?? "Casual"
+            self.personalEmojiEnabled = json["personalEmojiEnabled"] as? Bool ?? true
+            self.workTone = json["workTone"] as? String ?? "Professional"
+            self.customStylePrompt = json["customStylePrompt"] as? String ?? ""
+            self.autoPasteEnabled = json["autoPasteEnabled"] as? Bool ?? true
+            self.selectedMicrophone = json["selectedMicrophone"] as? String ?? "Auto-detect (System Default)"
+            self.dictationLanguage = json["dictationLanguage"] as? String ?? "en-US"
+            self.appLanguage = json["appLanguage"] as? String ?? "English"
+            self.launchAtLogin = json["launchAtLogin"] as? Bool ?? true
+            self.showCapsuleAtAllTimes = json["showCapsuleAtAllTimes"] as? Bool ?? true
+            self.showInDock = json["showInDock"] as? Bool ?? true
+            self.soundFeedbackEnabled = json["soundFeedbackEnabled"] as? Bool ?? true
+            self.selectedGlobalShortcut = json["selectedGlobalShortcut"] as? String ?? "Hold fn (Globe Key)"
+            self.hasCompletedOnboarding = json["hasCompletedOnboarding"] as? Bool ?? false
             self.transformsOptIn = json["transformsOptIn"] as? Bool ?? true
             self.autoApplyTransform = json["autoApplyTransform"] as? Bool ?? false
             self.selectedAutoTransform = json["selectedAutoTransform"] as? String ?? "Polish"
@@ -725,6 +768,17 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
             self.vibeCodingDocstring = json["vibeCodingDocstring"] as? Bool ?? true
             self.vibeCodingFileTagging = json["vibeCodingFileTagging"] as? Bool ?? true
         }
+    }
+    
+    // MARK: - Privacy & Data Compliance (GDPR Article 17)
+    func clearAllData() {
+        self.history.removeAll()
+        self.meetingNotes.removeAll()
+        self.scratchpadText = ""
+        saveHistory()
+        saveMeetings()
+        try? FileManager.default.removeItem(at: recordingsDir)
+        createDirectoriesIfNeeded()
     }
     
     // MARK: - 1. Team Workspace Management & Persistence
@@ -1041,7 +1095,7 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
             dateFormatted: dateStr,
             durationMinutes: durationMin,
             attendees: [firstName, "Alex Rivera"],
-            summary: "Discussed local SQLite WAL architecture, Groq LPU Whisper inference speeds, and eliminated all subscriptions.",
+            summary: "Discussed local SQLite WAL architecture, neural speech inference speeds, and eliminated all subscriptions.",
             actionItems: [
                 MeetingActionItem(id: UUID(), title: "Deploy SAYN DMG release for macOS", isCompleted: true),
                 MeetingActionItem(id: UUID(), title: "Verify real-time snippet expansion in IDEs", isCompleted: false),
@@ -1084,11 +1138,11 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
                     dateFormatted: dateStr,
                     durationMinutes: 32,
                     attendees: ["Mohammed Maaz", "Alex Rivera", "Sarah Chen"],
-                    summary: "Finalized Wispr Flow replacement specifications. Agreed on 100% free model, local SQLite database, and instant cursor paste across apps.",
+                    summary: "Finalized speech engine specifications. Agreed on 100% free model, local SQLite database, and instant cursor paste across apps.",
                     actionItems: [
                         MeetingActionItem(id: UUID(), title: "Build native macOS status bar pill", isCompleted: true),
                         MeetingActionItem(id: UUID(), title: "Wire MCP server stdio integration for Cursor", isCompleted: true),
-                        MeetingActionItem(id: UUID(), title: "Benchmark Groq LPU Whisper latency (<350ms)", isCompleted: true),
+                        MeetingActionItem(id: UUID(), title: "Benchmark neural voice latency (<350ms)", isCompleted: true),
                         MeetingActionItem(id: UUID(), title: "Test Android custom IME keyboard", isCompleted: false)
                     ],
                     transcript: "Let's review the architectural tradeoffs between cloud and local-first storage. Local SQLite provides zero latency and full privacy."

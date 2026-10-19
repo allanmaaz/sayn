@@ -64,9 +64,9 @@ final class SaynVoicePolisher {
         if !FileManager.default.fileExists(atPath: vocabularyFileURL.path) && !FileManager.default.fileExists(atPath: fallbackVocabularyFileURL.path) {
             let defaultVocab: [String: Any] = [
                 "terms": [
-                    "SAYN", "Groq", "LPU", "Whisper", "Flutter", "SwiftUI",
-                    "PostgreSQL", "Next.js", "TypeScript", "Tailwind", "Kubernetes",
-                    "Docker", "GraphQL", "GitHub", "API", "JSON", "SDK", "OAuth"
+                    "SAYN", "SpeechFlow", "SwiftUI", "Flutter", "PostgreSQL",
+                    "Next.js", "TypeScript", "Tailwind", "Kubernetes", "Docker",
+                    "GraphQL", "GitHub", "API", "JSON", "SDK", "OAuth"
                 ]
             ]
             if let data = try? JSONSerialization.data(withJSONObject: defaultVocab, options: [.prettyPrinted]) {
@@ -75,8 +75,12 @@ final class SaynVoicePolisher {
         }
     }
     
-    // Load custom vocabulary terms as a comma-separated prompt for Whisper biasing
+    // Load custom vocabulary terms as a comma-separated prompt for neural biasing
     func loadVocabularyPrompt() -> String {
+        let storeWords = SaynStore.shared.dictionaryWords
+        if !storeWords.isEmpty {
+            return storeWords.joined(separator: ", ")
+        }
         for url in [vocabularyFileURL, fallbackVocabularyFileURL] {
             if let data = try? Data(contentsOf: url),
                let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -84,25 +88,38 @@ final class SaynVoicePolisher {
                 return terms.joined(separator: ", ")
             }
         }
-        return "SAYN, Groq, Whisper, SwiftUI, Flutter, TypeScript, API"
+        return "SAYN, SpeechFlow, SwiftUI, Flutter, TypeScript, API"
     }
     
     // Check if spoken text matches a registered snippet template
     func expandSnippet(from rawText: String) -> String? {
+        let cleaned = rawText.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty else { return nil }
+        
+        // 1. Live In-Memory Real-Time Snippet Lookup (Instant 0-latency)
+        for snippet in SaynStore.shared.snippets {
+            let trigger = snippet.shortcut.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trigger.isEmpty && (cleaned == trigger || cleaned.contains(trigger)) {
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateStyle = .medium
+                let dateStr = dateFormatter.string(from: Date())
+                return snippet.expansion.replacingOccurrences(of: "{date}", with: dateStr)
+            }
+        }
+        
+        // 2. Disk fallback if in-memory store is empty
         for url in [snippetsFileURL, fallbackSnippetsFileURL] {
             if let data = try? Data(contentsOf: url),
                let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let snippets = json["snippets"] as? [[String: String]] {
-                let cleaned = rawText.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
                 for snippet in snippets {
-                    if let trigger = snippet["trigger"]?.lowercased(),
-                       let template = snippet["template"] {
-                        if cleaned == trigger || cleaned.contains(trigger) {
-                            let dateFormatter = DateFormatter()
-                            dateFormatter.dateStyle = .medium
-                            let dateStr = dateFormatter.string(from: Date())
-                            return template.replacingOccurrences(of: "{date}", with: dateStr)
-                        }
+                    let trigger = (snippet["trigger"] ?? snippet["shortcut"])?.lowercased() ?? ""
+                    let template = snippet["template"] ?? snippet["expansion"] ?? ""
+                    if !trigger.isEmpty && !template.isEmpty && (cleaned == trigger || cleaned.contains(trigger)) {
+                        let dateFormatter = DateFormatter()
+                        dateFormatter.dateStyle = .medium
+                        let dateStr = dateFormatter.string(from: Date())
+                        return template.replacingOccurrences(of: "{date}", with: dateStr)
                     }
                 }
             }
@@ -110,13 +127,24 @@ final class SaynVoicePolisher {
         return nil
     }
     
-    func polishLocally(_ text: String, appBundleId: String? = nil, style: String = "flow", angle: String = "normal") -> String {
+    func polishLocally(_ text: String, appBundleId: String? = nil, style: String = "flow", angle: String = "normal", cleanupLevel: String? = nil) -> String {
         var result = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !result.isEmpty, result != ".", !result.allSatisfy({ $0.isPunctuation || $0.isWhitespace }) else { return "" }
         
         // Check for instant snippet expansion
         if let snippet = expandSnippet(from: result) {
             return snippet
+        }
+        
+        let level = (cleanupLevel ?? SaynStore.shared.cleanupLevel).lowercased()
+        
+        // ── LEVEL: NONE ──
+        // Verbatim speech: retain exact words, colloquialisms, and delivery.
+        if level == "none" {
+            if let first = result.first {
+                return String(first).uppercased() + String(result.dropFirst())
+            }
+            return result
         }
         
         // 1. Hands-Free Voice Formatting Commands
@@ -147,13 +175,18 @@ final class SaynVoicePolisher {
         }
         
         // 2. Remove spoken disfluencies and vocal fillers
-        let fillerPatterns = [
+        // Light removes core hesitation disfluencies
+        let lightFillers = [
             "\\b(?i)um+,?\\b",
             "\\b(?i)uh+,?\\b",
             "\\b(?i)er+,?\\b",
             "\\b(?i)ah+,?\\b",
             "\\b(?i)umm+,?\\b",
-            "\\b(?i)uhh+,?\\b",
+            "\\b(?i)uhh+,?\\b"
+        ]
+        
+        // Medium & Aggressive additionally remove conversational padding
+        let mediumFillers = [
             "\\b(?i)you know,?\\b",
             "\\b(?i)so basically,?\\b",
             "\\b(?i)basically,?\\b",
@@ -163,7 +196,12 @@ final class SaynVoicePolisher {
             "\\b(?i)i mean,?\\b"
         ]
         
-        for pattern in fillerPatterns {
+        var activeFillers = lightFillers
+        if level == "medium" || level == "aggressive" {
+            activeFillers.append(contentsOf: mediumFillers)
+        }
+        
+        for pattern in activeFillers {
             if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
                 let range = NSRange(location: 0, length: result.utf16.count)
                 result = regex.stringByReplacingMatches(in: result, options: [], range: range, withTemplate: "")

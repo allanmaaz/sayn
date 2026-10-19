@@ -206,11 +206,12 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
             self.isProcessing = true
         }
         
-        // 3. High-Capacity Groq Whisper Turbo & LPU Polish with Mode & Vocabulary Biasing
+        // 3. High-Capacity Neural Polish with Mode, Style & Real-Time Vocabulary Biasing
         let styleToUse = activeStyle
         let angleToUse = activeAngle
         let modeToUse = currentMode
         let contextToUse = selectedContextText
+        let cleanupLevel = SaynStore.shared.cleanupLevel
         
         GroqService.shared.transcribeAndPolish(
             audioFileURL: tempAudioURL,
@@ -230,12 +231,24 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
                     if !trimmed.isEmpty {
                         completion(trimmed)
                     } else {
-                        let fallback = SaynVoicePolisher.shared.polishLocally(self?.lastAppleTranscript ?? "", appBundleId: activeAppBundleId, style: styleToUse, angle: angleToUse)
+                        let fallback = SaynVoicePolisher.shared.polishLocally(
+                            self?.lastAppleTranscript ?? "",
+                            appBundleId: activeAppBundleId,
+                            style: styleToUse,
+                            angle: angleToUse,
+                            cleanupLevel: cleanupLevel
+                        )
                         completion(fallback)
                     }
                 case .failure(let err):
-                    print("Groq transcription note: \(err). Falling back to local polish.")
-                    let fallback = SaynVoicePolisher.shared.polishLocally(self?.lastAppleTranscript ?? "", appBundleId: activeAppBundleId, style: styleToUse, angle: angleToUse)
+                    print("Neural voice transcription note: \(err). Falling back to local polish.")
+                    let fallback = SaynVoicePolisher.shared.polishLocally(
+                        self?.lastAppleTranscript ?? "",
+                        appBundleId: activeAppBundleId,
+                        style: styleToUse,
+                        angle: angleToUse,
+                        cleanupLevel: cleanupLevel
+                    )
                     completion(fallback)
                 }
             }

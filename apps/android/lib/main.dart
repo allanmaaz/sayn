@@ -6,6 +6,7 @@ import 'features/voice/voice_flow_screen.dart';
 import 'features/workspace/workspace_screen.dart';
 import 'features/overlay/overlay_settings_screen.dart';
 import 'features/keyboard/keyboard_settings_screen.dart';
+import 'features/onboarding/onboarding_dialog.dart';
 import 'services/update_service.dart';
 
 void main() {
@@ -51,7 +52,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAutoUpdate();
+      _checkOnboarding();
     });
+  }
+
+  Future<void> _checkOnboarding() async {
+    final shouldShow = await OnboardingDialog.shouldShow();
+    if (shouldShow && mounted) {
+      await OnboardingDialog.show(context);
+    }
   }
 
   Future<void> _checkAutoUpdate() async {

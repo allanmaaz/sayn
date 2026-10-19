@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme.dart';
 import '../../services/platform_channels.dart';
+import '../onboarding/onboarding_dialog.dart';
 
 class OverlaySettingsScreen extends StatefulWidget {
   const OverlaySettingsScreen({super.key});
@@ -340,6 +341,56 @@ class _OverlaySettingsScreenState extends State<OverlaySettingsScreen> {
                           value: _isRunning,
                           activeColor: SaynColors.darkAccent,
                           onChanged: _hasPermission ? _toggleAssistant : null,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Onboarding Replay Card
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: SaynColors.darkSurface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: SaynColors.darkBorder),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              'Interactive Walkthrough Tour',
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Replay the step-by-step introduction guide',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: SaynColors.darkSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: () => OnboardingDialog.show(context),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: SaynColors.darkAccent.withOpacity(0.18),
+                            foregroundColor: SaynColors.darkAccent,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          icon: const Icon(Icons.refresh_rounded, size: 16),
+                          label: const Text('Replay', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),

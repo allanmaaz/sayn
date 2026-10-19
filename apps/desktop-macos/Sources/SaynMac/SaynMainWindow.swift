@@ -99,6 +99,7 @@ struct SaynStudioView: View {
     @State private var showProfilePopover: Bool = false
     @State private var showSettingsModal: Bool = false
     @State private var activeSettingsTab: SaynSettingsTab = .general
+    @State private var onboardingStep: Int = 1
     
     // Invite-Only Auth Modal State
     @State private var showAuthModal: Bool = false
@@ -237,18 +238,26 @@ struct SaynStudioView: View {
                     .transition(.scale(scale: 0.95).combined(with: .opacity))
             }
             
-            // Floating Invite-Only Auth Modal Sheet
-            if showAuthModal {
-                Color.black.opacity(0.45)
+            // Floating Invite-Only Auth Modal Sheet (Gated Access)
+            if !store.isAuthenticated || showAuthModal {
+                Color.black.opacity(0.55)
                     .ignoresSafeArea()
                     .onTapGesture {
-                        withAnimation(.easeInOut(duration: 0.16)) {
-                            showAuthModal = false
+                        if store.isAuthenticated {
+                            withAnimation(.easeInOut(duration: 0.16)) {
+                                showAuthModal = false
+                            }
                         }
                     }
                 
                 authModalView
                     .transition(.scale(scale: 0.95).combined(with: .opacity))
+            }
+            
+            // Interactive Onboarding Walkthrough Overlay (Initial Install & Settings Replay)
+            if store.showOnboardingWalkthrough || (!store.hasCompletedOnboarding && store.isAuthenticated) {
+                onboardingWalkthroughView
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
             }
         }
         .frame(minWidth: 960, minHeight: 640)
@@ -784,7 +793,7 @@ struct SaynStudioView: View {
                             Image(systemName: "waveform")
                                 .font(.system(size: 10))
                                 .foregroundColor(accentTeal)
-                            Text("Groq LPU")
+                            Text("SAYN Neural Voice")
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundColor(textDark)
                         }
@@ -1365,7 +1374,7 @@ struct SaynStudioView: View {
                             }
                             .buttonStyle(PlainButtonStyle())
                             
-                            ForEach(["SAYN Voice", "Mohammed Maaz", "SwiftUI", "TypeScript", "Groq LPU"], id: \.self) { chip in
+                            ForEach(["SAYN Voice", "Mohammed Maaz", "SwiftUI", "TypeScript", "Speech Flow"], id: \.self) { chip in
                                 Button(action: { store.addDictionaryWord(chip) }) {
                                     Text(chip)
                                         .font(.system(size: 11, weight: .medium))
@@ -1483,11 +1492,11 @@ struct SaynStudioView: View {
                                 .fill(LinearGradient(colors: [Color(red: 40/255, green: 50/255, blue: 50/255), Color(red: 20/255, green: 25/255, blue: 25/255)], startPoint: .topLeading, endPoint: .bottomTrailing))
                         )
                         
-                        // 3 Level Cards: None, Light, Medium (Saves to SaynStore)
-                        HStack(alignment: .top, spacing: 16) {
+                        // 4 Level Cards: None, Light, Medium, Aggressive (Saves to SaynStore)
+                        HStack(alignment: .top, spacing: 14) {
                             cleanupLevelCard(
                                 title: "None",
-                                subtitle: "Transcribes exactly what you said, including mistakes",
+                                subtitle: "Verbatim speech with zero restructuring",
                                 example: "hey joey, we still on for coffee or? I think we maybe should leave earlier to make it there in time there might um be traffic. What are you thinking?",
                                 isSelected: store.cleanupLevel == "None"
                             ) {
@@ -1512,6 +1521,16 @@ struct SaynStudioView: View {
                                 isSelected: store.cleanupLevel == "Medium"
                             ) {
                                 store.cleanupLevel = "Medium"
+                                store.updateConfig()
+                            }
+                            
+                            cleanupLevelCard(
+                                title: "Aggressive",
+                                subtitle: "Condenses into punchy executive bullets",
+                                example: "Coffee meeting:\n• Leave earlier (traffic)\n• Let me know if time works",
+                                isSelected: store.cleanupLevel == "Aggressive"
+                            ) {
+                                store.cleanupLevel = "Aggressive"
                                 store.updateConfig()
                             }
                         }
@@ -1582,11 +1601,12 @@ struct SaynStudioView: View {
                             }
                         }
                     }
-                } else {
-                    Text("Select a category above to configure specialized tone rules.")
-                        .font(.system(size: 13))
-                        .foregroundColor(textMuted)
-                        .padding(.top, 20)
+                } else if activeStyleSubTab == "Personal messages" {
+                    personalMessagesStyleContent
+                } else if activeStyleSubTab == "Work messages" {
+                    workMessagesStyleContent
+                } else if activeStyleSubTab == "Other" {
+                    otherStyleContent
                 }
             }
             .padding(24)
@@ -1664,6 +1684,225 @@ struct SaynStudioView: View {
             )
         }
         .buttonStyle(PlainButtonStyle())
+    }
+    
+    // MARK: - Specialized Style Subtab Contents
+    private var personalMessagesStyleContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Applies to personal chats & social apps")
+                        .font(.system(size: 18, weight: .bold, design: .serif))
+                        .foregroundColor(.white)
+                    Text("Optimized for WhatsApp, Telegram, Signal, iMessage, and Discord.")
+                        .font(.system(size: 12))
+                        .foregroundColor(Color.white.opacity(0.85))
+                }
+                Spacer()
+                HStack(spacing: -6) {
+                    ForEach(["bubble.left.and.bubble.right.fill", "heart.fill", "sparkles"], id: \.self) { ic in
+                        ZStack {
+                            Circle()
+                                .fill(surfaceBeige)
+                                .frame(width: 32, height: 32)
+                            Image(systemName: ic)
+                                .font(.system(size: 13))
+                                .foregroundColor(accentTeal)
+                        }
+                    }
+                }
+            }
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(LinearGradient(colors: [Color(red: 35/255, green: 45/255, blue: 40/255), Color(red: 20/255, green: 28/255, blue: 25/255)], startPoint: .topLeading, endPoint: .bottomTrailing))
+            )
+            
+            HStack(alignment: .top, spacing: 16) {
+                emailToneCard(
+                    title: "Casual",
+                    subtitle: "Conversational & relaxed",
+                    greeting: "Hey! Just grabbed some coffee. Let me know when you're free to catch up later today",
+                    isSelected: store.personalTone == "Casual"
+                ) {
+                    store.personalTone = "Casual"
+                    store.updateConfig()
+                }
+                
+                emailToneCard(
+                    title: "Warm & Friendly ✨",
+                    subtitle: "Adds friendly warmth",
+                    greeting: "Hey there! Hope you're having an awesome week ✨ Let's definitely catch up soon!",
+                    isSelected: store.personalTone == "Warm & Friendly"
+                ) {
+                    store.personalTone = "Warm & Friendly"
+                    store.updateConfig()
+                }
+                
+                emailToneCard(
+                    title: "Direct & Punchy",
+                    subtitle: "Zero fluff replies",
+                    greeting: "Got it. Running 5 mins late. See you downstairs.",
+                    isSelected: store.personalTone == "Direct"
+                ) {
+                    store.personalTone = "Direct"
+                    store.updateConfig()
+                }
+            }
+            
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Auto-emoji enhancement")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(textDark)
+                    Text("Subtly adds warm emojis (✨, 👍, 🙌) to enthusiastic personal messages")
+                        .font(.system(size: 11))
+                        .foregroundColor(textMuted)
+                }
+                Spacer()
+                Toggle("", isOn: $store.personalEmojiEnabled)
+                    .toggleStyle(SwitchToggleStyle(tint: accentTeal))
+                    .onChange(of: store.personalEmojiEnabled) { _ in
+                        store.updateConfig()
+                    }
+            }
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 12).fill(cardWhite))
+        }
+    }
+    
+    private var workMessagesStyleContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Applies to workplace collaboration")
+                        .font(.system(size: 18, weight: .bold, design: .serif))
+                        .foregroundColor(.white)
+                    Text("Optimized for Slack, Microsoft Teams, Linear, Asana, and Jira.")
+                        .font(.system(size: 12))
+                        .foregroundColor(Color.white.opacity(0.85))
+                }
+                Spacer()
+                HStack(spacing: -6) {
+                    ForEach(["briefcase.fill", "target", "checklist"], id: \.self) { ic in
+                        ZStack {
+                            Circle()
+                                .fill(surfaceBeige)
+                                .frame(width: 32, height: 32)
+                            Image(systemName: ic)
+                                .font(.system(size: 13))
+                                .foregroundColor(accentTeal)
+                        }
+                    }
+                }
+            }
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(LinearGradient(colors: [Color(red: 30/255, green: 38/255, blue: 50/255), Color(red: 18/255, green: 22/255, blue: 32/255)], startPoint: .topLeading, endPoint: .bottomTrailing))
+            )
+            
+            HStack(alignment: .top, spacing: 16) {
+                emailToneCard(
+                    title: "Professional",
+                    subtitle: "Structured & clear",
+                    greeting: "Team, the sprint deliverables are deployed on staging. Please review the PR when you have bandwidth.",
+                    isSelected: store.workTone == "Professional"
+                ) {
+                    store.workTone = "Professional"
+                    store.updateConfig()
+                }
+                
+                emailToneCard(
+                    title: "Action-Oriented 🎯",
+                    subtitle: "Bullet lists & ownership",
+                    greeting: "Sprint Updates:\n• Backend auth API: Merged\n• macOS TextPaster: In QA\n• Next step: Release build tomorrow",
+                    isSelected: store.workTone == "Action-Oriented"
+                ) {
+                    store.workTone = "Action-Oriented"
+                    store.updateConfig()
+                }
+                
+                emailToneCard(
+                    title: "Executive Brief",
+                    subtitle: "High-density status",
+                    greeting: "Q3 metrics exceeded target by 14%. Core focus is user retention and zero-latency desktop workflows.",
+                    isSelected: store.workTone == "Executive Brief"
+                ) {
+                    store.workTone = "Executive Brief"
+                    store.updateConfig()
+                }
+            }
+        }
+    }
+    
+    private var otherStyleContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Custom Speech & AI Directives")
+                    .font(.system(size: 18, weight: .bold, design: .serif))
+                    .foregroundColor(.white)
+                Text("Define custom formatting rules that apply whenever SAYN polishes your dictation.")
+                    .font(.system(size: 12))
+                    .foregroundColor(Color.white.opacity(0.85))
+            }
+            .padding(20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(LinearGradient(colors: [Color(red: 45/255, green: 35/255, blue: 45/255), Color(red: 25/255, green: 20/255, blue: 28/255)], startPoint: .topLeading, endPoint: .bottomTrailing))
+            )
+            
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Custom Instruction Prompt")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(textDark)
+                
+                TextField("Enter prompt instructions (e.g. Always use British spelling, keep technical acronyms exact)...", text: $store.customStylePrompt)
+                    .textFieldStyle(PlainTextFieldStyle())
+                    .font(.system(size: 13))
+                    .padding(10)
+                    .background(RoundedRectangle(cornerRadius: 8).fill(cardWhite))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(borderDivider, lineWidth: 1))
+                    .onChange(of: store.customStylePrompt) { _ in
+                        store.updateConfig()
+                    }
+                
+                HStack(spacing: 8) {
+                    Button(action: { store.customStylePrompt = "Always use British spelling and format dates as DD/MM/YYYY."; store.updateConfig() }) {
+                        Text("🇬🇧 British Spelling")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(textDark)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(surfaceBeige))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Button(action: { store.customStylePrompt = "Format code snippets in markdown backticks and preserve exact camelCase naming."; store.updateConfig() }) {
+                        Text("💻 Code & Markdown")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(textDark)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(surfaceBeige))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Button(action: { store.customStylePrompt = "Convert key points into concise numbered lists."; store.updateConfig() }) {
+                        Text("🔢 Numbered Lists")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(textDark)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(surfaceBeige))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+            .padding(16)
+            .background(RoundedRectangle(cornerRadius: 12).fill(cardWhite))
+        }
     }
     
     // MARK: - 5. Transforms View (Connected to SaynStore)
@@ -2267,26 +2506,176 @@ struct SaynStudioView: View {
                 .foregroundColor(textDark)
             
             VStack(spacing: 12) {
-                settingsRow(title: "Shortcuts", desc: "Hold fn or press Option+Space to speak. Learn more →", buttonLabel: "Change") {}
-                settingsRow(title: "Microphone", desc: "Auto-detect (MacBook Pro)", buttonLabel: "Change") {}
-                settingsRow(title: "Dictation Languages", desc: "English · British · Urdu (اردو)", buttonLabel: "Change") {}
+                // 1. Global Shortcuts Row
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Global Shortcut")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(textDark)
+                        Text(store.selectedGlobalShortcut)
+                            .font(.system(size: 11))
+                            .foregroundColor(textMuted)
+                    }
+                    Spacer()
+                    Menu {
+                        Button("Hold fn (Globe Key)") { store.selectedGlobalShortcut = "Hold fn (Globe Key)"; store.updateConfig() }
+                        Button("Option + Space") { store.selectedGlobalShortcut = "Option + Space"; store.updateConfig() }
+                        Button("Right Command (Hold)") { store.selectedGlobalShortcut = "Right Command (Hold)"; store.updateConfig() }
+                        Button("Control + Option + Space") { store.selectedGlobalShortcut = "Control + Option + Space"; store.updateConfig() }
+                    } label: {
+                        Text("Change ▾")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(textDark)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(surfaceBeige))
+                    }
+                    .menuStyle(BorderlessButtonMenuStyle())
+                }
+                .padding(12)
+                .background(RoundedRectangle(cornerRadius: 10).fill(surfaceBeige))
                 
+                // 2. Microphone Input Row
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Microphone")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(textDark)
+                        Text(store.selectedMicrophone)
+                            .font(.system(size: 11))
+                            .foregroundColor(textMuted)
+                    }
+                    Spacer()
+                    Menu {
+                        Button("Auto-detect (System Default)") { store.selectedMicrophone = "Auto-detect (System Default)"; store.updateConfig() }
+                        Button("MacBook Pro Microphone") { store.selectedMicrophone = "MacBook Pro Microphone"; store.updateConfig() }
+                        Button("External / USB Audio Interface") { store.selectedMicrophone = "External / USB Audio Interface"; store.updateConfig() }
+                        Button("AirPods / Bluetooth Headset") { store.selectedMicrophone = "AirPods / Bluetooth Headset"; store.updateConfig() }
+                    } label: {
+                        Text("Change ▾")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(textDark)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(surfaceBeige))
+                    }
+                    .menuStyle(BorderlessButtonMenuStyle())
+                }
+                .padding(12)
+                .background(RoundedRectangle(cornerRadius: 10).fill(surfaceBeige))
+                
+                // 3. Dictation Languages Row
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Dictation Language")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(textDark)
+                        Text(store.dictationLanguage)
+                            .font(.system(size: 11))
+                            .foregroundColor(textMuted)
+                    }
+                    Spacer()
+                    Menu {
+                        Button("English (US & Global)") { store.dictationLanguage = "English (US & Global)"; store.updateConfig() }
+                        Button("English (British)") { store.dictationLanguage = "English (British)"; store.updateConfig() }
+                        Button("Urdu (اردو)") { store.dictationLanguage = "Urdu (اردو)"; store.updateConfig() }
+                        Button("Spanish (Español)") { store.dictationLanguage = "Spanish (Español)"; store.updateConfig() }
+                        Button("French (Français)") { store.dictationLanguage = "French (Français)"; store.updateConfig() }
+                        Button("German (Deutsch)") { store.dictationLanguage = "German (Deutsch)"; store.updateConfig() }
+                        Button("Arabic (العربية)") { store.dictationLanguage = "Arabic (العربية)"; store.updateConfig() }
+                        Button("Hindi (हिन्दी)") { store.dictationLanguage = "Hindi (हिन्दी)"; store.updateConfig() }
+                        Button("Japanese (日本語)") { store.dictationLanguage = "Japanese (日本語)"; store.updateConfig() }
+                    } label: {
+                        Text("Change ▾")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(textDark)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(surfaceBeige))
+                    }
+                    .menuStyle(BorderlessButtonMenuStyle())
+                }
+                .padding(12)
+                .background(RoundedRectangle(cornerRadius: 10).fill(surfaceBeige))
+                
+                // 4. App Language Row
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("App Language")
-                            .font(.system(size: 13, weight: .medium))
+                            .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(textDark)
                         Text("Select your preferred SAYN Hub language")
                             .font(.system(size: 11))
                             .foregroundColor(textMuted)
                     }
                     Spacer()
-                    Text("English ▾")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(textDark)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(RoundedRectangle(cornerRadius: 6).fill(surfaceBeige))
+                    Menu {
+                        Button("English") { store.appLanguage = "English"; store.updateConfig() }
+                        Button("Spanish (Español)") { store.appLanguage = "Spanish (Español)"; store.updateConfig() }
+                        Button("French (Français)") { store.appLanguage = "French (Français)"; store.updateConfig() }
+                        Button("German (Deutsch)") { store.appLanguage = "German (Deutsch)"; store.updateConfig() }
+                        Button("Urdu (اردو)") { store.appLanguage = "Urdu (اردو)"; store.updateConfig() }
+                        Button("Arabic (العربية)") { store.appLanguage = "Arabic (العربية)"; store.updateConfig() }
+                    } label: {
+                        Text("\(store.appLanguage) ▾")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(textDark)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(surfaceBeige))
+                    }
+                    .menuStyle(BorderlessButtonMenuStyle())
+                }
+                .padding(12)
+                .background(RoundedRectangle(cornerRadius: 10).fill(surfaceBeige))
+                
+                // 5. Auto-Paste on Completion Toggle
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Auto-paste on completion")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(textDark)
+                        Text("Directly injects text into AntiGravity, VS Code, Slack, or Browser. When off, text stays on clipboard.")
+                            .font(.system(size: 11))
+                            .foregroundColor(textMuted)
+                    }
+                    Spacer()
+                    Toggle("", isOn: $store.autoPasteEnabled)
+                        .toggleStyle(SwitchToggleStyle(tint: accentTeal))
+                        .onChange(of: store.autoPasteEnabled) { _ in
+                            store.updateConfig()
+                        }
+                }
+                .padding(12)
+                .background(RoundedRectangle(cornerRadius: 10).fill(surfaceBeige))
+                
+                // 6. Interactive Walkthrough Tour Replay
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Interactive Onboarding Tour")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(textDark)
+                        Text("Replay the interactive walkthrough tutorial with step-by-step guidance")
+                            .font(.system(size: 11))
+                            .foregroundColor(textMuted)
+                    }
+                    Spacer()
+                    Button(action: {
+                        showSettingsModal = false
+                        onboardingStep = 1
+                        store.showOnboardingWalkthrough = true
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.counterclockwise")
+                            Text("Replay Tour")
+                        }
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(RoundedRectangle(cornerRadius: 6).fill(accentTeal))
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
                 .padding(12)
                 .background(RoundedRectangle(cornerRadius: 10).fill(surfaceBeige))
@@ -2305,9 +2694,9 @@ struct SaynStudioView: View {
                 .foregroundColor(textMuted)
             
             VStack(spacing: 10) {
-                settingsToggle(title: "Launch app at login", state: .constant(true))
-                settingsToggle(title: "Show SAYN Voice Capsule at all times", state: .constant(true))
-                settingsToggle(title: "Show app in dock", state: .constant(true))
+                settingsToggle(title: "Launch app at login", state: $store.launchAtLogin)
+                settingsToggle(title: "Show SAYN Voice Capsule at all times", state: $store.showCapsuleAtAllTimes)
+                settingsToggle(title: "Show app in dock", state: $store.showInDock)
             }
             .padding(14)
             .background(RoundedRectangle(cornerRadius: 12).fill(surfaceBeige))
@@ -2317,8 +2706,7 @@ struct SaynStudioView: View {
                 .foregroundColor(textMuted)
             
             VStack(spacing: 10) {
-                settingsToggle(title: "Dictation and notification sounds", state: .constant(true))
-                settingsToggle(title: "Mute all audio while dictating", state: .constant(false))
+                settingsToggle(title: "Dictation and notification sounds", state: $store.soundFeedbackEnabled)
             }
             .padding(14)
             .background(RoundedRectangle(cornerRadius: 12).fill(surfaceBeige))
@@ -2908,6 +3296,40 @@ struct SaynStudioView: View {
                     .padding(.horizontal, 8).padding(.vertical, 4)
                     .background(RoundedRectangle(cornerRadius: 6).fill(surfaceBeige))
             }
+            
+            Divider()
+            
+            // GDPR Article 17 Right to Erasure
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Legal & Compliance Rights (GDPR & CCPA)")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(textMuted)
+                
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Right to Erasure (Article 17)")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(textDark)
+                        Text("Permanently deletes all dictation history, cached audio, and custom vocabulary from this Mac.")
+                            .font(.system(size: 11))
+                            .foregroundColor(textMuted)
+                    }
+                    Spacer()
+                    Button(action: {
+                        store.clearAllData()
+                    }) {
+                        Text("Clear All Data")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(Color.red.opacity(0.85)))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 12).fill(surfaceBeige))
         }
     }
     
@@ -3008,7 +3430,7 @@ struct SaynStudioView: View {
                 
                 HStack(spacing: 14) {
                     helpStatusItem(icon: "checkmark.shield.fill", title: "Accessibility", desc: "Granted", ok: true)
-                    helpStatusItem(icon: "bolt.fill", title: "Groq LPU API", desc: "<320ms latency", ok: true)
+                    helpStatusItem(icon: "bolt.fill", title: "Neural Voice Engine", desc: "<320ms latency", ok: true)
                     helpStatusItem(icon: "cloud.fill", title: "Supabase Cloud", desc: store.supabaseSyncStatus, ok: true)
                     helpStatusItem(icon: "mic.fill", title: "Microphone", desc: "Active (48kHz)", ok: true)
                 }
@@ -3100,18 +3522,20 @@ struct SaynStudioView: View {
                 
                 Spacer()
                 
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.16)) {
-                        showAuthModal = false
+                if store.isAuthenticated {
+                    Button(action: {
+                        withAnimation(.easeInOut(duration: 0.16)) {
+                            showAuthModal = false
+                        }
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(textMuted)
+                            .padding(6)
+                            .background(Circle().fill(surfaceBeige))
                     }
-                }) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(textMuted)
-                        .padding(6)
-                        .background(Circle().fill(surfaceBeige))
+                    .buttonStyle(PlainButtonStyle())
                 }
-                .buttonStyle(PlainButtonStyle())
             }
             
             // Branding & Title
@@ -3252,5 +3676,233 @@ struct SaynStudioView: View {
                 .shadow(color: Color.black.opacity(0.2), radius: 25, x: 0, y: 10)
         )
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(borderDivider, lineWidth: 1))
+    }
+    
+    // MARK: - Interactive Onboarding Walkthrough
+    private var onboardingWalkthroughView: some View {
+        ZStack {
+            Color.black.opacity(0.68)
+                .ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                // Top Bar: Step Dots & Skip Button
+                HStack {
+                    HStack(spacing: 6) {
+                        ForEach(1...5, id: \.self) { step in
+                            Capsule()
+                                .fill(step == onboardingStep ? accentTeal : Color.white.opacity(0.25))
+                                .frame(width: step == onboardingStep ? 18 : 7, height: 7)
+                                .animation(.spring(response: 0.35, dampingFraction: 0.7), value: onboardingStep)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            store.hasCompletedOnboarding = true
+                            store.showOnboardingWalkthrough = false
+                            store.updateConfig()
+                        }
+                    }) {
+                        Text("Skip Tour")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Color.white.opacity(0.75))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Capsule().fill(Color.white.opacity(0.12)))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                .padding(.horizontal, 28)
+                .padding(.top, 24)
+                
+                Spacer()
+                
+                // Step Content
+                VStack(spacing: 16) {
+                    if onboardingStep == 1 {
+                        // Step 1: Welcome
+                        ZStack {
+                            Circle()
+                                .fill(accentTeal.opacity(0.18))
+                                .frame(width: 80, height: 80)
+                            Image(systemName: "waveform.circle.fill")
+                                .font(.system(size: 46))
+                                .foregroundColor(accentTeal)
+                        }
+                        
+                        Text("Welcome to SAYN")
+                            .font(.system(size: 26, weight: .bold, design: .serif))
+                            .foregroundColor(.white)
+                        
+                        Text("Effortless, hands-free voice intelligence that speaks and formats directly into all your macOS apps with zero latency.")
+                            .font(.system(size: 13.5))
+                            .foregroundColor(Color.white.opacity(0.85))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 30)
+                            .lineSpacing(3)
+                    } else if onboardingStep == 2 {
+                        // Step 2: Global Shortcut
+                        ZStack {
+                            Circle()
+                                .fill(accentTeal.opacity(0.18))
+                                .frame(width: 80, height: 80)
+                            Image(systemName: "keyboard.fill")
+                                .font(.system(size: 40))
+                                .foregroundColor(accentTeal)
+                        }
+                        
+                        Text("Universal Dictation Shortcut")
+                            .font(.system(size: 26, weight: .bold, design: .serif))
+                            .foregroundColor(.white)
+                        
+                        HStack(spacing: 8) {
+                            Text(store.selectedGlobalShortcut)
+                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                .foregroundColor(accentTeal)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(RoundedRectangle(cornerRadius: 8).fill(Color.white.opacity(0.12)))
+                        }
+                        
+                        Text("Hold your shortcut key anywhere in macOS to speak. When you finish speaking, release the key to transcribe instantly.")
+                            .font(.system(size: 13.5))
+                            .foregroundColor(Color.white.opacity(0.85))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 30)
+                            .lineSpacing(3)
+                    } else if onboardingStep == 3 {
+                        // Step 3: Minimalist Floating Capsule
+                        ZStack {
+                            Circle()
+                                .fill(accentTeal.opacity(0.18))
+                                .frame(width: 80, height: 80)
+                            Image(systemName: "capsule.portrait.fill")
+                                .font(.system(size: 40))
+                                .foregroundColor(accentTeal)
+                        }
+                        
+                        Text("Minimalist Voice Capsule")
+                            .font(.system(size: 26, weight: .bold, design: .serif))
+                            .foregroundColor(.white)
+                        
+                        Text("A sleek, non-intrusive status capsule appears smoothly while you speak and glides away automatically when finished.")
+                            .font(.system(size: 13.5))
+                            .foregroundColor(Color.white.opacity(0.85))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 30)
+                            .lineSpacing(3)
+                    } else if onboardingStep == 4 {
+                        // Step 4: Smart Auto-Paste
+                        ZStack {
+                            Circle()
+                                .fill(accentTeal.opacity(0.18))
+                                .frame(width: 80, height: 80)
+                            Image(systemName: "cursorarrow.and.square.on.square.dashed")
+                                .font(.system(size: 40))
+                                .foregroundColor(accentTeal)
+                        }
+                        
+                        Text("Hands-Free Auto-Paste")
+                            .font(.system(size: 26, weight: .bold, design: .serif))
+                            .foregroundColor(.white)
+                        
+                        Text("SAYN injects polished text right at your caret in AntiGravity, VS Code, Notes, Slack, or browsers with 0 clicks.")
+                            .font(.system(size: 13.5))
+                            .foregroundColor(Color.white.opacity(0.85))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 30)
+                            .lineSpacing(3)
+                    } else {
+                        // Step 5: Snippets & Styles
+                        ZStack {
+                            Circle()
+                                .fill(accentTeal.opacity(0.18))
+                                .frame(width: 80, height: 80)
+                            Image(systemName: "bolt.fill")
+                                .font(.system(size: 40))
+                                .foregroundColor(accentTeal)
+                        }
+                        
+                        Text("Personalization & Snippets")
+                            .font(.system(size: 26, weight: .bold, design: .serif))
+                            .foregroundColor(.white)
+                        
+                        Text("Add custom vocabulary and voice triggers like 'insert standup' or 'insert meeting notes' to expand full templates in real time.")
+                            .font(.system(size: 13.5))
+                            .foregroundColor(Color.white.opacity(0.85))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 30)
+                            .lineSpacing(3)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                
+                Spacer()
+                
+                // Bottom Navigation: Previous & Next / Get Started
+                HStack {
+                    if onboardingStep > 1 {
+                        Button(action: {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                                onboardingStep -= 1
+                            }
+                        }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "chevron.left")
+                                Text("Previous")
+                            }
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(RoundedRectangle(cornerRadius: 10).fill(Color.white.opacity(0.14)))
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        if onboardingStep < 5 {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                                onboardingStep += 1
+                            }
+                        } else {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                store.hasCompletedOnboarding = true
+                                store.showOnboardingWalkthrough = false
+                                store.updateConfig()
+                            }
+                        }
+                    }) {
+                        HStack(spacing: 6) {
+                            Text(onboardingStep < 5 ? "Next" : "Get Started")
+                            Image(systemName: onboardingStep < 5 ? "chevron.right" : "sparkles")
+                        }
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 22)
+                        .padding(.vertical, 10)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Color.white))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                .padding(.horizontal, 28)
+                .padding(.bottom, 24)
+            }
+            .frame(width: 530, height: 420)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(Color(red: 24/255, green: 22/255, blue: 20/255))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(Color.white.opacity(0.15), lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(0.55), radius: 30, x: 0, y: 15)
+        }
     }
 }

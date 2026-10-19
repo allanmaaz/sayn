@@ -95,12 +95,23 @@ final class TextPaster {
         return true
     }
     
-    /// Automatic 3-tier injection of polished speech directly into the user's active text field
+    /// Automatic injection of polished speech directly into the user's active text field
     static func paste(text: String, targetApp: NSRunningApplication? = nil) {
         let cleanText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanText.isEmpty else { return }
         
-        // 1. Resolve destination application
+        // 1. Always place text on system pasteboard so user has it immediately
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(cleanText, forType: .string)
+        
+        // 2. Check user setting: if auto-paste is disabled in settings, stop here safely!
+        if !SaynStore.shared.autoPasteEnabled {
+            print("[TextPaster] Auto-paste disabled by user setting. Text placed safely on clipboard.")
+            return
+        }
+        
+        // 3. Resolve destination application
         var appToActivate = targetApp
         if appToActivate == nil {
             let front = NSWorkspace.shared.frontmostApplication
@@ -112,15 +123,11 @@ final class TextPaster {
         }
         
         guard let validApp = appToActivate else {
-            // Fallback: copy to clipboard
-            let pb = NSPasteboard.general
-            pb.clearContents()
-            pb.setString(cleanText, forType: .string)
             return
         }
 
         // ─────────────────────────────────────────────────────────────────────────────
-        // Tier 1: Direct Accessibility Attribute Replacement (Wispr Flow Instant Injection)
+        // Tier 1: Direct Accessibility Attribute Replacement (Native Cocoa Instant Injection)
         // ─────────────────────────────────────────────────────────────────────────────
         let appRef = AXUIElementCreateApplication(validApp.processIdentifier)
         var focusedElement: CFTypeRef?
@@ -139,74 +146,48 @@ final class TextPaster {
         }
 
         // ─────────────────────────────────────────────────────────────────────────────
-        // Tier 2: Electron / Monaco Coordinated 4-Step Hardware Keystroke Sequence
+        // Tier 2: Electron / AntiGravity Coordinated Hardware Keystroke Sequence
         // ─────────────────────────────────────────────────────────────────────────────
-        // 1. Put polished text onto system pasteboard
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(cleanText, forType: .string)
-
-        // 2. Bring target app (Anti-Gravity / IDE / Browser) to immediate front
         validApp.activate(options: [.activateIgnoringOtherApps])
 
         let targetPid = validApp.processIdentifier
 
-        // Cooperative delay: Electron/Monaco takes ~180-220ms to activate its frame buffer
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) {
+        // Cooperative activation delay allowing Electron / AntiGravity frame buffer to activate
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
             synthesizeHardwareCmdV(pid: targetPid)
-            
-            // Secondary reinforcement at +80ms to catch slow-responding Electron windows
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-                synthesizeHardwareCmdV(pid: targetPid)
-            }
-            
-            // ─────────────────────────────────────────────────────────────────────────
-            // Tier 3: Process-Targeted AppleScript System Events (Sandbox Bypass)
-            // ─────────────────────────────────────────────────────────────────────────
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-                let scriptSource = """
-                tell application "System Events"
-                    set targetProc to first application process whose unix id is \(targetPid)
-                    set frontmost of targetProc to true
-                    keystroke "v" using command down
-                end tell
-                """
-                if let script = NSAppleScript(source: scriptSource) {
-                    var errorDict: NSDictionary?
-                    script.executeAndReturnError(&errorDict)
-                }
-            }
         }
     }
 
     private static func synthesizeHardwareCmdV(pid: pid_t) {
-        let src = CGEventSource(stateID: .hidSystemState)
+        // Use combinedSessionState to seamlessly integrate with active user login session
+        guard let src = CGEventSource(stateID: .combinedSessionState) else { return }
         let cmdKeyCode: CGKeyCode = 0x37 // Left Command
         let vKeyCode: CGKeyCode = 0x09   // 'v'
 
-        // 1. Command Down
-        let cmdDown = CGEvent(keyboardEventSource: src, virtualKey: cmdKeyCode, keyDown: true)
-        cmdDown?.flags = .maskCommand
+        guard let cmdDown = CGEvent(keyboardEventSource: src, virtualKey: cmdKeyCode, keyDown: true),
+              let vDown = CGEvent(keyboardEventSource: src, virtualKey: vKeyCode, keyDown: true),
+              let vUp = CGEvent(keyboardEventSource: src, virtualKey: vKeyCode, keyDown: false),
+              let cmdUp = CGEvent(keyboardEventSource: src, virtualKey: cmdKeyCode, keyDown: false) else { return }
 
-        // 2. 'V' Down with Command Mask
-        let vDown = CGEvent(keyboardEventSource: src, virtualKey: vKeyCode, keyDown: true)
-        vDown?.flags = .maskCommand
+        cmdDown.flags = .maskCommand
+        vDown.flags = .maskCommand
+        vUp.flags = .maskCommand
+        cmdUp.flags = []
 
-        // 3. 'V' Up with Command Mask
-        let vUp = CGEvent(keyboardEventSource: src, virtualKey: vKeyCode, keyDown: false)
-        vUp?.flags = .maskCommand
+        // Precise inter-modifier pacing (15ms) ensures Electron / Chromium does not drop the modifier
+        cmdDown.postToPid(pid)
+        cmdDown.post(tap: .cgSessionEventTap)
+        usleep(15_000)
 
-        // 4. Command Up
-        let cmdUp = CGEvent(keyboardEventSource: src, virtualKey: cmdKeyCode, keyDown: false)
-        cmdUp?.flags = []
+        vDown.postToPid(pid)
+        vDown.post(tap: .cgSessionEventTap)
+        usleep(15_000)
 
-        let events = [cmdDown, vDown, vUp, cmdUp].compactMap { $0 }
+        vUp.postToPid(pid)
+        vUp.post(tap: .cgSessionEventTap)
+        usleep(15_000)
 
-        for event in events {
-            event.postToPid(pid)
-            event.post(tap: .cghidEventTap)
-            event.post(tap: .cgSessionEventTap)
-            event.post(tap: .cgAnnotatedSessionEventTap)
-        }
+        cmdUp.postToPid(pid)
+        cmdUp.post(tap: .cgSessionEventTap)
     }
 }
