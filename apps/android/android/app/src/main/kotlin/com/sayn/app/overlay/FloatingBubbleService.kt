@@ -660,7 +660,7 @@ class FloatingBubbleService : Service() {
         try {
             speechRecognizer?.stopListening()
             speechRecognizer?.destroy()
-        } catch (_: Exception) {}
+        } catch (e: Exception) {}
         speechRecognizer = null
         isListening = false
     }

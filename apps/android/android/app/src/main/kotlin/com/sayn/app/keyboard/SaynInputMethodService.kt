@@ -551,7 +551,8 @@ class SaynInputMethodService : InputMethodService() {
 
         val btnEmoji = createToolbarIconButton(R.drawable.ic_sayn_emoji) {
             triggerKeyFeedback("ENTER")
-            setSymbolLayout(3)
+            symbolLayoutMode = if (symbolLayoutMode == 3) 0 else 3
+            renderKeys()
         }
         val btnClipboard = createToolbarIconButton(R.drawable.ic_sayn_clipboard) {
             triggerKeyFeedback("ENTER")
@@ -764,7 +765,7 @@ class SaynInputMethodService : InputMethodService() {
                 putExtra("route", "/keyboard-settings")
             }
             if (intent != null) startActivity(intent)
-        } catch (_: Exception) {}
+        } catch (e: Exception) {}
     }
     private fun createDividerView(): View {
         return View(this).apply {
@@ -2425,7 +2426,7 @@ class SaynInputMethodService : InputMethodService() {
                 ic.setSelection(newPos, newPos)
                 return
             }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {}
 
         val keycode = if (direction < 0) android.view.KeyEvent.KEYCODE_DPAD_LEFT else android.view.KeyEvent.KEYCODE_DPAD_RIGHT
         ic.sendKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, keycode))
