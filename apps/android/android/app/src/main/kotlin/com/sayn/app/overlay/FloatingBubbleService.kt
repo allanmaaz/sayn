@@ -710,6 +710,20 @@ class FloatingBubbleService : Service() {
                 val rawRefined = SaynCloudVoiceClient.refineText(textToInsert, hostPackage, mode = "mammals")
                 val refined = cleanWisprFlowLocal(rawRefined, isMammals = true)
 
+                // Real-time words tracking across apps
+                val words = refined.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }.size
+                if (words > 0) {
+                    try {
+                        val flutterPrefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+                        val currentTotal = flutterPrefs.getLong("flutter.sayn_stat_total_words", 22340L)
+                        val currentWeekly = flutterPrefs.getLong("flutter.sayn_stat_weekly_words", 0L)
+                        flutterPrefs.edit()
+                            .putLong("flutter.sayn_stat_total_words", currentTotal + words)
+                            .putLong("flutter.sayn_stat_weekly_words", (currentWeekly + words) % 1000)
+                            .apply()
+                    } catch (_: Exception) {}
+                }
+
                 // 1. If SAYN Keyboard is actively connected, inject directly via InputConnection
                 var injected = SaynInputMethodService.instance?.commitTextFromExternal(refined) ?: false
 

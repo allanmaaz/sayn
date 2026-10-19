@@ -10,9 +10,9 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  String _selectedLanguage = 'English (US)';
+  String _selectedLanguage = 'English';
   bool _improveModel = false;
-  bool _cloudStorage = true;
+  bool _cloudStorage = false;
   double _bubbleSize = 56.0;
   double _bubbleOpacity = 0.95;
 
@@ -25,9 +25,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _selectedLanguage = prefs.getString('sayn_language') ?? 'English (US)';
+      _selectedLanguage = prefs.getString('sayn_language') ?? 'English';
       _improveModel = prefs.getBool('sayn_improve_model') ?? false;
-      _cloudStorage = prefs.getBool('sayn_cloud_storage') ?? true;
+      _cloudStorage = prefs.getBool('sayn_cloud_storage') ?? false;
       _bubbleSize = prefs.getDouble('sayn_bubble_size') ?? 56.0;
       _bubbleOpacity = prefs.getDouble('sayn_bubble_opacity') ?? 0.95;
     });
@@ -52,26 +52,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: SaynColors.paperBg,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: SaynColors.wineMaroon),
+          icon: const Icon(Icons.arrow_back_rounded, color: SaynColors.wineMaroon, size: 26),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Settings',
           style: TextStyle(
             fontFamily: 'serif',
-            fontSize: 20,
+            fontSize: 22,
             fontWeight: FontWeight.w700,
             color: SaynColors.wineMaroon,
           ),
         ),
-        centerTitle: true,
+        centerTitle: false,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ─── 1. GENERAL ───
+            // ─── 1. GENERAL (Matching Screenshot 5) ───
             _buildSectionHeader('GENERAL'),
             _buildGroupCard([
               _buildSettingItem(
@@ -85,21 +85,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.chat_outlined,
                 title: 'Typing Preferences',
                 subtitle: 'Auto-correct, suggestions, and more',
-                onTap: () => _showSimpleNotice('Typing Preferences', 'Smart capitalisation, double-space period, and suggestion bar are actively enabled.'),
+                onTap: () => _showNotice('Typing Preferences', 'Smart capitalisation, double-space period, and suggestion bar are actively enabled.'),
               ),
               _buildDivider(),
               _buildSettingItem(
                 icon: Icons.palette_outlined,
                 title: 'Theme',
                 subtitle: 'SAYN Burgundy (Default)',
-                onTap: () => _showSimpleNotice('Theme', 'Currently using the official Warm Cream & Wine Burgundy palette.'),
+                onTap: () => _showNotice('Theme', 'Currently using the official Warm Cream & Wine Burgundy palette.'),
               ),
               _buildDivider(),
               _buildSettingItem(
-                icon: Icons.vibration_rounded,
+                icon: Icons.stay_current_portrait_rounded,
                 title: 'Typing Sound & Haptic',
                 subtitle: 'Keypress sound and vibration',
-                onTap: () => Navigator.pop(context), // takes back to Smart Keyboard tab
+                onTap: () => Navigator.pop(context),
               ),
             ]),
             const SizedBox(height: 20),
@@ -111,14 +111,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.mic_none_rounded,
                 title: 'Microphone (SAYN Voice)',
                 subtitle: 'Manage microphone access',
-                onTap: () => _showSimpleNotice('Microphone Access', 'Microphone permissions are granted for voice flow dictation.'),
+                onTap: () => _showNotice('Microphone Access', 'Microphone permissions are granted for voice flow dictation.'),
               ),
               _buildDivider(),
               _buildSettingItem(
                 icon: Icons.graphic_eq_rounded,
                 title: 'Voice Settings',
                 subtitle: 'Dictation language, speed, and more',
-                onTap: () => _showSimpleNotice('Voice Settings', 'Continuous dictation and auto-silence punctuation commit active.'),
+                onTap: () => _showNotice('Voice Settings', 'Continuous dictation and auto-silence punctuation commit active.'),
               ),
               _buildDivider(),
               _buildSettingItem(
@@ -134,14 +134,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildSectionHeader('APPEARANCE'),
             _buildGroupCard([
               _buildSettingItem(
-                icon: Icons.circle_outlined,
+                icon: Icons.adjust_rounded,
                 title: 'Flow Bubble Size',
                 subtitle: 'Adjust the floating bubble size',
                 onTap: _showBubbleSizeDialog,
               ),
               _buildDivider(),
               _buildSettingItem(
-                icon: Icons.blur_on_rounded,
+                icon: Icons.filter_tilt_shift_rounded,
                 title: 'Flow Bubble Opacity',
                 subtitle: 'Adjust the bubble transparency',
                 onTap: _showBubbleOpacityDialog,
@@ -183,7 +183,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.info_outline_rounded,
                 title: 'App version',
                 subtitle: 'v1.1.5',
-                onTap: () => _showSimpleNotice('App Version', 'SAYN v1.1.5 is up to date on your device.'),
+                onTap: () => _showNotice('App Version', 'SAYN v1.1.5 (Build 16) is up to date on your device.'),
               ),
             ]),
             const SizedBox(height: 40),
@@ -195,13 +195,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: 6, bottom: 8),
+      padding: const EdgeInsets.only(left: 4, bottom: 8),
       child: Text(
         title,
         style: const TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: SaynColors.paperTextMuted,
+          color: Color(0xFF8C7368),
           letterSpacing: 0.8,
         ),
       ),
@@ -213,14 +213,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: BoxDecoration(
         color: SaynColors.paperCard,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: SaynColors.paperBorder, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        border: Border.all(color: SaynColors.paperBorder, width: 1.2),
       ),
       child: Column(children: children),
     );
@@ -236,15 +229,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(18),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
             Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: SaynColors.paperSurface,
-                borderRadius: BorderRadius.circular(10),
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(
+                color: Color(0xFFF3E7DC),
+                shape: BoxShape.circle,
               ),
               child: Icon(icon, color: SaynColors.wineMaroon, size: 20),
             ),
@@ -257,8 +250,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title,
                     style: const TextStyle(
                       fontSize: 14.5,
-                      fontWeight: FontWeight.w600,
-                      color: SaynColors.paperText,
+                      fontWeight: FontWeight.w700,
+                      color: SaynColors.wineMaroon,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -266,7 +259,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     subtitle,
                     style: const TextStyle(
                       fontSize: 12,
-                      color: SaynColors.paperTextMuted,
+                      color: Color(0xFF8C7368),
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -274,8 +268,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const Icon(
               Icons.chevron_right_rounded,
-              color: SaynColors.paperTextMuted,
-              size: 19,
+              color: SaynColors.wineMaroon,
+              size: 20,
             ),
           ],
         ),
@@ -291,16 +285,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required ValueChanged<bool> onChanged,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: SaynColors.paperSurface,
-              borderRadius: BorderRadius.circular(10),
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: Color(0xFFF3E7DC),
+              shape: BoxShape.circle,
             ),
             child: Icon(icon, color: SaynColors.wineMaroon, size: 20),
           ),
@@ -312,31 +306,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: SaynColors.paperText,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w700,
+                    color: SaynColors.wineMaroon,
                   ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 2),
                 Text(
                   subtitle,
                   style: const TextStyle(
                     fontSize: 11.5,
-                    color: SaynColors.paperTextMuted,
+                    color: Color(0xFF8C7368),
                     height: 1.35,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Switch(
             value: value,
-            activeColor: SaynColors.wineMaroon,
-            activeTrackColor: SaynColors.wineMaroonLight.withOpacity(0.35),
-            inactiveThumbColor: Colors.white,
-            inactiveTrackColor: const Color(0xFFD6C7B2),
             onChanged: onChanged,
+            activeColor: Colors.white,
+            activeTrackColor: SaynColors.wineMaroon,
+            inactiveThumbColor: Colors.white,
+            inactiveTrackColor: const Color(0xFFD6C8B8),
           ),
         ],
       ),
@@ -344,40 +338,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildDivider() {
-    return const Divider(
-      height: 1,
-      thickness: 1,
-      color: SaynColors.paperBorder,
-      indent: 64,
-    );
+    return const Divider(color: SaynColors.paperBorder, height: 1, indent: 68);
   }
 
-  void _showLanguageDialog() {
-    final languages = ['English (US)', 'English (UK)', 'English (India)', 'Spanish', 'French', 'German'];
+  void _showNotice(String title, String message) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: SaynColors.paperCard,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          title,
+          style: const TextStyle(fontFamily: 'serif', color: SaynColors.wineMaroon, fontWeight: FontWeight.w800),
+        ),
+        content: Text(message, style: const TextStyle(fontSize: 13, height: 1.4)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK', style: TextStyle(color: SaynColors.wineMaroon, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLanguageDialog() {
+    final languages = ['English', 'Spanish', 'French', 'German', 'Arabic', 'Japanese'];
+    showDialog(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        backgroundColor: SaynColors.paperCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
           'Select Language',
-          style: TextStyle(fontFamily: 'serif', color: SaynColors.wineMaroon, fontWeight: FontWeight.bold),
+          style: TextStyle(fontFamily: 'serif', color: SaynColors.wineMaroon, fontWeight: FontWeight.w800),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: languages.map((lang) {
-            final isSelected = lang == _selectedLanguage;
-            return ListTile(
-              title: Text(lang, style: TextStyle(color: isSelected ? SaynColors.wineMaroon : SaynColors.paperText, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-              trailing: isSelected ? const Icon(Icons.check_rounded, color: SaynColors.wineMaroon) : null,
-              onTap: () {
-                setState(() => _selectedLanguage = lang);
-                _saveSetting('sayn_language', lang);
-                Navigator.pop(ctx);
-              },
-            );
-          }).toList(),
-        ),
+        children: languages.map((lang) {
+          final isSelected = lang == _selectedLanguage;
+          return SimpleDialogOption(
+            onPressed: () {
+              setState(() => _selectedLanguage = lang);
+              _saveSetting('sayn_language', lang);
+              Navigator.pop(ctx);
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  lang,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: isSelected ? SaynColors.wineMaroon : SaynColors.paperText,
+                  ),
+                ),
+                if (isSelected) const Icon(Icons.check_rounded, color: SaynColors.wineMaroon, size: 18),
+              ],
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -386,23 +405,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
+        builder: (context, setDialogState) => AlertDialog(
           backgroundColor: SaynColors.paperCard,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text(
             'Flow Bubble Size',
-            style: TextStyle(fontFamily: 'serif', color: SaynColors.wineMaroon, fontWeight: FontWeight.bold),
+            style: TextStyle(fontFamily: 'serif', color: SaynColors.wineMaroon, fontWeight: FontWeight.w800),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('${_bubbleSize.toInt()} dp', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: SaynColors.wineMaroon)),
+              Text('${_bubbleSize.round()} dp', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: SaynColors.wineMaroon)),
               Slider(
                 value: _bubbleSize,
                 min: 44.0,
                 max: 72.0,
-                divisions: 4,
+                divisions: 7,
                 activeColor: SaynColors.wineMaroon,
+                inactiveColor: const Color(0xFFD6C8B8),
                 onChanged: (val) {
                   setDialogState(() => _bubbleSize = val);
                   setState(() => _bubbleSize = val);
@@ -426,23 +446,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
+        builder: (context, setDialogState) => AlertDialog(
           backgroundColor: SaynColors.paperCard,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text(
             'Flow Bubble Opacity',
-            style: TextStyle(fontFamily: 'serif', color: SaynColors.wineMaroon, fontWeight: FontWeight.bold),
+            style: TextStyle(fontFamily: 'serif', color: SaynColors.wineMaroon, fontWeight: FontWeight.w800),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('${(_bubbleOpacity * 100).toInt()}%', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: SaynColors.wineMaroon)),
+              Text('${(_bubbleOpacity * 100).round()}%', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: SaynColors.wineMaroon)),
               Slider(
                 value: _bubbleOpacity,
                 min: 0.4,
                 max: 1.0,
                 divisions: 6,
                 activeColor: SaynColors.wineMaroon,
+                inactiveColor: const Color(0xFFD6C8B8),
                 onChanged: (val) {
                   setDialogState(() => _bubbleOpacity = val);
                   setState(() => _bubbleOpacity = val);
@@ -458,27 +479,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showSimpleNotice(String title, String message) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: SaynColors.paperCard,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          title,
-          style: const TextStyle(fontFamily: 'serif', color: SaynColors.wineMaroon, fontWeight: FontWeight.bold),
-        ),
-        content: Text(message, style: const TextStyle(fontSize: 13, height: 1.4)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK', style: TextStyle(color: SaynColors.wineMaroon, fontWeight: FontWeight.bold)),
-          ),
-        ],
       ),
     );
   }

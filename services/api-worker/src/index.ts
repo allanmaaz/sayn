@@ -106,11 +106,11 @@ export default {
       // 1b. PUBLIC APP VERSION CHECK & UPDATE SERVER
       if (url.pathname === '/api/v1/version' && request.method === 'GET') {
         const updatePayload = {
-          version: '1.1.4',
-          versionCode: 15,
-          name: 'SAYN v1.1.4',
-          releaseNotes: '1:1 Samsung One UI keyboard replication (sliding spacebar cursor trackpad, secondary symbol keys, One UI toolbar) + Wispr Flow ultra-fast grammar & conciseness engine.',
-          downloadUrl: 'https://github.com/allanmaaz/sayn/releases/download/v1.1.4/sayn-release.apk',
+          version: '1.1.5',
+          versionCode: 16,
+          name: 'SAYN v1.1.5',
+          releaseNotes: 'Exact 1:1 match across all screens with real-time Supabase stats sync and instant APK auto-update.',
+          downloadUrl: 'https://github.com/allanmaaz/sayn/releases/download/v1.1.5/sayn-release.apk',
           publishedAt: new Date().toISOString(),
         };
         return jsonResponse(updatePayload, 200, origin);

@@ -4,6 +4,7 @@ import '../../core/theme.dart';
 import '../../core/api_client.dart';
 import '../../services/platform_channels.dart';
 import '../../services/auth_service.dart';
+import '../../services/user_stats_service.dart';
 import '../navigation/sayn_drawer.dart';
 import '../account/account_screen.dart';
 
@@ -150,10 +151,10 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         _outputController.text = refined;
       });
 
-      // Synchronize in real time with Supabase Cloud
-      AuthService.instance.uploadWritingHistory(
-        text: refined,
-        mode: _selectedStyle,
+      // Synchronize in real time with UserStatsService and Supabase
+      UserStatsService.instance.recordSpeechSession(
+        transcript: refined,
+        durationSeconds: 0,
       );
     } catch (e) {
       setState(() {

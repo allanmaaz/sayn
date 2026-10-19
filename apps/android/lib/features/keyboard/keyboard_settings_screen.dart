@@ -17,9 +17,9 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
   bool _isLoading = true;
   bool _keySoundEnabled = true;
   bool _keyVibrationEnabled = true;
-  String _keyVibrationIntensity = 'medium';
+  String _keyVibrationIntensity = 'Subtle'; // Subtle, Crisp, Strong
   bool _autoCorrectEnabled = true;
-  final TextEditingController _sandboxController = TextEditingController();
+  final TextEditingController _testController = TextEditingController();
 
   @override
   void initState() {
@@ -29,7 +29,7 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
 
   @override
   void dispose() {
-    _sandboxController.dispose();
+    _testController.dispose();
     super.dispose();
   }
 
@@ -40,8 +40,15 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
     final feedback = await PlatformChannels.getKeyboardFeedbackSettings();
     final sound = feedback['soundEnabled'] as bool? ?? true;
     final vibration = feedback['vibrationEnabled'] as bool? ?? true;
-    final intensity = feedback['vibrationIntensity'] as String? ?? 'medium';
+    final rawIntensity = feedback['vibrationIntensity'] as String? ?? 'subtle';
     final autoCorrect = feedback['autoCorrectEnabled'] as bool? ?? true;
+
+    String intensity = 'Subtle';
+    if (rawIntensity.toLowerCase() == 'strong') {
+      intensity = 'Strong';
+    } else if (rawIntensity.toLowerCase() == 'medium' || rawIntensity.toLowerCase() == 'crisp') {
+      intensity = 'Crisp';
+    }
 
     if (mounted) {
       setState(() {
@@ -56,7 +63,7 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
     }
   }
 
-  Future<void> _updateFeedbackSettings({
+  Future<void> _updateSettings({
     bool? sound,
     bool? vibration,
     String? intensity,
@@ -66,16 +73,18 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
     final newVib = vibration ?? _keyVibrationEnabled;
     final newInt = intensity ?? _keyVibrationIntensity;
     final newAuto = autoCorrect ?? _autoCorrectEnabled;
+
     setState(() {
       _keySoundEnabled = newSound;
       _keyVibrationEnabled = newVib;
       _keyVibrationIntensity = newInt;
       _autoCorrectEnabled = newAuto;
     });
+
     await PlatformChannels.setKeyboardFeedbackSettings(
       soundEnabled: newSound,
       vibrationEnabled: newVib,
-      vibrationIntensity: newInt,
+      vibrationIntensity: newInt.toLowerCase(),
       autoCorrectEnabled: newAuto,
     );
   }
@@ -90,18 +99,43 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
         elevation: 0,
         leading: Builder(
           builder: (ctx) => IconButton(
-            icon: const Icon(Icons.menu_rounded, color: SaynColors.wineMaroon, size: 26),
+            icon: const Icon(Icons.menu_rounded, color: SaynColors.wineMaroon, size: 28),
             onPressed: () => Scaffold.of(ctx).openDrawer(),
           ),
         ),
-        title: const Text(
-          'Smart Keyboard',
-          style: TextStyle(
-            fontFamily: 'serif',
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            color: SaynColors.wineMaroon,
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: SaynColors.wineMaroon,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Image.asset(
+                'assets/images/logo.png',
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.graphic_eq_rounded,
+                  color: SaynColors.warmCream,
+                  size: 18,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              'S A Y N',
+              style: TextStyle(
+                fontFamily: 'serif',
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 4.0,
+                color: SaynColors.wineMaroon,
+              ),
+            ),
+          ],
         ),
         centerTitle: true,
       ),
@@ -110,137 +144,99 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
               child: CircularProgressIndicator(color: SaynColors.wineMaroon),
             )
           : SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(18, 10, 18, 120),
+              padding: const EdgeInsets.fromLTRB(18, 6, 18, 120),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ─── 1. OVERVIEW CARD ───
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: SaynColors.paperCard,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: SaynColors.paperBorder, width: 1.2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Row(
-                          children: [
-                            Icon(Icons.keyboard_rounded, color: SaynColors.wineMaroon, size: 20),
-                            SizedBox(width: 8),
-                            Text(
-                              'Obsidian Chiclet Keyboard',
-                              style: TextStyle(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w700,
-                                color: SaynColors.paperText,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'SAYN Smart Keyboard provides a tactile typing experience with smart suggestions, spacebar trackpad cursor control, and seamless one-tap voice overlay integration.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: SaynColors.paperTextMuted,
-                            height: 1.45,
-                          ),
-                        ),
-                      ],
+                  // Title Header (Matching Screenshot 2: Smart Keyboard (IME))
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                      'Smart Keyboard (IME)',
+                      style: TextStyle(
+                        fontFamily: 'serif',
+                        fontSize: 27,
+                        fontWeight: FontWeight.w700,
+                        color: SaynColors.wineMaroon,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 6),
 
-                  // ─── 2. KEYBOARD SETUP & ACTIVATION CARD ───
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: SaynColors.paperCard,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: SaynColors.paperBorder, width: 1.2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
+                  // ─── 1. KEYBOARD SETUP CARD ───
+                  _buildCard(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'Keyboard Setup',
-                              style: TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                color: SaynColors.paperText,
+                            _buildIconCircle(Icons.keyboard_outlined),
+                            const SizedBox(width: 14),
+                            const Expanded(
+                              child: Text(
+                                'Keyboard setup',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: SaynColors.wineMaroon,
+                                ),
                               ),
                             ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: _isEnabled
-                                    ? const Color(0xFFE8F5E9)
-                                    : const Color(0xFFFDE8EC),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                _isEnabled ? 'Activated' : 'Not Activated',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: _isEnabled
-                                      ? const Color(0xFF2E7D32)
-                                      : SaynColors.wineMaroon,
+                            InkWell(
+                              onTap: () async {
+                                await PlatformChannels.openKeyboardSettings();
+                                _loadState();
+                              },
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF3E7DC),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      _isEnabled ? 'Activated' : 'Not activated',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: SaynColors.wineMaroon,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.chevron_right_rounded,
+                                      color: SaynColors.wineMaroon,
+                                      size: 16,
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
-                        const Text(
-                          '1. Tap "Open Keyboard Settings →" below.\n2. Enable "SAYN Smart Keyboard" in On-Screen Keyboards.\n3. Switch to SAYN using the globe/keyboard switcher key.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: SaynColors.paperTextMuted,
-                            height: 1.5,
-                          ),
-                        ),
                         const SizedBox(height: 14),
                         SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
+                          height: 44,
+                          child: ElevatedButton(
                             onPressed: () async {
                               await PlatformChannels.openKeyboardSettings();
                               _loadState();
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: SaynColors.wineMaroon,
-                              foregroundColor: SaynColors.warmCream,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              elevation: 0,
                             ),
-                            icon: const Icon(Icons.settings_input_component_rounded, size: 16),
-                            label: const Text(
-                              'Open Keyboard Settings →',
+                            child: const Text(
+                              'Open keyboard settings  →',
                               style: TextStyle(
-                                fontSize: 12.5,
+                                fontSize: 13.5,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -251,334 +247,213 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
                   ),
                   const SizedBox(height: 14),
 
-                  // ─── 3. MICROPHONE (SAYN VOICE) ACCESS CARD ───
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: SaynColors.paperCard,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: SaynColors.paperBorder, width: 1.2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  // ─── 2. MICROPHONE (SAYN VOICE) CARD ───
+                  _buildCard(
+                    child: Row(
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Row(
+                        _buildIconCircle(Icons.mic_none_rounded),
+                        const SizedBox(width: 14),
+                        const Expanded(
+                          child: Text(
+                            'Microphone (SAYN Voice)',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: SaynColors.wineMaroon,
+                            ),
+                          ),
+                        ),
+                        InkWell(
+                          onTap: () async {
+                            await PlatformChannels.requestAudioPermission();
+                            _loadState();
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF3E7DC),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.mic_rounded, color: SaynColors.wineMaroon, size: 18),
-                                SizedBox(width: 8),
                                 Text(
-                                  'Microphone (SAYN Voice)',
-                                  style: TextStyle(
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: SaynColors.paperText,
+                                  _hasMicPermission ? 'Granted' : 'Needs access',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: SaynColors.wineMaroon,
                                   ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.chevron_right_rounded,
+                                  color: SaynColors.wineMaroon,
+                                  size: 16,
                                 ),
                               ],
                             ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: _hasMicPermission
-                                    ? const Color(0xFFE8F5E9)
-                                    : const Color(0xFFFDE8EC),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // ─── 3. TYPING SOUND & HAPTIC CARD ───
+                  _buildCard(
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            _buildIconCircle(Icons.stay_current_portrait_rounded),
+                            const SizedBox(width: 14),
+                            const Expanded(
                               child: Text(
-                                _hasMicPermission ? 'Granted' : 'Needs Permission',
+                                'Typing sound & haptic',
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.w700,
-                                  color: _hasMicPermission
-                                      ? const Color(0xFF2E7D32)
-                                      : SaynColors.wineMaroon,
+                                  color: SaynColors.wineMaroon,
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Required for in-keyboard speech-to-text dictation. Allows instant dictation directly from your keyboard toolbar.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: SaynColors.paperTextMuted,
-                            height: 1.4,
-                          ),
-                        ),
-                        if (!_hasMicPermission) ...[
-                          const SizedBox(height: 14),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              onPressed: () async {
-                                await PlatformChannels.requestAudioPermission();
-                                await Future.delayed(const Duration(milliseconds: 500));
-                                _loadState();
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: SaynColors.wineMaroon,
-                                foregroundColor: SaynColors.warmCream,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                elevation: 0,
-                              ),
-                              icon: const Icon(Icons.mic, size: 16),
-                              label: const Text(
-                                'Grant Microphone Access',
-                                style: TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // ─── 4. TYPING SOUND & HAPTIC VIBRATION CARD ───
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: SaynColors.paperCard,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: SaynColors.paperBorder, width: 1.2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
+                        const SizedBox(height: 14),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Icon(Icons.vibration_rounded, size: 18, color: SaynColors.wineMaroon),
-                            SizedBox(width: 8),
-                            Text(
-                              'Typing Sound & Haptic',
+                            const Text(
+                              'Keypress vibration',
                               style: TextStyle(
                                 fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                color: SaynColors.paperText,
+                                fontWeight: FontWeight.w600,
+                                color: SaynColors.wineMaroon,
                               ),
+                            ),
+                            _buildMaroonSwitch(
+                              value: _keyVibrationEnabled,
+                              onChanged: (val) => _updateSettings(vibration: val),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
-                        SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: const Text(
-                            'Keypress Vibration',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: SaynColors.paperText,
-                            ),
-                          ),
-                          subtitle: const Text(
-                            'Tactile physical haptic pulse on keypress',
-                            style: TextStyle(fontSize: 11.5, color: SaynColors.paperTextMuted),
-                          ),
-                          value: _keyVibrationEnabled,
-                          activeColor: SaynColors.wineMaroon,
-                          activeTrackColor: SaynColors.wineMaroon.withOpacity(0.35),
-                          inactiveTrackColor: SaynColors.paperBorder,
-                          onChanged: (val) => _updateFeedbackSettings(vibration: val),
-                        ),
-                        if (_keyVibrationEnabled) ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Text(
-                                'Vibration Intensity: ',
-                                style: TextStyle(fontSize: 11.5, color: SaynColors.paperTextMuted),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Vibration intensity',
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w600,
+                                color: SaynColors.wineMaroon,
                               ),
-                              const Spacer(),
-                              ...['subtle', 'medium', 'strong'].map((lvl) {
-                                final isSelected = _keyVibrationIntensity == lvl;
-                                final label = lvl == 'subtle'
-                                    ? 'Subtle'
-                                    : (lvl == 'medium' ? 'Crisp' : 'Strong');
-                                return Padding(
-                                  padding: const EdgeInsets.only(left: 6),
-                                  child: ChoiceChip(
-                                    label: Text(label),
-                                    selected: isSelected,
-                                    selectedColor: SaynColors.wineMaroon,
-                                    labelStyle: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      color: isSelected ? Colors.white : SaynColors.wineMaroon,
-                                    ),
-                                    backgroundColor: SaynColors.paperSurface,
-                                    side: BorderSide(
-                                      color: isSelected ? SaynColors.wineMaroon : SaynColors.paperBorder,
-                                    ),
-                                    onSelected: (val) {
-                                      if (val) _updateFeedbackSettings(intensity: lvl);
-                                    },
-                                  ),
-                                );
-                              }),
-                            ],
-                          ),
-                        ],
-                        const Divider(color: SaynColors.paperBorder, height: 22),
-                        SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: const Text(
-                            'Keypress Click Sound',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: SaynColors.paperText,
                             ),
-                          ),
-                          subtitle: const Text(
-                            'Subtle mechanical click audio on keypress',
-                            style: TextStyle(fontSize: 11.5, color: SaynColors.paperTextMuted),
-                          ),
-                          value: _keySoundEnabled,
-                          activeColor: SaynColors.wineMaroon,
-                          activeTrackColor: SaynColors.wineMaroon.withOpacity(0.35),
-                          inactiveTrackColor: SaynColors.paperBorder,
-                          onChanged: (val) => _updateFeedbackSettings(sound: val),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _buildIntensitySegment('Subtle'),
+                                const SizedBox(width: 4),
+                                _buildIntensitySegment('Crisp'),
+                                const SizedBox(width: 4),
+                                _buildIntensitySegment('Strong'),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        const Divider(color: SaynColors.paperBorder, height: 1),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Keypress click sound',
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w600,
+                                color: SaynColors.wineMaroon,
+                              ),
+                            ),
+                            _buildMaroonSwitch(
+                              value: _keySoundEnabled,
+                              onChanged: (val) => _updateSettings(sound: val),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 14),
 
-                  // ─── 5. KEYBOARD AUTO-CORRECT CARD ───
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: SaynColors.paperCard,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: SaynColors.paperBorder, width: 1.2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  // ─── 4. AUTO-CORRECT CARD ───
+                  _buildCard(
+                    child: Row(
                       children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.spellcheck_rounded, size: 18, color: SaynColors.wineMaroon),
-                            SizedBox(width: 8),
-                            Text(
-                              'Auto-Correct',
-                              style: TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                color: SaynColors.paperText,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: const Text(
-                            'Instant Typing Corrections',
+                        _buildIconCircle(Icons.auto_awesome_rounded),
+                        const SizedBox(width: 14),
+                        const Expanded(
+                          child: Text(
+                            'Auto-correct',
                             style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: SaynColors.paperText,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: SaynColors.wineMaroon,
                             ),
                           ),
-                          subtitle: const Text(
-                            'Automatically fixes common typos and capitalizes letters while you type on SAYN Keyboard.',
-                            style: TextStyle(fontSize: 11.5, color: SaynColors.paperTextMuted),
-                          ),
+                        ),
+                        _buildMaroonSwitch(
                           value: _autoCorrectEnabled,
-                          activeColor: SaynColors.wineMaroon,
-                          activeTrackColor: SaynColors.wineMaroon.withOpacity(0.35),
-                          inactiveTrackColor: SaynColors.paperBorder,
-                          onChanged: (val) => _updateFeedbackSettings(autoCorrect: val),
+                          onChanged: (val) => _updateSettings(autoCorrect: val),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 14),
 
-                  // ─── 6. INTERACTIVE "TRY SAYN KEYBOARD" TEST BOX ───
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: SaynColors.paperCard,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: SaynColors.paperBorder, width: 1.2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
+                  // ─── 5. TRY SAYN KEYBOARD TEST CARD ───
+                  _buildCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(
+                        Row(
                           children: [
-                            Icon(Icons.touch_app_rounded, color: SaynColors.wineMaroon, size: 18),
-                            SizedBox(width: 8),
-                            Text(
+                            _buildIconCircle(Icons.edit_outlined),
+                            const SizedBox(width: 14),
+                            const Text(
                               'Try SAYN Keyboard',
                               style: TextStyle(
-                                fontSize: 13.5,
+                                fontSize: 16,
                                 fontWeight: FontWeight.w700,
-                                color: SaynColors.paperText,
+                                color: SaynColors.wineMaroon,
                               ),
                             ),
                           ],
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'Tap the field below to bring up the SAYN Keyboard and test typing, spacebar trackpad sliding, and voice flow.',
-                          style: TextStyle(fontSize: 11.5, color: SaynColors.paperTextMuted),
                         ),
                         const SizedBox(height: 12),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
                           decoration: BoxDecoration(
-                            color: SaynColors.paperSurface,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: SaynColors.paperBorder),
+                            color: const Color(0xFFF3EAE0),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFE8DFD1), width: 1),
                           ),
                           child: TextField(
-                            controller: _sandboxController,
-                            maxLines: 3,
-                            style: const TextStyle(fontSize: 13.5, color: SaynColors.paperText),
+                            controller: _testController,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: SaynColors.wineMaroon,
+                            ),
                             decoration: const InputDecoration(
-                              hintText: 'Type here to test SAYN Smart Keyboard...',
-                              hintStyle: TextStyle(fontSize: 13, color: SaynColors.paperTextMuted),
+                              hintText: 'Type here to test...',
+                              hintStyle: TextStyle(
+                                color: Color(0xFFB09D8B),
+                                fontSize: 14,
+                              ),
                               border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(vertical: 14),
                             ),
                           ),
                         ),
@@ -587,145 +462,171 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
                   ),
                   const SizedBox(height: 14),
 
-                  // ─── 7. PRIVACY & SENSITIVE FIELD GUARD CARD ───
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: SaynColors.paperCard,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: SaynColors.paperBorder, width: 1.2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Row(
-                          children: [
-                            Icon(Icons.shield_outlined, color: SaynColors.wineMaroon, size: 18),
-                            SizedBox(width: 8),
-                            Text(
-                              'Privacy & Security Guard',
-                              style: TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                color: SaynColors.paperText,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          '• Zero keystroke logging: your typing is strictly on-device.\n• Sensitive fields (passwords, PINs, card numbers) automatically hide AI toolbars.\n• AI refinement is triggered only on your explicit tap.',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: SaynColors.paperTextMuted,
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // ─── 8. APP UPDATES CARD ───
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: SaynColors.paperCard,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: SaynColors.paperBorder, width: 1.2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  // ─── 6. PRIVACY CARD ───
+                  _buildCard(
+                    onTap: _showPrivacyDialog,
+                    child: Row(
                       children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.autorenew_rounded, color: SaynColors.wineMaroon, size: 18),
-                            SizedBox(width: 8),
-                            Text(
-                              'App Updates & Releases',
-                              style: TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                color: SaynColors.paperText,
-                              ),
+                        _buildIconCircle(Icons.shield_outlined),
+                        const SizedBox(width: 14),
+                        const Expanded(
+                          child: Text(
+                            'Privacy',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: SaynColors.wineMaroon,
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'SAYN automatically checks for the latest updates. You can also manually check to get the newest features immediately.',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: SaynColors.paperTextMuted,
-                            height: 1.4,
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: () async {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Checking for updates...'),
-                                  duration: Duration(seconds: 1),
-                                ),
-                              );
-                              final info = await UpdateService.checkUpdate();
-                              if (!mounted) return;
-                              if (info != null && info.hasUpdate) {
-                                UpdateService.showUpdateDialog(context, info);
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      info != null
-                                          ? 'You are on the latest version (v${info.currentVersion})'
-                                          : 'Could not connect to update server',
-                                    ),
-                                    backgroundColor: SaynColors.wineMaroon,
-                                  ),
-                                );
-                              }
-                            },
-                            icon: const Icon(Icons.cloud_download_outlined, size: 16),
-                            label: const Text(
-                              'Check for Updates Now →',
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w700,
-                              ),
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          color: SaynColors.wineMaroon,
+                          size: 22,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // ─── 7. APP UPDATES CARD ───
+                  _buildCard(
+                    child: Row(
+                      children: [
+                        _buildIconCircle(Icons.cloud_download_outlined),
+                        const SizedBox(width: 14),
+                        const Expanded(
+                          child: Text(
+                            'App updates',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: SaynColors.wineMaroon,
                             ),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: SaynColors.wineMaroon),
-                              foregroundColor: SaynColors.wineMaroon,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                        OutlinedButton(
+                          onPressed: () => UpdateService.checkForUpdate(context, manual: true),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: SaynColors.wineMaroon, width: 1.2),
+                            foregroundColor: SaynColors.wineMaroon,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                          child: const Text(
+                            'Check for updates  →',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
+    );
+  }
+
+  Widget _buildCard({required Widget child, VoidCallback? onTap}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: SaynColors.paperCard,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: SaynColors.paperBorder, width: 1.2),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIconCircle(IconData icon) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: const BoxDecoration(
+        color: Color(0xFFF3E7DC),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(icon, color: SaynColors.wineMaroon, size: 22),
+    );
+  }
+
+  Widget _buildMaroonSwitch({
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Switch(
+      value: value,
+      onChanged: onChanged,
+      activeColor: Colors.white,
+      activeTrackColor: SaynColors.wineMaroon,
+      inactiveThumbColor: Colors.white,
+      inactiveTrackColor: const Color(0xFFD6C8B8),
+    );
+  }
+
+  Widget _buildIntensitySegment(String label) {
+    final isSelected = _keyVibrationIntensity == label;
+    return GestureDetector(
+      onTap: () => _updateSettings(intensity: label),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? SaynColors.wineMaroon : const Color(0xFFFAF5EE),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: isSelected ? SaynColors.wineMaroon : const Color(0xFFE8DFD1),
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: isSelected ? Colors.white : SaynColors.wineMaroon,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showPrivacyDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: SaynColors.paperCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Keyboard Privacy',
+          style: TextStyle(fontFamily: 'serif', color: SaynColors.wineMaroon, fontWeight: FontWeight.w800),
+        ),
+        content: const Text(
+          'SAYN Smart Keyboard operates locally with full device isolation. Keystrokes, passwords, and private messages are never logged or stored. Only requested AI rewrites and speech dictations are sent to secure servers.',
+          style: TextStyle(fontSize: 13, height: 1.45, color: SaynColors.paperText),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK', style: TextStyle(color: SaynColors.wineMaroon, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
 }

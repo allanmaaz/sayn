@@ -10,9 +10,11 @@ import 'features/onboarding/onboarding_dialog.dart';
 import 'features/auth/login_screen.dart';
 import 'services/auth_service.dart';
 import 'services/update_service.dart';
+import 'services/user_stats_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  UserStatsService.instance.init();
   runApp(const SaynApp());
 }
 
@@ -50,6 +52,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     _initScreens();
     AuthService.instance.addListener(_onAuthChanged);
     AuthService.instance.init();
+    UserStatsService.instance.init();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAutoUpdate();
       if (AuthService.instance.isAuthenticated) {
@@ -89,7 +92,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   Future<void> _checkOnboarding() async {
     final shouldShow = await OnboardingDialog.shouldShow();
     if (shouldShow && mounted) {
-      await OnboardingDialog.show(context);
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const OnboardingDialog(),
+      );
     }
   }
 
@@ -114,116 +121,92 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     }
 
     return Scaffold(
-      extendBody: true,
+      extendBody: false,
       backgroundColor: SaynColors.paperBg,
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: _buildFloatingBottomNav(),
+      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
-  Widget _buildFloatingBottomNav() {
+  Widget _buildBottomNav() {
     final navItems = [
-      {'label': 'Flow', 'icon': Icons.graphic_eq_rounded},
+      {'label': 'Voice', 'icon': Icons.graphic_eq_rounded},
       {'label': 'Studio', 'icon': Icons.edit_note_rounded},
-      {'label': 'Overlay', 'icon': Icons.layers_rounded},
+      {'label': 'Overlay', 'icon': Icons.layers_outlined},
       {'label': 'Keys', 'icon': Icons.keyboard_rounded},
     ];
 
-    return SafeArea(
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(18, 0, 18, 14),
-        height: 64,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(32),
-          boxShadow: [
-            BoxShadow(
-              color: SaynColors.wineMaroon.withOpacity(0.12),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
-            ),
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
+    return Container(
+      decoration: const BoxDecoration(
+        color: SaynColors.paperBg,
+        border: Border(
+          top: BorderSide(color: Color(0xFFE8DFD1), width: 1.0),
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(32),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xF6F5EBDD), // Warm Paper Surface
-                borderRadius: BorderRadius.circular(32),
-                border: Border.all(
-                  color: SaynColors.paperBorder,
-                  width: 1.5,
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: List.generate(navItems.length, (index) {
-                  final item = navItems[index];
-                  final isSelected = _currentIndex == index;
-                  final iconData = item['icon'] as IconData;
-                  final label = item['label'] as String;
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: List.generate(navItems.length, (index) {
+              final item = navItems[index];
+              final isSelected = _currentIndex == index;
+              final iconData = item['icon'] as IconData;
+              final label = item['label'] as String;
 
-                  return Expanded(
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        setState(() => _currentIndex = index);
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 220),
-                        curve: Curves.easeOutCubic,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+              return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() => _currentIndex = index);
+                },
+                child: isSelected
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isSelected
-                              ? SaynColors.wineMaroon
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(24),
+                          color: SaynColors.wineMaroon,
+                          borderRadius: BorderRadius.circular(22),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              iconData,
-                              size: 19,
-                              color: isSelected
-                                  ? SaynColors.warmCream
-                                  : SaynColors.paperTextMuted,
-                            ),
-                            if (isSelected) ...[
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  label,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.3,
-                                    color: SaynColors.warmCream,
-                                  ),
-                                ),
+                            Icon(iconData, size: 20, color: Colors.white),
+                            const SizedBox(height: 2),
+                            Text(
+                              label,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
                               ),
-                            ],
+                            ),
+                          ],
+                        ),
+                      )
+                    : Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(iconData, size: 20, color: SaynColors.wineMaroon),
+                            const SizedBox(height: 2),
+                            Text(
+                              label,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: SaynColors.wineMaroon,
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                    ),
-                  );
-                }),
-              ),
-            ),
+              );
+            }),
           ),
         ),
       ),
