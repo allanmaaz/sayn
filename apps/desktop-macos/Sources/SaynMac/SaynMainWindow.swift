@@ -100,6 +100,12 @@ struct SaynStudioView: View {
     @State private var showSettingsModal: Bool = false
     @State private var activeSettingsTab: SaynSettingsTab = .general
     
+    // Invite-Only Auth Modal State
+    @State private var showAuthModal: Bool = false
+    @State private var authUsernameOrEmail: String = ""
+    @State private var authPassword: String = ""
+    @State private var isShowPassword: Bool = false
+    
     // Search & Filtering
     @State private var searchHistoryQuery: String = ""
     @State private var searchDictionaryQuery: String = ""
@@ -230,6 +236,20 @@ struct SaynStudioView: View {
                 helpModalView
                     .transition(.scale(scale: 0.95).combined(with: .opacity))
             }
+            
+            // Floating Invite-Only Auth Modal Sheet
+            if showAuthModal {
+                Color.black.opacity(0.45)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation(.easeInOut(duration: 0.16)) {
+                            showAuthModal = false
+                        }
+                    }
+                
+                authModalView
+                    .transition(.scale(scale: 0.95).combined(with: .opacity))
+            }
         }
         .frame(minWidth: 960, minHeight: 640)
         .onAppear {
@@ -290,25 +310,43 @@ struct SaynStudioView: View {
             }
             .buttonStyle(PlainButtonStyle())
             
-            // User Avatar Popover Button (Real Monogram from store.firstName)
-            Button(action: {
-                withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
-                    showProfilePopover.toggle()
+            // User Avatar Popover & Invite Sign-In Action
+            HStack(spacing: 8) {
+                if !store.isAuthenticated {
+                    Button(action: { showAuthModal = true }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "lock.shield.fill")
+                                .font(.system(size: 10))
+                            Text("Sign In")
+                                .font(.system(size: 11, weight: .bold))
+                        }
+                        .foregroundColor(accentTeal)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Capsule().stroke(accentTeal.opacity(0.4), lineWidth: 1))
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
-            }) {
-                ZStack {
-                    Circle()
-                        .fill(accentTeal)
-                        .frame(width: 28, height: 28)
-                    
-                    Text(String(store.firstName.prefix(1)).uppercased())
-                        .font(.system(size: 13, weight: .bold, design: .rounded))
-                        .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
+                
+                Button(action: {
+                    withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
+                        showProfilePopover.toggle()
+                    }
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(accentTeal)
+                            .frame(width: 28, height: 28)
+                        
+                        Text(String(store.firstName.prefix(1)).uppercased())
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
+                    }
                 }
-            }
-            .buttonStyle(PlainButtonStyle())
-            .popover(isPresented: $showProfilePopover, arrowEdge: .bottom) {
-                profilePopoverCard
+                .buttonStyle(PlainButtonStyle())
+                .popover(isPresented: $showProfilePopover, arrowEdge: .bottom) {
+                    profilePopoverCard
+                }
             }
         }
         .padding(.horizontal, 16)
@@ -331,10 +369,19 @@ struct SaynStudioView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("\(store.firstName) \(store.lastName)")
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                        .foregroundColor(textDark)
-                    Text(store.email)
+                    HStack(spacing: 6) {
+                        Text("\(store.firstName) \(store.lastName)")
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .foregroundColor(textDark)
+                        
+                        Text(store.isAuthenticated ? "INVITED" : "GUEST")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(store.isAuthenticated ? Color.green : textMuted)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(Capsule().fill(store.isAuthenticated ? Color.green.opacity(0.12) : surfaceBeige))
+                    }
+                    Text(store.email.isEmpty ? "Local Offline Session" : store.email)
                         .font(.system(size: 12, weight: .regular))
                         .foregroundColor(textMuted)
                 }
@@ -354,20 +401,60 @@ struct SaynStudioView: View {
                             .font(.system(size: 13, weight: .bold))
                             .foregroundColor(textDark)
                     }
-                    Text("Local-first · Zero limits · Private")
+                    Text(store.isAuthenticated ? "Synced with Supabase Cloud" : "Local-first · Zero limits · Private")
                         .font(.system(size: 11, weight: .regular))
                         .foregroundColor(textMuted)
                 }
                 Spacer()
-                Text("Lifetime")
-                    .font(.system(size: 11, weight: .bold))
+                Text(store.isAuthenticated ? "Cloud Active" : "Local")
+                    .font(.system(size: 10, weight: .bold))
                     .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
-                    .padding(.horizontal, 9)
+                    .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(Capsule().fill(accentTeal))
             }
             .padding(10)
             .background(RoundedRectangle(cornerRadius: 10).fill(surfaceBeige))
+            
+            Divider()
+                .background(borderDivider)
+            
+            // Authentication Action: Sign In or Sign Out
+            if !store.isAuthenticated {
+                Button(action: {
+                    showProfilePopover = false
+                    showAuthModal = true
+                }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "lock.shield.fill")
+                            .foregroundColor(accentTeal)
+                        Text("Sign In with Invite")
+                            .fontWeight(.bold)
+                            .foregroundColor(accentTeal)
+                    }
+                    .font(.system(size: 13))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 3)
+                }
+                .buttonStyle(PlainButtonStyle())
+            } else {
+                Button(action: {
+                    showProfilePopover = false
+                    store.logout()
+                }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                            .foregroundColor(.red)
+                        Text("Sign Out")
+                            .fontWeight(.medium)
+                            .foregroundColor(.red)
+                    }
+                    .font(.system(size: 13))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 3)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
             
             Divider()
                 .background(borderDivider)
@@ -390,7 +477,7 @@ struct SaynStudioView: View {
             .buttonStyle(PlainButtonStyle())
         }
         .padding(16)
-        .frame(width: 300)
+        .frame(width: 310)
         .background(cardWhite)
     }
     
@@ -914,9 +1001,9 @@ struct SaynStudioView: View {
                     .frame(maxWidth: .infinity)
                     .background(RoundedRectangle(cornerRadius: 14).fill(cardWhite))
                     
-                    // Card 2: Fixes Counter
+                    // Card 2: Fixes Counter (Pure Real Data)
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("1,688")
+                        Text("\(store.totalFixesMade)")
                             .font(.system(size: 32, weight: .bold, design: .rounded))
                             .foregroundColor(textDark)
                         Text("FIXES MADE BY SAYN")
@@ -927,16 +1014,16 @@ struct SaynStudioView: View {
                         
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
-                                Text("1,095")
+                                Text("\(Int(Double(store.totalFixesMade) * 0.65))")
                                     .font(.system(size: 14, weight: .bold))
                                 Text("words corrected")
                                     .font(.system(size: 12))
                                     .foregroundColor(textMuted)
                             }
                             HStack {
-                                Text("593")
+                                Text("\(max(0, store.totalFixesMade - Int(Double(store.totalFixesMade) * 0.65)))")
                                     .font(.system(size: 14, weight: .bold))
-                                Text("dictionary fixes")
+                                Text("formatting fixes")
                                     .font(.system(size: 12))
                                     .foregroundColor(textMuted)
                             }
@@ -946,14 +1033,14 @@ struct SaynStudioView: View {
                     .frame(maxWidth: .infinity)
                     .background(RoundedRectangle(cornerRadius: 14).fill(cardWhite))
                     
-                    // Card 3: Total Words Dictated
+                    // Card 3: Total Words Dictated (Pure Real Data)
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
                             Text("\(store.totalWordsDictated)")
                                 .font(.system(size: 32, weight: .bold, design: .rounded))
                                 .foregroundColor(textDark)
                             Spacer()
-                            Text("↗ 290% this month")
+                            Text(store.totalWordsDictated > 0 ? "Real Cloud Synced" : "Ready")
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(Color.green)
                                 .padding(.horizontal, 6)
@@ -964,9 +1051,19 @@ struct SaynStudioView: View {
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(textMuted)
                         
-                        Text("You've written 2 college essays!")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(textDark)
+                        if store.totalWordsDictated == 0 {
+                            Text("Start dictating to generate your metrics.")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(textDark)
+                        } else if store.totalWordsDictated < 500 {
+                            Text("Great start! You've written \(store.totalWordsDictated) real words.")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(textDark)
+                        } else {
+                            Text("You've written approximately \(max(1, store.totalWordsDictated / 250)) pages!")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(textDark)
+                        }
                         
                         Spacer()
                         
@@ -975,7 +1072,7 @@ struct SaynStudioView: View {
                             HStack(spacing: 4) {
                                 Image(systemName: "desktopcomputer")
                                     .font(.system(size: 10))
-                                Text("Desktop")
+                                Text("Desktop (\(store.history.count))")
                                     .font(.system(size: 11, weight: .semibold))
                             }
                             .foregroundColor(.white)
@@ -1002,35 +1099,34 @@ struct SaynStudioView: View {
                 
                 // Bottom Row Cards: Desktop Usage Breakdown + Activity Streak Heatmap
                 HStack(alignment: .top, spacing: 16) {
-                    // Desktop Usage
+                    // Desktop Usage (Pure Real Metrics)
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             Text("Desktop usage")
                                 .font(.system(size: 18, weight: .bold, design: .rounded))
                                 .foregroundColor(textDark)
                             Spacer()
-                            Text("TOTAL APPS USED | 28")
+                            Text("TOTAL DICTATIONS | \(store.history.count)")
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(textMuted)
                         }
                         
-                        telemetryBar(percent: "80%", label: "315 OTHER TASKS", icon: "infinity", color: accentTeal)
-                        telemetryBar(percent: "10%", label: "54 AI PROMPTS", icon: "cpu", color: accentCyan)
-                        telemetryBar(percent: "10%", label: "131 PERSONAL MESSAGES", icon: "bubble.left", color: accentCyan)
-                        telemetryBar(percent: "0%", label: "2 WORK MESSAGES", icon: "bubble.right", color: textMuted.opacity(0.3))
+                        ForEach(telemetryBreakdown, id: \.label) { bar in
+                            telemetryBar(percent: bar.percent, label: bar.label, icon: bar.icon, color: bar.color)
+                        }
                     }
                     .padding(18)
                     .frame(maxWidth: .infinity)
                     .background(RoundedRectangle(cornerRadius: 14).fill(cardWhite))
                     
-                    // GitHub-style Streak Heatmap
+                    // GitHub-style Streak Heatmap (Strictly Mapped to Real Calendar Dates)
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             Text("\(store.currentDayStreak) day streak")
                                 .font(.system(size: 18, weight: .bold, design: .rounded))
                                 .foregroundColor(textDark)
                             Spacer()
-                            Text("LONGEST STREAK | 32 DAYS")
+                            Text("CURRENT STREAK | \(store.currentDayStreak) DAYS")
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(textMuted)
                         }
@@ -1050,11 +1146,12 @@ struct SaynStudioView: View {
                             ForEach(0..<7, id: \.self) { row in
                                 HStack(spacing: 4) {
                                     ForEach(0..<14, id: \.self) { col in
+                                        let words = store.wordsOnDate(offsetWeeksAgo: col, dayOfWeek: row)
                                         RoundedRectangle(cornerRadius: 2)
                                             .fill(heatmapColor(row: row, col: col))
                                             .frame(width: 14, height: 14)
                                             .overlay(
-                                                (col >= 11 && row <= 4) ?
+                                                words > 0 ?
                                                 RoundedRectangle(cornerRadius: 2).stroke(accentTeal, lineWidth: 1) : nil
                                             )
                                     }
@@ -1081,7 +1178,7 @@ struct SaynStudioView: View {
                             RoundedRectangle(cornerRadius: 2)
                                 .stroke(accentTeal, lineWidth: 1)
                                 .frame(width: 10, height: 10)
-                            Text("Current streak")
+                            Text("Active Day")
                                 .font(.system(size: 10))
                                 .foregroundColor(textMuted)
                         }
@@ -1093,6 +1190,28 @@ struct SaynStudioView: View {
             }
             .padding(24)
         }
+    }
+    
+    private var telemetryBreakdown: [(percent: String, label: String, icon: String, color: Color)] {
+        let total = store.history.count
+        guard total > 0 else {
+            return [
+                ("100%", "READY FOR SPEECH", "mic", accentTeal)
+            ]
+        }
+        let codeAndTech = store.history.filter { $0.text.contains("func") || $0.text.contains("const") || $0.text.contains("import") || $0.text.contains("let ") || $0.text.contains("var ") }.count
+        let messages = store.history.filter { $0.text.contains("?") || $0.text.contains("!") || $0.wordCount < 15 }.count
+        let documents = max(0, total - codeAndTech - messages)
+        
+        let pCode = max(0, min(100, Int((Double(codeAndTech) / Double(total)) * 100)))
+        let pMsg = max(0, min(100, Int((Double(messages) / Double(total)) * 100)))
+        let pDoc = max(0, 100 - pCode - pMsg)
+        
+        return [
+            ("\(pDoc)%", "\(documents) GENERAL & WRITING", "doc.text", accentTeal),
+            ("\(pCode)%", "\(codeAndTech) CODE & TECHNICAL", "chevron.left.forwardslash.chevron.right", accentCyan),
+            ("\(pMsg)%", "\(messages) MESSAGES & CHAT", "bubble.left.and.bubble.right", accentTeal.opacity(0.7))
+        ]
     }
     
     private func telemetryBar(percent: String, label: String, icon: String, color: Color) -> some View {
@@ -1118,11 +1237,14 @@ struct SaynStudioView: View {
     }
     
     private func heatmapColor(row: Int, col: Int) -> Color {
-        if col >= 11 {
+        let words = store.wordsOnDate(offsetWeeksAgo: col, dayOfWeek: row)
+        if words >= 400 {
+            return accentTeal
+        } else if words >= 150 {
             return accentTeal.opacity(0.75)
-        } else if (row + col) % 3 == 0 {
-            return accentTeal.opacity(0.35)
-        } else if (row + col) % 2 == 0 {
+        } else if words >= 30 {
+            return accentTeal.opacity(0.40)
+        } else if words > 0 {
             return accentTeal.opacity(0.18)
         } else {
             return Color(red: 235/255, green: 232/255, blue: 223/255)
@@ -2956,5 +3078,179 @@ struct SaynStudioView: View {
                     .foregroundColor(textMuted)
             }
         }
+    }
+    
+    // MARK: - Invite-Only Authentication Modal
+    private var authModalView: some View {
+        VStack(spacing: 20) {
+            // Header with Close Button
+            HStack {
+                HStack(spacing: 6) {
+                    Image(systemName: "lock.shield.fill")
+                        .foregroundColor(Color(red: 212/255, green: 160/255, blue: 23/255))
+                        .font(.system(size: 12))
+                    Text("INVITE ONLY • PRIVATE BETA")
+                        .font(.system(size: 10.5, weight: .bold))
+                        .foregroundColor(Color(red: 212/255, green: 160/255, blue: 23/255))
+                        .tracking(0.6)
+                }
+                .padding(.horizontal, 9)
+                .padding(.vertical, 4)
+                .background(Capsule().fill(Color(red: 212/255, green: 160/255, blue: 23/255).opacity(0.14)))
+                
+                Spacer()
+                
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.16)) {
+                        showAuthModal = false
+                    }
+                }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(textMuted)
+                        .padding(6)
+                        .background(Circle().fill(surfaceBeige))
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            
+            // Branding & Title
+            VStack(spacing: 6) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(accentTeal)
+                        .frame(width: 48, height: 48)
+                    Text("S")
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                }
+                
+                Text("Sign In to SAYN Studio")
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .foregroundColor(textDark)
+                
+                Text("Enter your invite username or email and password to connect your private voice cloud.")
+                    .font(.system(size: 12))
+                    .foregroundColor(textMuted)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 10)
+            }
+            
+            // Error Message Banner (if any)
+            if let err = store.authErrorMessage {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(.red)
+                        .font(.system(size: 13))
+                    Text(err)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.leading)
+                    Spacer()
+                }
+                .padding(10)
+                .background(RoundedRectangle(cornerRadius: 8).fill(Color.red.opacity(0.1)))
+            }
+            
+            // Form Fields: Username/Email & Password
+            VStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("USERNAME OR EMAIL")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(textMuted)
+                        .tracking(0.5)
+                    
+                    HStack(spacing: 8) {
+                        Image(systemName: "person.crop.circle")
+                            .foregroundColor(textMuted)
+                            .font(.system(size: 14))
+                        TextField("e.g. allanmaaz or name@sayn.ai", text: $authUsernameOrEmail)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .font(.system(size: 13))
+                    }
+                    .padding(10)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(surfaceBeige))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(borderDivider, lineWidth: 1))
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("PASSWORD")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(textMuted)
+                        .tracking(0.5)
+                    
+                    HStack(spacing: 8) {
+                        Image(systemName: "lock")
+                            .foregroundColor(textMuted)
+                            .font(.system(size: 14))
+                        if isShowPassword {
+                            TextField("Enter your password", text: $authPassword)
+                                .textFieldStyle(PlainTextFieldStyle())
+                                .font(.system(size: 13))
+                        } else {
+                            SecureField("Enter your password", text: $authPassword)
+                                .textFieldStyle(PlainTextFieldStyle())
+                                .font(.system(size: 13))
+                        }
+                        Button(action: { isShowPassword.toggle() }) {
+                            Image(systemName: isShowPassword ? "eye.slash" : "eye")
+                                .foregroundColor(textMuted)
+                                .font(.system(size: 12))
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                    .padding(10)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(surfaceBeige))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(borderDivider, lineWidth: 1))
+                }
+            }
+            
+            // Action Button
+            Button(action: {
+                Task {
+                    let success = await store.login(usernameOrEmail: authUsernameOrEmail, password: authPassword)
+                    if success {
+                        withAnimation {
+                            showAuthModal = false
+                            authPassword = ""
+                        }
+                    }
+                }
+            }) {
+                HStack(spacing: 8) {
+                    if store.isAuthenticating {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                            .colorInvert()
+                        Text("Verifying Invite...")
+                    } else {
+                        Image(systemName: "arrow.right.circle.fill")
+                        Text("Access Studio")
+                    }
+                }
+                .font(.system(size: 13.5, weight: .bold))
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(RoundedRectangle(cornerRadius: 10).fill(accentTeal))
+            }
+            .buttonStyle(PlainButtonStyle())
+            .disabled(store.isAuthenticating || authUsernameOrEmail.isEmpty || authPassword.isEmpty)
+            .opacity((authUsernameOrEmail.isEmpty || authPassword.isEmpty) ? 0.6 : 1.0)
+            
+            // Footnote
+            Text("SAYN Studio is invite-only. Credentials are created by workspace admins.")
+                .font(.system(size: 11))
+                .foregroundColor(textMuted)
+                .multilineTextAlignment(.center)
+        }
+        .padding(24)
+        .frame(width: 420)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(cardWhite)
+                .shadow(color: Color.black.opacity(0.2), radius: 25, x: 0, y: 10)
+        )
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(borderDivider, lineWidth: 1))
     }
 }

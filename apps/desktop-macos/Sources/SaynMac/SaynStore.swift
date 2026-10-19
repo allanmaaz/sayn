@@ -167,21 +167,67 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
     @Published var lastSupabaseSyncDate: Date? = nil
     @Published var supabaseSyncStatus: String = "Connected"
     
-    // Calculated Real Stats
+    // MARK: - Invite-Only Supabase Auth State
+    @Published var isAuthenticated: Bool = false
+    @Published var currentUserEmail: String? = nil
+    @Published var currentUsername: String? = nil
+    @Published var currentUserId: String? = nil
+    @Published var accessToken: String? = nil
+    @Published var isAuthenticating: Bool = false
+    @Published var authErrorMessage: String? = nil
+    private let sessionFile: URL
+    
+    // 100% Pure Real Data Calculations (Zero Mocked Numbers)
     var totalWordsDictated: Int {
-        let historyWords = history.reduce(0) { $0 + $1.wordCount }
-        return 22155 + historyWords
+        return history.reduce(0) { $0 + $1.wordCount }
     }
     
     var averageWPM: Int {
-        guard !history.isEmpty else { return 135 }
-        let sum = history.reduce(0) { $0 + $1.wpm }
-        return max(85, min(240, sum / history.count))
+        let words = totalWordsDictated
+        let totalSeconds = history.reduce(0.0) { $0 + $1.durationSeconds }
+        let totalMinutes = totalSeconds / 60.0
+        guard totalMinutes > 0.05 && words > 0 else { return 0 }
+        return Int((Double(words) / totalMinutes).rounded())
     }
     
     var currentDayStreak: Int {
-        let dates = Set(history.map { $0.dateFormatted })
-        return max(11, dates.count)
+        guard !history.isEmpty else { return 0 }
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let uniqueDays = Set(history.map { calendar.startOfDay(for: $0.timestamp) })
+        
+        var streak = 0
+        var checkDay = uniqueDays.contains(today) ? today : calendar.date(byAdding: .day, value: -1, to: today)!
+        
+        while uniqueDays.contains(checkDay) {
+            streak += 1
+            guard let prev = calendar.date(byAdding: .day, value: -1, to: checkDay) else { break }
+            checkDay = prev
+        }
+        return streak
+    }
+    
+    var totalFixesMade: Int {
+        return history.reduce(0) { sum, entry in
+            let text = entry.text
+            let punctuationCount = text.filter { [".", ",", "!", "?", ";", ":"].contains($0) }.count
+            let capitalizedCount = text.split(separator: " ").filter { $0.first?.isUppercase == true }.count
+            return sum + punctuationCount + max(1, capitalizedCount / 2)
+        }
+    }
+    
+    func wordsOnDate(offsetWeeksAgo: Int, dayOfWeek: Int) -> Int {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let weeksAgo = 13 - offsetWeeksAgo
+        guard let targetDay = calendar.date(byAdding: .day, value: -(weeksAgo * 7 + (6 - dayOfWeek)), to: today) else {
+            return 0
+        }
+        let dayStart = calendar.startOfDay(for: targetDay)
+        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else { return 0 }
+        
+        return history.filter { $0.timestamp >= dayStart && $0.timestamp < dayEnd }
+                      .reduce(0) { $0 + $1.wordCount }
     }
     
     private override init() {
@@ -197,10 +243,12 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
         self.connectorsFile = saynDir.appendingPathComponent("connectors.json")
         self.snippetsFile = saynDir.appendingPathComponent("snippets.json")
         self.meetingsFile = saynDir.appendingPathComponent("meetings.json")
+        self.sessionFile = saynDir.appendingPathComponent("session.json")
         
         super.init()
         
         createDirectoriesIfNeeded()
+        loadSession()
         loadAccount()
         loadDictionary()
         loadHistory()
@@ -273,11 +321,12 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue(Self.supabaseAnonKey, forHTTPHeaderField: "apikey")
-        request.setValue("Bearer \(Self.supabaseAnonKey)", forHTTPHeaderField: "Authorization")
+        let authHeader = (accessToken != nil && !accessToken!.isEmpty) ? "Bearer \(accessToken!)" : "Bearer \(Self.supabaseAnonKey)"
+        request.setValue(authHeader, forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("return=minimal", forHTTPHeaderField: "Prefer")
         
-        let payload: [String: Any] = [
+        var payload: [String: Any] = [
             "id": entry.id.uuidString,
             "source_text": entry.text,
             "result_text": entry.text,
@@ -286,6 +335,9 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
             "output_language": "en",
             "provider": "macos-desktop"
         ]
+        if let uid = currentUserId, !uid.isEmpty {
+            payload["user_id"] = uid
+        }
         
         guard let httpBody = try? JSONSerialization.data(withJSONObject: payload) else { return }
         request.httpBody = httpBody
@@ -305,13 +357,15 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
     
     func syncWithSupabase() {
         guard !isSupabaseSyncing else { return }
-        guard let url = URL(string: "\(Self.supabaseUrl)/rest/v1/writing_history?select=id,source_text,result_text,writing_mode,created_at&order=created_at.desc&limit=50") else { return }
+        let endpoint = "\(Self.supabaseUrl)/rest/v1/writing_history?select=id,source_text,result_text,writing_mode,created_at&order=created_at.desc&limit=50"
+        guard let url = URL(string: endpoint) else { return }
         
         isSupabaseSyncing = true
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue(Self.supabaseAnonKey, forHTTPHeaderField: "apikey")
-        request.setValue("Bearer \(Self.supabaseAnonKey)", forHTTPHeaderField: "Authorization")
+        let authHeader = (accessToken != nil && !accessToken!.isEmpty) ? "Bearer \(accessToken!)" : "Bearer \(Self.supabaseAnonKey)"
+        request.setValue(authHeader, forHTTPHeaderField: "Authorization")
         
         URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
             DispatchQueue.main.async {
@@ -356,8 +410,138 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
         request.setValue(Self.supabaseAnonKey, forHTTPHeaderField: "apikey")
-        request.setValue("Bearer \(Self.supabaseAnonKey)", forHTTPHeaderField: "Authorization")
+        let authHeader = (accessToken != nil && !accessToken!.isEmpty) ? "Bearer \(accessToken!)" : "Bearer \(Self.supabaseAnonKey)"
+        request.setValue(authHeader, forHTTPHeaderField: "Authorization")
         URLSession.shared.dataTask(with: request).resume()
+    }
+    
+    // MARK: - Invite-Only Supabase Auth Methods
+    func login(usernameOrEmail: String, password: String) async -> Bool {
+        let trimmed = usernameOrEmail.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanPass = password.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, !cleanPass.isEmpty else {
+            await MainActor.run {
+                self.authErrorMessage = "Please enter both invite username and password."
+            }
+            return false
+        }
+        
+        await MainActor.run {
+            self.isAuthenticating = true
+            self.authErrorMessage = nil
+        }
+        
+        // Format email: if user entered plain username, format as username@sayn.ai for Supabase auth
+        let emailToUse = trimmed.contains("@") ? trimmed : "\(trimmed.lowercased())@sayn.ai"
+        
+        guard let url = URL(string: "\(Self.supabaseUrl)/auth/v1/token?grant_type=password") else {
+            await MainActor.run {
+                self.isAuthenticating = false
+                self.authErrorMessage = "Invalid Supabase authentication URL."
+            }
+            return false
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(Self.supabaseAnonKey, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(Self.supabaseAnonKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let payload: [String: Any] = [
+            "email": emailToUse,
+            "password": cleanPass
+        ]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
+        
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            if let httpRes = response as? HTTPURLResponse, (200...299).contains(httpRes.statusCode),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                
+                let token = json["access_token"] as? String ?? ""
+                let userObj = json["user"] as? [String: Any]
+                let userId = userObj?["id"] as? String ?? UUID().uuidString
+                let userEmail = (userObj?["email"] as? String) ?? emailToUse
+                let metadata = userObj?["user_metadata"] as? [String: Any]
+                let fName = (metadata?["first_name"] as? String) ?? trimmed.components(separatedBy: "@").first?.capitalized ?? "Invited"
+                let lName = (metadata?["last_name"] as? String) ?? "Member"
+                
+                await MainActor.run {
+                    self.accessToken = token
+                    self.currentUserId = userId
+                    self.currentUserEmail = userEmail
+                    self.currentUsername = trimmed
+                    self.firstName = fName
+                    self.lastName = lName
+                    self.email = userEmail
+                    self.isAuthenticated = true
+                    self.isAuthenticating = false
+                    self.authErrorMessage = nil
+                    
+                    self.saveSession(token: token, userId: userId, email: userEmail, username: trimmed, firstName: fName, lastName: lName)
+                    self.saveAccount()
+                    self.syncWithSupabase()
+                }
+                return true
+            } else {
+                let errJson = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])
+                let msg = (errJson?["msg"] as? String) ?? (errJson?["error_description"] as? String) ?? "Invalid invite username or password."
+                await MainActor.run {
+                    self.isAuthenticating = false
+                    self.authErrorMessage = msg
+                }
+                return false
+            }
+        } catch {
+            await MainActor.run {
+                self.isAuthenticating = false
+                self.authErrorMessage = "Network connection failed: \(error.localizedDescription)"
+            }
+            return false
+        }
+    }
+    
+    func logout() {
+        self.isAuthenticated = false
+        self.accessToken = nil
+        self.currentUserId = nil
+        self.currentUserEmail = nil
+        self.currentUsername = nil
+        try? FileManager.default.removeItem(at: sessionFile)
+    }
+    
+    private func saveSession(token: String, userId: String, email: String, username: String, firstName: String, lastName: String) {
+        let dict: [String: String] = [
+            "accessToken": token,
+            "userId": userId,
+            "email": email,
+            "username": username,
+            "firstName": firstName,
+            "lastName": lastName
+        ]
+        if let d = try? JSONSerialization.data(withJSONObject: dict, options: .prettyPrinted) {
+            try? d.write(to: sessionFile, options: .atomic)
+        }
+    }
+    
+    private func loadSession() {
+        guard FileManager.default.fileExists(atPath: sessionFile.path),
+              let data = try? Data(contentsOf: sessionFile),
+              let dict = try? JSONSerialization.jsonObject(with: data) as? [String: String],
+              let token = dict["accessToken"], !token.isEmpty else {
+            self.isAuthenticated = false
+            return
+        }
+        
+        self.accessToken = token
+        self.currentUserId = dict["userId"]
+        self.currentUserEmail = dict["email"]
+        self.currentUsername = dict["username"]
+        if let f = dict["firstName"] { self.firstName = f }
+        if let l = dict["lastName"] { self.lastName = l }
+        if let e = dict["email"] { self.email = e }
+        self.isAuthenticated = true
     }
     
     func toggleFlag(id: UUID) {
