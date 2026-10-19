@@ -60,6 +60,9 @@ class SaynInputMethodService : InputMethodService() {
     private lateinit var voiceLiveBar: LinearLayout
     private lateinit var suggestionArea: LinearLayout
     private lateinit var keysContainer: LinearLayout
+    private lateinit var clipboardTrayContainer: LinearLayout
+    private lateinit var clipboardItemsLayout: LinearLayout
+    private val recentClips = mutableListOf<String>()
 
     // Wispr Voice Live Bar Views (3-piece Wispr pill)
     private lateinit var voiceStatusDot: TextView
@@ -196,6 +199,15 @@ class SaynInputMethodService : InputMethodService() {
         super.onCreate()
         instance = this
         reloadFeedbackSettings()
+
+        val cm = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+        cm?.addPrimaryClipChangedListener {
+            val clip = cm.primaryClip?.getItemAt(0)?.text?.toString()?.trim()
+            if (!clip.isNullOrEmpty() && !recentClips.contains(clip)) {
+                recentClips.add(0, clip)
+                if (recentClips.size > 20) recentClips.removeAt(recentClips.lastIndex)
+            }
+        }
     }
 
     // Auto-Correct settings & dictionary (Enabled strictly inside the keyboard)
@@ -422,6 +434,7 @@ class SaynInputMethodService : InputMethodService() {
         buildCandidateStrip()
         buildFullAiPanel()
         buildKeysLayout()
+        buildClipboardTray()
 
         return rootLayout
     }
@@ -488,6 +501,7 @@ class SaynInputMethodService : InputMethodService() {
         if (::fullAiPanelContainer.isInitialized) {
             fullAiPanelContainer.visibility = View.GONE
         }
+        hideClipboardTray()
         if (::keysContainer.isInitialized) {
             keysContainer.visibility = View.VISIBLE
         }
@@ -741,13 +755,153 @@ class SaynInputMethodService : InputMethodService() {
     }
 
     private fun pasteFromClipboard() {
+        showClipboardTray()
+    }
+
+    private fun buildClipboardTray() {
+        clipboardTrayContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+            setBackgroundColor(COLOR_BG)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dpToPx(230)
+            )
+        }
+
+        // Header: [ 📋 Clipboard ] [ Clear ] [ ✕ Close ]
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dpToPx(14), dpToPx(6), dpToPx(12), dpToPx(6))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dpToPx(38)
+            )
+        }
+        val title = TextView(this).apply {
+            text = "Clipboard"
+            textSize = 14f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(COLOR_WARM_CREAM)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        val btnClear = TextView(this).apply {
+            text = "Clear all"
+            textSize = 12f
+            setTextColor(COLOR_MUTED_CREAM)
+            setPadding(dpToPx(8), dpToPx(4), dpToPx(8), dpToPx(4))
+            setOnClickListener {
+                recentClips.clear()
+                refreshClipboardTrayItems()
+            }
+        }
+        val btnClose = ImageView(this).apply {
+            setImageResource(R.drawable.ic_sayn_close)
+            setColorFilter(COLOR_WARM_CREAM, PorterDuff.Mode.SRC_IN)
+            setPadding(dpToPx(6), dpToPx(6), dpToPx(6), dpToPx(6))
+            layoutParams = LinearLayout.LayoutParams(dpToPx(32), dpToPx(32))
+            setOnClickListener {
+                hideClipboardTray()
+            }
+        }
+        header.addView(title)
+        header.addView(btnClear)
+        header.addView(btnClose)
+        clipboardTrayContainer.addView(header)
+
+        // Horizontal scroll container with clipboard cards
+        val scroll = HorizontalScrollView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT
+            )
+        }
+        clipboardItemsLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(dpToPx(12), dpToPx(4), dpToPx(12), dpToPx(12))
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        }
+        scroll.addView(clipboardItemsLayout)
+        clipboardTrayContainer.addView(scroll)
+
+        rootLayout.addView(clipboardTrayContainer)
+    }
+
+    private fun showClipboardTray() {
         val cm = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-        val clip = cm?.primaryClip?.getItemAt(0)?.text?.toString()
-        if (!clip.isNullOrEmpty()) {
-            currentInputConnection?.commitText(clip, 1)
-            Toast.makeText(this, "Pasted from clipboard", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(this, "Clipboard is empty", Toast.LENGTH_SHORT).show()
+        val clip = cm?.primaryClip?.getItemAt(0)?.text?.toString()?.trim()
+        if (!clip.isNullOrEmpty() && !recentClips.contains(clip)) {
+            recentClips.add(0, clip)
+        }
+
+        refreshClipboardTrayItems()
+
+        if (::keysContainer.isInitialized) keysContainer.visibility = View.GONE
+        if (::fullAiPanelContainer.isInitialized) fullAiPanelContainer.visibility = View.GONE
+        if (::clipboardTrayContainer.isInitialized) clipboardTrayContainer.visibility = View.VISIBLE
+    }
+
+    private fun hideClipboardTray() {
+        if (::clipboardTrayContainer.isInitialized) clipboardTrayContainer.visibility = View.GONE
+        if (::keysContainer.isInitialized) keysContainer.visibility = View.VISIBLE
+    }
+
+    private fun refreshClipboardTrayItems() {
+        if (!::clipboardItemsLayout.isInitialized) return
+        clipboardItemsLayout.removeAllViews()
+
+        if (recentClips.isEmpty()) {
+            val emptyTv = TextView(this).apply {
+                text = "Clipboard is empty"
+                textSize = 13f
+                setTextColor(COLOR_MUTED_CREAM)
+                gravity = Gravity.CENTER
+                setPadding(dpToPx(16), dpToPx(32), dpToPx(16), dpToPx(32))
+            }
+            clipboardItemsLayout.addView(emptyTv)
+            return
+        }
+
+        for (clip in recentClips) {
+            val card = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER_VERTICAL
+                val cardBg = GradientDrawable().apply {
+                    cornerRadius = dpToPx(8).toFloat()
+                    setColor(COLOR_KEY_NORMAL)
+                    setStroke(dpToPx(1f), COLOR_KEY_BORDER)
+                }
+                background = cardBg
+                setPadding(dpToPx(12), dpToPx(10), dpToPx(12), dpToPx(10))
+                layoutParams = LinearLayout.LayoutParams(
+                    dpToPx(140),
+                    LinearLayout.LayoutParams.MATCH_PARENT
+                ).apply {
+                    marginEnd = dpToPx(8)
+                    bottomMargin = dpToPx(8)
+                }
+                isClickable = true
+                setOnClickListener {
+                    triggerKeyFeedback("ENTER")
+                    currentInputConnection?.commitText(clip, 1)
+                    hideClipboardTray()
+                }
+            }
+
+            val tv = TextView(this).apply {
+                text = clip
+                textSize = 13f
+                maxLines = 6
+                ellipsize = TextUtils.TruncateAt.END
+                setTextColor(COLOR_WARM_CREAM)
+                includeFontPadding = false
+            }
+            card.addView(tv)
+            clipboardItemsLayout.addView(card)
         }
     }
 
