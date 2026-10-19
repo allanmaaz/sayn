@@ -46,7 +46,7 @@ jobs:
       - name: Build Release APK
         run: |
           cd apps/android
-          flutter build apk --release
+          flutter build apk --release -v
 
       - name: Copy APK to Root Release
         run: |
