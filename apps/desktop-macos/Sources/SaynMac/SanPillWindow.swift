@@ -372,7 +372,7 @@ struct SanPillView: View {
                     .padding(.vertical, 7)
                     .background(
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(isCopied ? Color.green.opacity(0.8) : Color(red: 70/255, green: 70/255, blue: 74/255).opacity(isHoveredCopy ? 0.95 : 0.8))
+                            .fill(isCopied ? Color(red: 168/255, green: 50/255, blue: 73/255).opacity(0.85) : Color(red: 55/255, green: 15/255, blue: 24/255).opacity(isHoveredCopy ? 0.95 : 0.8))
                     )
                 }
                 .buttonStyle(PlainButtonStyle())

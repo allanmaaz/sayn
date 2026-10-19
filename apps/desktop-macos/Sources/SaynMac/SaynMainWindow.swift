@@ -381,10 +381,10 @@ struct SaynStudioView: View {
                         
                         Text(store.isAuthenticated ? "INVITED" : "GUEST")
                             .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(store.isAuthenticated ? Color.green : textMuted)
+                            .foregroundColor(store.isAuthenticated ? accentCyan : textMuted)
                             .padding(.horizontal, 5)
                             .padding(.vertical, 1)
-                            .background(Capsule().fill(store.isAuthenticated ? Color.green.opacity(0.12) : surfaceBeige))
+                            .background(Capsule().fill(store.isAuthenticated ? accentCyan.opacity(0.12) : surfaceBeige))
                     }
                     Text(store.email.isEmpty ? "Local Offline Session" : store.email)
                         .font(.system(size: 12, weight: .regular))
@@ -400,7 +400,7 @@ struct SaynStudioView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
                         Circle()
-                            .fill(Color.green)
+                            .fill(accentCyan)
                             .frame(width: 7, height: 7)
                         Text("Unlimited Studio")
                             .font(.system(size: 13, weight: .bold))
@@ -1200,7 +1200,7 @@ struct SaynStudioView: View {
                 }) {
                     Image(systemName: copiedId == item.id ? "checkmark" : "doc.on.doc")
                         .font(.system(size: 11.5))
-                        .foregroundColor(copiedId == item.id ? Color.green : Color(red: 120/255, green: 118/255, blue: 115/255))
+                        .foregroundColor(copiedId == item.id ? accentCyan : Color(red: 120/255, green: 118/255, blue: 115/255))
                 }
                 .buttonStyle(PlainButtonStyle())
                 
@@ -3023,7 +3023,7 @@ struct SaynStudioView: View {
                                     }) {
                                         Image(systemName: item.isCompleted ? "checkmark.circle.fill" : "circle")
                                             .font(.system(size: 14))
-                                            .foregroundColor(item.isCompleted ? Color.green : textMuted)
+                                            .foregroundColor(item.isCompleted ? accentCyan : textMuted)
                                     }
                                     .buttonStyle(PlainButtonStyle())
                                     
@@ -3599,7 +3599,7 @@ struct SaynStudioView: View {
             if let notice = vibeCodingSetupNotice {
                 Text(notice)
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(Color.green)
+                    .foregroundColor(accentCyan)
             }
             
             // Running IDE status
@@ -3611,7 +3611,7 @@ struct SaynStudioView: View {
                 HStack(spacing: 8) {
                     ForEach(store.detectedIDEs, id: \.self) { ide in
                         HStack(spacing: 5) {
-                            Circle().fill(Color.green).frame(width: 7, height: 7)
+                            Circle().fill(accentCyan).frame(width: 7, height: 7)
                             Text(ide)
                                 .font(.system(size: 12, weight: .semibold))
                                 .foregroundColor(textDark)
@@ -3697,12 +3697,12 @@ struct SaynStudioView: View {
                             }) {
                                 Text(app.isConnected ? "Connected" : "Connect")
                                     .font(.system(size: 11, weight: .bold))
-                                    .foregroundColor(app.isConnected ? Color.green : textDark)
+                                    .foregroundColor(app.isConnected ? accentCyan : textDark)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 3)
                                     .background(
                                         Capsule()
-                                            .fill(app.isConnected ? Color.green.opacity(0.12) : cardWhite)
+                                            .fill(app.isConnected ? accentCyan.opacity(0.12) : cardWhite)
                                     )
                             }
                             .buttonStyle(PlainButtonStyle())
@@ -3739,15 +3739,15 @@ struct SaynStudioView: View {
                 Spacer()
                 HStack(spacing: 5) {
                     Circle()
-                        .fill(Color.green)
+                        .fill(accentCyan)
                         .frame(width: 8, height: 8)
                     Text("Server Active (stdio)")
                         .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(Color.green)
+                        .foregroundColor(accentCyan)
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 4)
-                .background(Capsule().fill(Color.green.opacity(0.12)))
+                .background(Capsule().fill(accentCyan.opacity(0.12)))
             }
             
             Text("Compatible Coding Clients")
@@ -3770,10 +3770,10 @@ struct SaynStudioView: View {
                                 if config.isInstalled {
                                     Text("Installed")
                                         .font(.system(size: 10, weight: .bold))
-                                        .foregroundColor(Color.green)
+                                        .foregroundColor(accentCyan)
                                         .padding(.horizontal, 6)
                                         .padding(.vertical, 2)
-                                        .background(Capsule().fill(Color.green.opacity(0.12)))
+                                        .background(Capsule().fill(accentCyan.opacity(0.12)))
                                 }
                             }
                             Text(config.configPath)
@@ -3872,10 +3872,10 @@ struct SaynStudioView: View {
             if let notice = teamInviteNotice {
                 Text(notice)
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(Color.green)
+                    .foregroundColor(accentCyan)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
-                    .background(RoundedRectangle(cornerRadius: 6).fill(Color.green.opacity(0.12)))
+                    .background(RoundedRectangle(cornerRadius: 6).fill(accentCyan.opacity(0.12)))
             }
             
             // Invite Form
@@ -3950,10 +3950,10 @@ struct SaynStudioView: View {
                                 if member.isPending {
                                     Text("Pending")
                                         .font(.system(size: 10, weight: .semibold))
-                                        .foregroundColor(Color.orange)
+                                        .foregroundColor(accentAmber)
                                         .padding(.horizontal, 6)
                                         .padding(.vertical, 2)
-                                        .background(Capsule().fill(Color.orange.opacity(0.12)))
+                                        .background(Capsule().fill(accentAmber.opacity(0.12)))
                                 }
                             }
                             Text(member.email)
@@ -4025,7 +4025,7 @@ struct SaynStudioView: View {
             if accountSavedNotice {
                 Text("✓ Changes saved to ~/.sayn/account.json")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(Color.green)
+                    .foregroundColor(accentCyan)
             }
             
             HStack {
@@ -4719,7 +4719,7 @@ struct SaynStudioView: View {
         HStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.system(size: 16))
-                .foregroundColor(ok ? Color.green : Color.orange)
+                .foregroundColor(ok ? accentCyan : accentAmber)
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
                     .font(.system(size: 11, weight: .bold))
