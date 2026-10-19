@@ -164,6 +164,7 @@ export default {
         '/api/v1/ai/paraphrase': 'paraphrase',
         '/api/v1/ai/summarize': 'summarize',
         '/api/v1/ai/translate': 'translate',
+        '/api/v1/ai/concise': 'concise',
       };
 
       if (Object.keys(shortcutModes).includes(url.pathname) && request.method === 'POST') {

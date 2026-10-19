@@ -1,0 +1,6 @@
+# Data directories
+data/*.jsonl
+checkpoints/
+venv/
+__pycache__/
+*.pyc
