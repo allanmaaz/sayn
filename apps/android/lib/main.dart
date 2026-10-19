@@ -41,7 +41,6 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
-  String? _pendingStudioStyle;
 
   late final List<Widget> _screens;
 
@@ -67,7 +66,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         },
         onSelectWritingTool: (toolMode) {
           setState(() {
-            _pendingStudioStyle = toolMode;
             _currentIndex = 1; // Switch to Studio
           });
         },

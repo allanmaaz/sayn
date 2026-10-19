@@ -5,6 +5,7 @@ import '../../core/api_client.dart';
 import '../../services/platform_channels.dart';
 import '../../services/auth_service.dart';
 import '../navigation/sayn_drawer.dart';
+import '../account/account_screen.dart';
 
 class WorkspaceScreen extends StatefulWidget {
   final String? initialStyle;
@@ -36,7 +37,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
 
   // Real-time document statistics
   int _wordCount = 0;
-  int _charCount = 0;
   int _readabilityScore = 95;
 
   final List<Map<String, dynamic>> _styles = const [
@@ -117,7 +117,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
 
     setState(() {
       _wordCount = wCount;
-      _charCount = text.length;
       _readabilityScore = score;
     });
   }
@@ -431,15 +430,24 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                         ),
                         const Spacer(),
                         if (_inputController.text.isNotEmpty)
-                          GestureDetector(
-                            onTap: () {
-                              _inputController.clear();
-                              setState(() {});
-                            },
-                            child: const Text(
-                              'Clear',
-                              style: TextStyle(fontSize: 11.5, color: SaynColors.paperTextMuted, fontWeight: FontWeight.bold),
-                            ),
+                          Row(
+                            children: [
+                              Text(
+                                '$_wordCount words · $_readabilityScore% flow',
+                                style: const TextStyle(fontSize: 11, color: SaynColors.paperTextMuted),
+                              ),
+                              const SizedBox(width: 8),
+                              GestureDetector(
+                                onTap: () {
+                                  _inputController.clear();
+                                  setState(() {});
+                                },
+                                child: const Text(
+                                  'Clear',
+                                  style: TextStyle(fontSize: 11.5, color: SaynColors.paperTextMuted, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
                           ),
                       ],
                     ),
@@ -786,169 +794,4 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     );
   }
 
-  void _showProfileSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: SaynColors.darkSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        final auth = AuthService.instance;
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: SaynColors.deepMaroon,
-                    child: Text(
-                      auth.username.isNotEmpty ? auth.username[0].toUpperCase() : 'A',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              auth.displayName,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: SaynColors.roseMaroon.withOpacity(0.25),
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(
-                                  color: SaynColors.roseMaroon.withOpacity(0.45),
-                                  width: 1,
-                                ),
-                              ),
-                              child: const Text(
-                                'ACTIVE',
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w800,
-                                  color: SaynColors.warmCream,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          '@${auth.username} · ${auth.email}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: SaynColors.darkSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              const Divider(color: SaynColors.darkDivider),
-              const SizedBox(height: 12),
-
-              // Supabase Cloud Sync Info Card
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: SaynColors.darkElevated,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: SaynColors.darkDivider),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: SaynColors.darkSuccess,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Supabase Cloud Storage',
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            auth.supabaseSyncStatus,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: SaynColors.darkSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.sync_rounded, size: 18, color: SaynColors.roseMaroon),
-                      onPressed: () async {
-                        await auth.syncWithSupabase();
-                        if (mounted) setState(() {});
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Sign Out Button
-              OutlinedButton.icon(
-                onPressed: () async {
-                  Navigator.pop(ctx);
-                  await auth.logout();
-                },
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: SaynColors.darkError.withOpacity(0.5)),
-                  foregroundColor: SaynColors.darkError,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                icon: const Icon(Icons.logout_rounded, size: 18),
-                label: const Text(
-                  'Sign Out',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 }

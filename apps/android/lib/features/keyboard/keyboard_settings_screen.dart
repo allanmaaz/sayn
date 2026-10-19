@@ -15,23 +15,11 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
   bool _isEnabled = false;
   bool _hasMicPermission = false;
   bool _isLoading = true;
-  String _defaultMode = 'standard';
   bool _keySoundEnabled = true;
   bool _keyVibrationEnabled = true;
   String _keyVibrationIntensity = 'medium';
   bool _autoCorrectEnabled = true;
   final TextEditingController _sandboxController = TextEditingController();
-
-  final List<Map<String, String>> _modes = const [
-    {'id': 'standard', 'label': 'Standard'},
-    {'id': 'fluent', 'label': 'Fluent'},
-    {'id': 'natural', 'label': 'Natural'},
-    {'id': 'professional', 'label': 'Professional'},
-    {'id': 'casual', 'label': 'Casual'},
-    {'id': 'shorten', 'label': 'Shorten'},
-    {'id': 'expand', 'label': 'Expand'},
-    {'id': 'formal', 'label': 'Formal'},
-  ];
 
   @override
   void initState() {
@@ -48,7 +36,6 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
   Future<void> _loadState() async {
     setState(() => _isLoading = true);
     final enabled = await PlatformChannels.isKeyboardEnabled();
-    final mode = await PlatformChannels.getDefaultMode();
     final micGranted = await PlatformChannels.checkAudioPermission();
     final feedback = await PlatformChannels.getKeyboardFeedbackSettings();
     final sound = feedback['soundEnabled'] as bool? ?? true;
@@ -59,7 +46,6 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
     if (mounted) {
       setState(() {
         _isEnabled = enabled;
-        _defaultMode = mode;
         _hasMicPermission = micGranted;
         _keySoundEnabled = sound;
         _keyVibrationEnabled = vibration;
@@ -92,11 +78,6 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
       vibrationIntensity: newInt,
       autoCorrectEnabled: newAuto,
     );
-  }
-
-  Future<void> _updateDefaultMode(String mode) async {
-    setState(() => _defaultMode = mode);
-    await PlatformChannels.setDefaultMode(mode);
   }
 
   @override
