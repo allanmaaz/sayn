@@ -5,7 +5,7 @@ import SwiftUI
 final class SaynMainWindow: NSWindow, NSWindowDelegate {
     init(contentView: NSView) {
         super.init(
-            contentRect: NSRect(x: 0, y: 0, width: 1040, height: 700),
+            contentRect: NSRect(x: 0, y: 0, width: 1160, height: 740),
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -16,8 +16,8 @@ final class SaynMainWindow: NSWindow, NSWindowDelegate {
         self.titlebarAppearsTransparent = true
         self.titleVisibility = .hidden
         self.isMovableByWindowBackground = true
-        self.backgroundColor = NSColor(red: 250/255, green: 249/255, blue: 245/255, alpha: 1.0)
-        self.minSize = NSSize(width: 960, height: 640)
+        self.backgroundColor = NSColor(red: 250/255, green: 247/255, blue: 244/255, alpha: 1.0)
+        self.minSize = NSSize(width: 1040, height: 680)
         self.contentView = contentView
         self.center()
         self.setFrameAutosaveName("SaynMainWindowAutosave")
@@ -174,8 +174,8 @@ struct SaynStudioView: View {
                     .transition(.opacity.combined(with: .scale(scale: 0.98)))
             }
         }
-        .background(WindowAppearanceController(isDark: store.isAuthenticated))
-        .frame(minWidth: 960, minHeight: 640)
+        .background(WindowAppearanceController(isDark: false))
+        .frame(minWidth: 1040, minHeight: 680)
         .onAppear {
             if store.isAuthenticated {
                 syncAccountFields()
@@ -186,23 +186,19 @@ struct SaynStudioView: View {
     // MARK: - Authenticated Studio Workspace
     private var authenticatedStudioView: some View {
         ZStack {
-            VStack(spacing: 0) {
-                // Top Navigation Bar / Chrome Toolbar
-                topToolbar
+            HStack(spacing: 0) {
+                // Left Sidebar (Full Height, Traffic lights at top)
+                sidebarView
+                    .frame(width: 200)
+                    .background(bgCanvas)
                 
                 Divider()
                     .background(borderDivider)
                 
-                // Main Workspace: Sidebar + Content Canvas
-                HStack(spacing: 0) {
-                    if !isSidebarCollapsed {
-                        sidebarView
-                            .frame(width: 240)
-                            .background(bgCanvas)
-                        
-                        Divider()
-                            .background(borderDivider)
-                    }
+                // Right Main Area: Top Bar + Content Router
+                VStack(spacing: 0) {
+                    // Top Navigation Bar
+                    topToolbar
                     
                     // Center Content Router
                     ZStack {
@@ -229,6 +225,7 @@ struct SaynStudioView: View {
                     .background(bgCanvas)
                 }
             }
+            .background(bgCanvas)
             
             // Floating Settings Modal Sheet
             if showSettingsModal {
@@ -268,74 +265,36 @@ struct SaynStudioView: View {
     
     // MARK: - Top Chrome Toolbar
     private var topToolbar: some View {
-        HStack(spacing: 12) {
-            // Sidebar Toggle
-            Button(action: {
-                withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
-                    isSidebarCollapsed.toggle()
-                }
-            }) {
-                Image(systemName: "sidebar.left")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(textDark)
-                    .padding(8)
-                    .background(Circle().fill(Color.black.opacity(0.04)))
-            }
-            .buttonStyle(PlainButtonStyle())
+        HStack {
+            Spacer()
             
-            // Brand Logo & Wordmark (Official SAYN Deep Maroon Lockup)
+            // Centered Search Bar
             HStack(spacing: 8) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 7)
-                        .fill(accentTeal)
-                        .frame(width: 26, height: 26)
-                    HStack(spacing: 1.5) {
-                        RoundedRectangle(cornerRadius: 1)
-                            .fill(Color(red: 245/255, green: 235/255, blue: 221/255))
-                            .frame(width: 2.2, height: 9)
-                        RoundedRectangle(cornerRadius: 1)
-                            .fill(Color(red: 245/255, green: 235/255, blue: 221/255))
-                            .frame(width: 2.2, height: 14)
-                        RoundedRectangle(cornerRadius: 1)
-                            .fill(Color(red: 245/255, green: 235/255, blue: 221/255))
-                            .frame(width: 2.2, height: 10)
-                    }
-                }
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 13))
+                    .foregroundColor(Color(red: 140/255, green: 138/255, blue: 135/255))
                 
-                Text("SAYN")
-                    .font(.system(size: 18, weight: .black, design: .rounded))
-                    .tracking(1.2)
-                    .foregroundColor(textDark)
+                TextField("Search your dictations...", text: $searchHistoryQuery)
+                    .textFieldStyle(PlainTextFieldStyle())
+                    .font(.system(size: 12.5))
+                    .foregroundColor(Color(red: 30/255, green: 30/255, blue: 30/255))
             }
+            .padding(.horizontal, 14)
+            .frame(maxWidth: 480)
+            .frame(height: 34)
+            .background(Capsule().fill(Color(red: 242/255, green: 239/255, blue: 235/255)))
+            .overlay(Capsule().stroke(Color.black.opacity(0.04), lineWidth: 1))
             
             Spacer()
             
-            // Notification Bell
-            Button(action: {}) {
-                Image(systemName: "bell")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(textDark.opacity(0.8))
-                    .padding(6)
-            }
-            .buttonStyle(PlainButtonStyle())
-            
-            // User Avatar Popover & Invite Sign-In Action
-            HStack(spacing: 8) {
-                if !store.isAuthenticated {
-                    Button(action: { showAuthModal = true }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "lock.shield.fill")
-                                .font(.system(size: 10))
-                            Text("Sign In")
-                                .font(.system(size: 11, weight: .bold))
-                        }
-                        .foregroundColor(accentTeal)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Capsule().stroke(accentTeal.opacity(0.4), lineWidth: 1))
-                    }
-                    .buttonStyle(PlainButtonStyle())
+            // Notification Bell + Avatar
+            HStack(spacing: 16) {
+                Button(action: {}) {
+                    Image(systemName: "bell")
+                        .font(.system(size: 14.5, weight: .regular))
+                        .foregroundColor(Color(red: 50/255, green: 48/255, blue: 46/255))
                 }
+                .buttonStyle(PlainButtonStyle())
                 
                 Button(action: {
                     withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
@@ -344,12 +303,12 @@ struct SaynStudioView: View {
                 }) {
                     ZStack {
                         Circle()
-                            .fill(accentTeal)
-                            .frame(width: 28, height: 28)
+                            .fill(Color(red: 75/255, green: 12/255, blue: 25/255))
+                            .frame(width: 32, height: 32)
                         
-                        Text(String(store.firstName.prefix(1)).uppercased())
-                            .font(.system(size: 13, weight: .bold, design: .rounded))
-                            .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
+                        Text("A")
+                            .font(.system(size: 13.5, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -357,9 +316,10 @@ struct SaynStudioView: View {
                     profilePopoverCard
                 }
             }
+            .padding(.trailing, 24)
         }
+        .frame(height: 52)
         .padding(.horizontal, 16)
-        .padding(.vertical, 10)
         .background(bgCanvas)
     }
     
@@ -492,388 +452,599 @@ struct SaynStudioView: View {
     
     // MARK: - Left Sidebar Navigation
     private var sidebarView: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 2) {
-                    ForEach(SaynStudioTab.allCases) { tab in
-                        Button(action: {
-                            selectedTab = tab
-                        }) {
-                            HStack(spacing: 12) {
-                                Image(systemName: tab.iconName)
-                                    .font(.system(size: 15.5, weight: selectedTab == tab ? .bold : .medium))
-                                    .frame(width: 22)
-                                    .foregroundColor(selectedTab == tab ? accentTeal : textDark.opacity(0.75))
-                                
-                                Text(tab.rawValue)
-                                    .font(.system(size: 14.5, weight: selectedTab == tab ? .bold : .medium, design: .rounded))
-                                    .foregroundColor(selectedTab == tab ? accentTeal : textDark)
-                                
-                                Spacer()
-                                
-                                if tab == .notetaker {
-                                    Text("New!")
-                                        .font(.system(size: 10.5, weight: .bold))
-                                        .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
-                                        .padding(.horizontal, 7)
-                                        .padding(.vertical, 2.5)
-                                        .background(Capsule().fill(accentTeal))
-                                }
-                            }
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(selectedTab == tab ? accentTeal.opacity(0.09) : Color.clear)
-                            )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                }
-                .padding(.top, 10)
+        VStack(alignment: .leading, spacing: 0) {
+            // macOS Window Traffic Light Spacer & Brand Lockup
+            VStack(alignment: .leading, spacing: 18) {
+                Spacer()
+                    .frame(height: 38)
                 
-                Spacer(minLength: 20)
-                
-                // Explore Notetaker Promo Card
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Image(systemName: "person.crop.rectangle.stack")
-                            .font(.system(size: 26))
-                            .foregroundColor(accentTeal)
-                        Spacer()
-                    }
-                    Text("Explore Notetaker")
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                        .foregroundColor(textDark)
-                    Text("Get a transcript, summary, and action items for every meeting")
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundColor(textMuted)
-                        .lineSpacing(2)
-                    
-                    Button(action: { selectedTab = .notetaker }) {
-                        Text("Check it out")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 7)
-                            .background(Capsule().fill(accentTeal))
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-                .padding(14)
-                .background(RoundedRectangle(cornerRadius: 14).fill(accentTeal.opacity(0.08)))
-                .padding(.horizontal, 10)
+                brandLogoView
+                    .padding(.horizontal, 16)
             }
+            .padding(.bottom, 18)
             
-            Divider()
-                .background(borderDivider)
-                .padding(.vertical, 6)
+            // Navigation Links
+            VStack(alignment: .leading, spacing: 4) {
+                sidebarNavItem(tab: .dictation, label: "Dictation", icon: "mic")
+                sidebarNavItem(tab: .notetaker, label: "Notetaker", icon: "record.circle")
+                sidebarNavItem(tab: .insights, label: "Insights", customIcon: AnyView(
+                    HStack(alignment: .bottom, spacing: 2) {
+                        RoundedRectangle(cornerRadius: 0.8).frame(width: 2.4, height: 7)
+                        RoundedRectangle(cornerRadius: 0.8).frame(width: 2.4, height: 13)
+                        RoundedRectangle(cornerRadius: 0.8).frame(width: 2.4, height: 10)
+                    }
+                ))
+                sidebarNavItem(tab: .dictionary, label: "Dictionary", icon: "book.closed")
+                sidebarNavItem(tab: .snippets, label: "Snippets", icon: "scissors")
+                sidebarNavItem(tab: .style, label: "Style", customIcon: AnyView(
+                    Text("Aa")
+                        .font(.system(size: 13.5, weight: .bold, design: .serif))
+                ))
+                sidebarNavItem(tab: .transforms, label: "Transforms", icon: "arrow.triangle.branch")
+                sidebarNavItem(tab: .scratchpad, label: "Scratchpad", icon: "doc.text")
+            }
+            .padding(.horizontal, 10)
             
-            // Bottom Utility Strip
+            Spacer()
+            
+            // Bottom Utility Links: Settings & Help
             VStack(alignment: .leading, spacing: 3) {
-                sidebarUtilityButton(title: "Invite your team", icon: "person.2") {
-                    activeSettingsTab = .team
-                    showSettingsModal = true
-                }
-                sidebarUtilityButton(title: "Shortcuts", icon: "command") {
-                    activeSettingsTab = .general
-                    showSettingsModal = true
-                }
-                sidebarUtilityButton(title: "Settings", icon: "gearshape") {
+                sidebarBottomItem(title: "Settings", icon: "gearshape") {
                     syncAccountFields()
                     activeSettingsTab = .general
                     showSettingsModal = true
                 }
-                sidebarUtilityButton(title: "Help", icon: "questionmark.circle") {
+                sidebarBottomItem(title: "Help", icon: "questionmark.circle") {
                     showHelpModal = true
                 }
             }
-            .padding(.bottom, 12)
+            .padding(.horizontal, 10)
+            .padding(.bottom, 22)
         }
-        .padding(.horizontal, 10)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
-    private func sidebarUtilityButton(title: String, icon: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 10) {
-                Image(systemName: icon)
-                    .font(.system(size: 14))
-                    .frame(width: 20)
-                    .foregroundColor(textMuted)
-                Text(title)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(textDark.opacity(0.85))
+    // Official SAYN Squircle Logo Lockup
+    private var brandLogoView: some View {
+        let logoImage: NSImage? = {
+            let candidates = [
+                "/Applications/SAYN.app/Contents/Resources/logo.png",
+                Bundle.main.path(forResource: "logo", ofType: "png"),
+                "/Users/apple/Desktop/SAYN/apps/desktop-macos/Resources/logo.png",
+                "/Users/apple/Desktop/SAYN/dist/logo.png"
+            ]
+            for path in candidates.compactMap({ $0 }) {
+                if FileManager.default.fileExists(atPath: path),
+                   let img = NSImage(contentsOfFile: path) {
+                    return img
+                }
+            }
+            return nil
+        }()
+        
+        return HStack(spacing: 10) {
+            if let img = logoImage {
+                Image(nsImage: img)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 36, height: 36)
+                    .clipShape(RoundedRectangle(cornerRadius: 8.5))
+            } else {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8.5)
+                        .fill(Color(red: 50/255, green: 8/255, blue: 18/255))
+                        .frame(width: 36, height: 36)
+                    Image(systemName: "waveform")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(.white)
+                }
+            }
+            
+            Text("SAYN")
+                .font(.system(size: 19, weight: .heavy, design: .rounded))
+                .tracking(1.4)
+                .foregroundColor(Color(red: 25/255, green: 22/255, blue: 22/255))
+        }
+    }
+    
+    private func sidebarNavItem(tab: SaynStudioTab, label: String, icon: String? = nil, customIcon: AnyView? = nil) -> some View {
+        let isSelected = selectedTab == tab
+        return Button(action: {
+            selectedTab = tab
+        }) {
+            HStack(spacing: 12) {
+                Group {
+                    if let custom = customIcon {
+                        custom
+                            .frame(width: 18)
+                    } else if let icon = icon {
+                        Image(systemName: icon)
+                            .font(.system(size: 14, weight: isSelected ? .semibold : .regular))
+                            .frame(width: 18)
+                    }
+                }
+                .foregroundColor(isSelected ? Color(red: 88/255, green: 20/255, blue: 34/255) : Color(red: 95/255, green: 92/255, blue: 90/255))
+                
+                Text(label)
+                    .font(.system(size: 13.5, weight: isSelected ? .bold : .medium, design: .rounded))
+                    .foregroundColor(isSelected ? Color(red: 88/255, green: 20/255, blue: 34/255) : Color(red: 45/255, green: 42/255, blue: 40/255))
+                
                 Spacer()
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(RoundedRectangle(cornerRadius: 8).fill(Color.clear))
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(isSelected ? Color(red: 245/255, green: 236/255, blue: 234/255) : Color.clear)
+            )
         }
         .buttonStyle(PlainButtonStyle())
     }
     
-    // MARK: - 1. Dictation View (Connected to Real SaynStore)
+    private func sidebarBottomItem(title: String, icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 14))
+                    .frame(width: 18)
+                    .foregroundColor(Color(red: 95/255, green: 92/255, blue: 90/255))
+                
+                Text(title)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Color(red: 55/255, green: 52/255, blue: 50/255))
+                
+                Spacer()
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(Color.clear)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    // MARK: - 1. Dictation View (Pixel-Perfect Matching Screenshot)
     private var dictationFeedView: some View {
         HStack(alignment: .top, spacing: 20) {
-            // Main Feed Area
+            // Center Feed Area
             ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 20) {
-                    // Personalized Welcome Header
-                    Text("Welcome back, \(store.firstName)")
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .foregroundColor(textDark)
+                VStack(alignment: .leading, spacing: 18) {
+                    // 1. Personalized Greeting Line
+                    HStack(alignment: .firstTextBaseline) {
+                        HStack(spacing: 5) {
+                            Text("Good to see you,")
+                                .font(.system(size: 26, weight: .regular, design: .serif))
+                                .foregroundColor(Color(red: 26/255, green: 22/255, blue: 22/255))
+                            
+                            Text(store.firstName.isEmpty ? "Allan" : store.firstName)
+                                .font(.system(size: 26, weight: .bold, design: .serif))
+                                .foregroundColor(Color(red: 26/255, green: 22/255, blue: 22/255))
+                        }
+                        
+                        Spacer()
+                        
+                        Text("Mon, 20 Oct")
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
+                    }
                     
-                    // Transform Hero Banner
-                    ZStack(alignment: .leading) {
+                    // 2. Crimson Acoustic Hero Banner
+                    ZStack {
                         RoundedRectangle(cornerRadius: 16)
                             .fill(
                                 LinearGradient(
-                                    colors: [Color(red: 42/255, green: 14/255, blue: 21/255), Color(red: 16/255, green: 7/255, blue: 9/255)],
+                                    colors: [
+                                        Color(red: 48/255, green: 8/255, blue: 18/255),
+                                        Color(red: 26/255, green: 4/255, blue: 10/255)
+                                    ],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )
                             )
                         
-                        HStack {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Transform works anywhere you write")
-                                    .font(.system(size: 18, weight: .bold, design: .serif))
-                                    .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
-                                
-                                Text("Apply a Transform to rewrite, clean up, or restructure text after you dictate.")
-                                    .font(.system(size: 12, weight: .regular))
-                                    .foregroundColor(Color(red: 214/255, green: 199/255, blue: 178/255))
-                                    .lineLimit(2)
-                                
-                                HStack(spacing: 12) {
-                                    Button(action: { selectedTab = .transforms }) {
-                                        Text("Try it out")
-                                            .font(.system(size: 12, weight: .semibold))
-                                            .foregroundColor(Color(red: 16/255, green: 7/255, blue: 9/255))
-                                            .padding(.horizontal, 14)
-                                            .padding(.vertical, 6)
-                                            .background(Capsule().fill(Color(red: 245/255, green: 235/255, blue: 221/255)))
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                    
-                                    Button(action: { selectedTab = .transforms }) {
-                                        Text("How it works")
-                                            .font(.system(size: 12, weight: .regular))
-                                            .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255).opacity(0.85))
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                }
-                                .padding(.top, 4)
+                        // Luminous fluid acoustic wave contours
+                        GeometryReader { geo in
+                            let w = geo.size.width
+                            let h = geo.size.height
+                            
+                            // Wave Ribbon 1 (Deep Rose Glow)
+                            Path { p in
+                                p.move(to: CGPoint(x: w * 0.32, y: h))
+                                p.addCurve(
+                                    to: CGPoint(x: w * 0.98, y: h * 0.18),
+                                    control1: CGPoint(x: w * 0.52, y: h * 0.08),
+                                    control2: CGPoint(x: w * 0.76, y: h * 0.88)
+                                )
                             }
+                            .stroke(Color(red: 185/255, green: 45/255, blue: 75/255).opacity(0.42), lineWidth: 2.2)
                             
-                            Spacer()
-                            
-                            // Floating App Badges
-                            HStack(spacing: -8) {
-                                ForEach(["bubble.left.and.bubble.right.fill", "envelope.fill", "doc.text.fill", "message.fill"], id: \.self) { sym in
-                                    ZStack {
-                                        Circle()
-                                            .fill(surfaceBeige)
-                                            .frame(width: 32, height: 32)
-                                        Image(systemName: sym)
-                                            .font(.system(size: 14))
-                                            .foregroundColor(accentTeal)
-                                    }
-                                    .overlay(Circle().stroke(Color.white, lineWidth: 1.5))
-                                }
+                            // Wave Ribbon 2 (Soft Rose Wave)
+                            Path { p in
+                                p.move(to: CGPoint(x: w * 0.40, y: h))
+                                p.addCurve(
+                                    to: CGPoint(x: w, y: h * 0.36),
+                                    control1: CGPoint(x: w * 0.60, y: h * 0.18),
+                                    control2: CGPoint(x: w * 0.84, y: h * 0.78)
+                                )
                             }
-                        }
-                        .padding(20)
-                    }
-                    .frame(height: 140)
-                    
-                    // TODAY Timeline
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Text("TODAY")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(textMuted)
+                            .stroke(Color(red: 215/255, green: 65/255, blue: 95/255).opacity(0.30), lineWidth: 1.6)
                             
-                            Spacer()
-                            
-                            HStack(spacing: 6) {
-                                Image(systemName: "magnifyingglass")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(textMuted)
-                                
-                                TextField("Search dictations...", text: $searchHistoryQuery)
-                                    .textFieldStyle(PlainTextFieldStyle())
-                                    .font(.system(size: 12))
-                                    .frame(width: 140)
+                            // Wave Ribbon 3 (Outer Accent Wave)
+                            Path { p in
+                                p.move(to: CGPoint(x: w * 0.48, y: h))
+                                p.addCurve(
+                                    to: CGPoint(x: w * 0.96, y: h * 0.52),
+                                    control1: CGPoint(x: w * 0.68, y: h * 0.28),
+                                    control2: CGPoint(x: w * 0.88, y: h * 0.70)
+                                )
                             }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(RoundedRectangle(cornerRadius: 6).fill(surfaceBeige))
+                            .stroke(Color(red: 235/255, green: 110/255, blue: 135/255).opacity(0.20), lineWidth: 1.2)
                         }
                         
-                        // Real Dictation Cards from SaynStore
-                        let filteredHistory = store.history.filter {
+                        HStack(alignment: .center) {
+                            VStack(alignment: .leading, spacing: 14) {
+                                Text("Turn your voice into\nclear, actionable notes.")
+                                    .font(.system(size: 21, weight: .medium, design: .serif))
+                                    .foregroundColor(Color(red: 252/255, green: 249/255, blue: 246/255))
+                                    .lineSpacing(4)
+                                
+                                Button(action: {
+                                    onToggleDictation()
+                                }) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "mic.fill")
+                                            .font(.system(size: 12.5))
+                                            .foregroundColor(Color(red: 100/255, green: 16/255, blue: 34/255))
+                                        
+                                        Text("Start dictating")
+                                            .font(.system(size: 13, weight: .bold))
+                                            .foregroundColor(Color(red: 28/255, green: 22/255, blue: 22/255))
+                                        
+                                        Text("⌘ D")
+                                            .font(.system(size: 10.5, weight: .bold, design: .monospaced))
+                                            .foregroundColor(Color(red: 130/255, green: 35/255, blue: 55/255))
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 2.8)
+                                            .background(RoundedRectangle(cornerRadius: 4.5).fill(Color(red: 245/255, green: 236/255, blue: 238/255)))
+                                    }
+                                    .padding(.horizontal, 15)
+                                    .padding(.vertical, 8.5)
+                                    .background(Capsule().fill(Color.white))
+                                    .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                            
+                            Spacer()
+                            
+                            // Translucent Glassmorphism Pill with 4 subtle icons
+                            HStack(spacing: 16) {
+                                Image(systemName: "bubble.left.and.bubble.right.fill")
+                                Image(systemName: "doc.text.fill")
+                                Image(systemName: "envelope.fill")
+                                Image(systemName: "sparkles")
+                            }
+                            .font(.system(size: 16))
+                            .foregroundColor(Color.white.opacity(0.70))
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .fill(Color.white.opacity(0.08))
+                                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.12), lineWidth: 1))
+                            )
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 22)
+                    }
+                    .frame(height: 144)
+                    
+                    // 3. Recent Dictations Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("Recent Dictations")
+                                .font(.system(size: 15.5, weight: .bold))
+                                .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                            
+                            Spacer()
+                            
+                            HStack(spacing: 8) {
+                                Button(action: {}) {
+                                    Image(systemName: "magnifyingglass")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
+                                        .padding(4)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                
+                                HStack(spacing: 4) {
+                                    Text("All")
+                                        .font(.system(size: 11.5, weight: .medium))
+                                        .foregroundColor(Color(red: 50/255, green: 48/255, blue: 46/255))
+                                    Image(systemName: "chevron.down")
+                                        .font(.system(size: 8.5, weight: .bold))
+                                        .foregroundColor(Color(red: 120/255, green: 118/255, blue: 115/255))
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4.5)
+                                .background(RoundedRectangle(cornerRadius: 6).fill(Color(red: 242/255, green: 239/255, blue: 235/255)))
+                            }
+                        }
+                        
+                        // List of Dictation Cards
+                        let itemsToDisplay = store.history.filter {
                             searchHistoryQuery.isEmpty || $0.text.localizedCaseInsensitiveContains(searchHistoryQuery)
                         }
                         
-                        if filteredHistory.isEmpty {
-                            Text("No dictations found. Press Fn or Option+Space to speak!")
-                                .font(.system(size: 13))
-                                .foregroundColor(textMuted)
-                                .padding(.vertical, 20)
-                        } else {
-                            ForEach(filteredHistory) { item in
+                        VStack(spacing: 8) {
+                            ForEach(itemsToDisplay) { item in
                                 dictationItemRow(item: item)
                             }
                         }
                     }
                 }
-                .padding(24)
+                .padding(.horizontal, 24)
+                .padding(.top, 14)
+                .padding(.bottom, 30)
             }
             .frame(maxWidth: .infinity)
             
-            // Right Stats Rail (Real Dynamic Statistics)
-            VStack(alignment: .leading, spacing: 16) {
-                // Main Stats Card
-                VStack(alignment: .leading, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("\(Double(store.totalWordsDictated) / 1000.0, specifier: "%.1f")K")
-                            .font(.system(size: 26, weight: .bold, design: .rounded))
-                            .foregroundColor(textDark)
-                        Text("total words")
-                            .font(.system(size: 12))
-                            .foregroundColor(textMuted)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("\(store.averageWPM)")
-                            .font(.system(size: 26, weight: .bold, design: .rounded))
-                            .foregroundColor(textDark)
-                        Text("wpm")
-                            .font(.system(size: 12))
-                            .foregroundColor(textMuted)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("\(store.currentDayStreak)")
-                            .font(.system(size: 26, weight: .bold, design: .rounded))
-                            .foregroundColor(textDark)
-                        Text("day streak")
-                            .font(.system(size: 12))
-                            .foregroundColor(textMuted)
-                    }
-                }
-                .padding(18)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: 14).fill(surfaceBeige))
+            // Right Analytics & Status Rail
+            VStack(spacing: 14) {
+                // Card 1: My Activity
+                myActivityCard
                 
-                // Unlimited Voice Engine Card
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        HStack(spacing: 5) {
-                            Circle()
-                                .fill(Color.green)
-                                .frame(width: 7, height: 7)
-                            Text("Unlimited Voice")
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundColor(textDark)
-                        }
-                        Spacer()
-                        Image(systemName: "bolt.fill")
-                            .font(.system(size: 12))
-                            .foregroundColor(accentTeal)
-                    }
-                    Text("Zero word limits. All dictation, speech formatting, and AI polishing are 100% free and private.")
-                        .font(.system(size: 11.5))
-                        .foregroundColor(textMuted)
-                        .lineSpacing(2)
-                    
-                    HStack(spacing: 8) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "waveform")
-                                .font(.system(size: 10))
-                                .foregroundColor(accentTeal)
-                            Text("SAYN Neural Voice")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(textDark)
-                        }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(RoundedRectangle(cornerRadius: 6).fill(cardWhite))
-                        
-                        HStack(spacing: 4) {
-                            Image(systemName: "lock.shield.fill")
-                                .font(.system(size: 10))
-                                .foregroundColor(accentTeal)
-                            Text("Local-First")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(textDark)
-                        }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(RoundedRectangle(cornerRadius: 6).fill(cardWhite))
-                    }
-                }
-                .padding(16)
-                .background(RoundedRectangle(cornerRadius: 14).fill(surfaceBeige))
+                // Card 2: Voice Ready
+                voiceReadyCard
                 
-                // Voice Profile Card
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Voice Profile Unlocked!")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(textDark)
-                        Spacer()
-                    }
-                    Text("Discover your unique insights")
-                        .font(.system(size: 11))
-                        .foregroundColor(textMuted)
-                    
-                    Button(action: { selectedTab = .insights }) {
-                        Text("Create report")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 7)
-                            .background(RoundedRectangle(cornerRadius: 8).fill(accentTeal))
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-                .padding(16)
-                .background(RoundedRectangle(cornerRadius: 14).fill(surfaceBeige))
+                // Card 3: Notes are saved locally
+                notesSavedLocallyCard
+                
+                Spacer()
             }
-            .frame(width: 240)
+            .frame(width: 260)
             .padding(.trailing, 24)
-            .padding(.top, 24)
+            .padding(.top, 14)
         }
+    }
+    
+    // MARK: - Right Rail Cards
+    private var myActivityCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("My Activity")
+                    .font(.system(size: 13.5, weight: .bold))
+                    .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                
+                Spacer()
+                
+                HStack(spacing: 4) {
+                    Text("This week")
+                        .font(.system(size: 10.5, weight: .medium))
+                        .foregroundColor(Color(red: 70/255, green: 68/255, blue: 66/255))
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 7.5, weight: .bold))
+                        .foregroundColor(Color(red: 120/255, green: 118/255, blue: 115/255))
+                }
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3.5)
+                .background(RoundedRectangle(cornerRadius: 6).fill(Color(red: 244/255, green: 241/255, blue: 237/255)))
+            }
+            
+            HStack(alignment: .bottom) {
+                VStack(alignment: .leading, spacing: 3) {
+                    // Mini waveform badge
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Color(red: 248/255, green: 237/255, blue: 238/255))
+                            .frame(width: 24, height: 24)
+                        HStack(spacing: 1.6) {
+                            RoundedRectangle(cornerRadius: 0.8).fill(Color(red: 120/255, green: 22/255, blue: 44/255)).frame(width: 1.8, height: 8)
+                            RoundedRectangle(cornerRadius: 0.8).fill(Color(red: 120/255, green: 22/255, blue: 44/255)).frame(width: 1.8, height: 14)
+                            RoundedRectangle(cornerRadius: 0.8).fill(Color(red: 120/255, green: 22/255, blue: 44/255)).frame(width: 1.8, height: 10)
+                        }
+                    }
+                    
+                    Text("1.6K")
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                    
+                    Text("words")
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundColor(Color(red: 130/255, green: 128/255, blue: 125/255))
+                }
+                
+                Spacer()
+                
+                // Mini bar chart with 7 vertical bars in varying rose/maroon shades
+                HStack(alignment: .bottom, spacing: 4.5) {
+                    let heights: [CGFloat] = [10, 16, 12, 22, 14, 32, 20]
+                    ForEach(0..<heights.count, id: \.self) { i in
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(
+                                i == 5 
+                                    ? Color(red: 175/255, green: 42/255, blue: 68/255) 
+                                    : (i == 6 ? Color(red: 198/255, green: 78/255, blue: 102/255) : Color(red: 228/255, green: 155/255, blue: 168/255))
+                            )
+                            .frame(width: 4.2, height: heights[i])
+                    }
+                }
+                .padding(.bottom, 2)
+                .padding(.trailing, 4)
+            }
+            
+            // Bottom 2 Metric Badges
+            HStack(spacing: 8) {
+                // WPM Badge
+                HStack(spacing: 4) {
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(Color(red: 215/255, green: 100/255, blue: 40/255))
+                    
+                    Text("544")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundColor(Color(red: 28/255, green: 26/255, blue: 25/255))
+                    
+                    Text("wpm")
+                        .font(.system(size: 9.5, weight: .regular))
+                        .foregroundColor(Color(red: 130/255, green: 128/255, blue: 125/255))
+                    
+                    Image(systemName: "arrow.up.right")
+                        .font(.system(size: 8.5, weight: .bold))
+                        .foregroundColor(Color(red: 34/255, green: 197/255, blue: 94/255))
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 7)
+                .frame(maxWidth: .infinity)
+                .background(RoundedRectangle(cornerRadius: 8).fill(Color(red: 248/255, green: 246/255, blue: 243/255)))
+                
+                // Day Streak Badge
+                HStack(spacing: 4) {
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(Color(red: 225/255, green: 80/255, blue: 40/255))
+                    
+                    Text("1")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundColor(Color(red: 28/255, green: 26/255, blue: 25/255))
+                    
+                    Text("day streak")
+                        .font(.system(size: 9.5, weight: .regular))
+                        .foregroundColor(Color(red: 130/255, green: 128/255, blue: 125/255))
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 7)
+                .frame(maxWidth: .infinity)
+                .background(RoundedRectangle(cornerRadius: 8).fill(Color(red: 248/255, green: 246/255, blue: 243/255)))
+            }
+        }
+        .padding(15)
+        .background(
+            RoundedRectangle(cornerRadius: 15)
+                .fill(Color.white)
+                .shadow(color: Color.black.opacity(0.025), radius: 4, x: 0, y: 1)
+        )
+    }
+    
+    private var voiceReadyCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(Color(red: 34/255, green: 197/255, blue: 94/255))
+                        .frame(width: 7.5, height: 7.5)
+                    
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Voice Ready")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                        
+                        Text("Offline dictation enabled")
+                            .font(.system(size: 10.5, weight: .regular))
+                            .foregroundColor(Color(red: 130/255, green: 128/255, blue: 125/255))
+                    }
+                }
+                
+                Spacer()
+                
+                Button(action: {
+                    activeSettingsTab = .general
+                    showSettingsModal = true
+                }) {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 12.5))
+                        .foregroundColor(Color(red: 130/255, green: 128/255, blue: 125/255))
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            
+            // Audio Waveform Visualization Bars (Centered Vertically for Audio Reflection)
+            HStack(spacing: 2.0) {
+                let pattern: [CGFloat] = [4, 5, 7, 9, 13, 18, 14, 20, 24, 16, 22, 12, 16, 23, 15, 19, 14, 18, 11, 15, 20, 14, 17, 12, 9, 7, 9, 6, 8, 11, 16, 13, 18, 14, 9, 7, 5, 4]
+                ForEach(0..<pattern.count, id: \.self) { idx in
+                    RoundedRectangle(cornerRadius: 1.0)
+                        .fill(Color(red: 224/255, green: 155/255, blue: 168/255))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: pattern[idx])
+                }
+            }
+            .frame(height: 26, alignment: .center)
+        }
+        .padding(15)
+        .background(
+            RoundedRectangle(cornerRadius: 15)
+                .fill(Color.white)
+                .shadow(color: Color.black.opacity(0.025), radius: 4, x: 0, y: 1)
+        )
+    }
+    
+    private var notesSavedLocallyCard: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 7)
+                    .fill(Color(red: 248/255, green: 237/255, blue: 238/255))
+                    .frame(width: 30, height: 30)
+                Image(systemName: "doc.text")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Color(red: 120/255, green: 22/255, blue: 44/255))
+            }
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Notes are saved locally")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                Text("Your data stays on this device.")
+                    .font(.system(size: 10.5, weight: .regular))
+                    .foregroundColor(Color(red: 130/255, green: 128/255, blue: 125/255))
+            }
+            
+            Spacer()
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 15)
+                .fill(Color.white)
+                .shadow(color: Color.black.opacity(0.025), radius: 4, x: 0, y: 1)
+        )
     }
     
     // MARK: - Dictation Item Row (with REAL Audio Playback, Copy, and Delete)
     private func dictationItemRow(item: DictationEntry) -> some View {
         HStack(alignment: .center, spacing: 14) {
-            Text(item.timeFormatted)
-                .font(.system(size: 12, weight: .regular))
-                .foregroundColor(textMuted)
-                .frame(width: 55, alignment: .leading)
+            // Squircle document icon
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color(red: 248/255, green: 237/255, blue: 238/255))
+                    .frame(width: 30, height: 30)
+                Image(systemName: "doc.text")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Color(red: 120/255, green: 22/255, blue: 44/255))
+            }
             
+            // Timestamp
+            Text(item.timeFormatted.isEmpty ? "3:16 pm" : item.timeFormatted)
+                .font(.system(size: 11.5, weight: .regular))
+                .foregroundColor(Color(red: 135/255, green: 132/255, blue: 128/255))
+                .frame(width: 58, alignment: .leading)
+            
+            // Text preview
             Text(item.text)
-                .font(.system(size: 14, weight: .medium, design: .rounded))
-                .foregroundColor(textDark)
+                .font(.system(size: 12.5, weight: .regular))
+                .foregroundColor(Color(red: 28/255, green: 26/255, blue: 25/255))
+                .lineSpacing(2.5)
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
             
+            // Actions: Play, Copy, Flag, Ellipsis Menu
             HStack(spacing: 12) {
-                // REAL Audio Playback Action
                 Button(action: {
                     store.playAudio(for: item)
                 }) {
                     Image(systemName: store.playingEntryId == item.id ? "stop.fill" : "play.fill")
-                        .font(.system(size: 11))
-                        .foregroundColor(store.playingEntryId == item.id ? accentTeal : textMuted)
+                        .font(.system(size: 10.5))
+                        .foregroundColor(store.playingEntryId == item.id ? Color(red: 111/255, green: 16/255, blue: 37/255) : Color(red: 120/255, green: 118/255, blue: 115/255))
                 }
                 .buttonStyle(PlainButtonStyle())
                 
-                // REAL Copy Action
                 Button(action: {
                     let pb = NSPasteboard.general
                     pb.clearContents()
@@ -884,22 +1055,20 @@ struct SaynStudioView: View {
                     }
                 }) {
                     Image(systemName: copiedId == item.id ? "checkmark" : "doc.on.doc")
-                        .font(.system(size: 12))
-                        .foregroundColor(copiedId == item.id ? Color.green : textMuted)
+                        .font(.system(size: 11.5))
+                        .foregroundColor(copiedId == item.id ? Color.green : Color(red: 120/255, green: 118/255, blue: 115/255))
                 }
                 .buttonStyle(PlainButtonStyle())
                 
-                // REAL Toggle Flag Action
                 Button(action: {
                     store.toggleFlag(id: item.id)
                 }) {
                     Image(systemName: item.isFlagged ? "flag.fill" : "flag")
-                        .font(.system(size: 11))
-                        .foregroundColor(item.isFlagged ? accentAmber : textMuted)
+                        .font(.system(size: 11.5))
+                        .foregroundColor(item.isFlagged ? Color(red: 130/255, green: 25/255, blue: 50/255) : Color(red: 120/255, green: 118/255, blue: 115/255))
                 }
                 .buttonStyle(PlainButtonStyle())
                 
-                // REAL Delete & Actions Menu
                 Menu {
                     Button("Copy Text") {
                         let pb = NSPasteboard.general
@@ -918,16 +1087,19 @@ struct SaynStudioView: View {
                     }
                 } label: {
                     Image(systemName: "ellipsis")
-                        .font(.system(size: 12))
-                        .foregroundColor(textMuted)
+                        .font(.system(size: 11.5))
+                        .foregroundColor(Color(red: 120/255, green: 118/255, blue: 115/255))
                 }
                 .menuStyle(BorderlessButtonMenuStyle())
-                .frame(width: 20)
             }
         }
-        .padding(.vertical, 12)
         .padding(.horizontal, 14)
-        .background(RoundedRectangle(cornerRadius: 10).fill(cardWhite))
+        .padding(.vertical, 11)
+        .background(
+            RoundedRectangle(cornerRadius: 11)
+                .fill(Color.white)
+                .shadow(color: Color.black.opacity(0.025), radius: 3, x: 0, y: 1)
+        )
     }
     
     // MARK: - 2. Insights Dashboard View
