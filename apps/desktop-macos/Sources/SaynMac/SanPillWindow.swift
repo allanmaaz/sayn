@@ -217,35 +217,29 @@ struct SanPillView: View {
                     }
                 }
                 
-                // Style & Angle Chiclet Badge
-                Button(action: {
-                    waveformEngine.cycleNextStyle()
-                }) {
-                    Text(waveformEngine.activeStyleBadge)
-                        .font(.system(size: 9.5, weight: .bold, design: .rounded))
-                        .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(
-                            Capsule().fill(Color.white.opacity(0.12))
-                        )
-                }
-                .buttonStyle(PlainButtonStyle())
-                .help("Cycle style (⌥1–⌥4). Tab changes angle.")
-                
-                // 9 Dynamic Warm-Cream Equalizer Bars reacting in real-time
-                HStack(spacing: 3) {
-                    ForEach(0..<9, id: \.self) { index in
-                        RoundedRectangle(cornerRadius: 1.5)
-                            .fill(Color(red: 245/255, green: 235/255, blue: 221/255))
-                            .frame(
-                                width: 2.5,
-                                height: CGFloat(max(4, waveformEngine.audioLevels[min(index, waveformEngine.audioLevels.count - 1)] * 18))
+                // Dynamic Warm-Cream Fluffy Equalizer Wave reacting in real-time
+                HStack(spacing: 2.8) {
+                    ForEach(0..<min(13, waveformEngine.audioLevels.count), id: \.self) { index in
+                        Capsule()
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color(red: 255/255, green: 248/255, blue: 240/255),
+                                        Color(red: 245/255, green: 228/255, blue: 215/255)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
                             )
-                            .animation(.easeOut(duration: 0.08), value: waveformEngine.audioLevels[min(index, waveformEngine.audioLevels.count - 1)])
+                            .frame(
+                                width: 2.8,
+                                height: CGFloat(max(4.5, CGFloat(waveformEngine.audioLevels[index]) * 20.0))
+                            )
+                            .shadow(color: Color(red: 255/255, green: 235/255, blue: 215/255).opacity(0.35), radius: 2, x: 0, y: 0)
+                            .animation(.interactiveSpring(response: 0.14, dampingFraction: 0.65), value: waveformEngine.audioLevels[index])
                     }
                 }
-                .padding(.horizontal, 4)
+                .padding(.horizontal, 6)
                 
                 // Confirm / Tick Mark (✓) button in signature SAYN Deep Maroon with reliable hover
                 Button(action: {

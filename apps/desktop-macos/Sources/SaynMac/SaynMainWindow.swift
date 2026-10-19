@@ -1326,7 +1326,7 @@ struct SaynStudioView: View {
                                 Text("Words per minute")
                                     .font(.system(size: 11.5, weight: .semibold))
                                     .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
-                                Text("544")
+                                Text("\(store.averageWPM > 0 ? store.averageWPM : (store.history.isEmpty ? 544 : 240))")
                                     .font(.system(size: 26, weight: .bold, design: .rounded))
                                     .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
                             }
@@ -1397,7 +1397,7 @@ struct SaynStudioView: View {
                                 Text("Fixes made")
                                     .font(.system(size: 11.5, weight: .semibold))
                                     .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
-                                Text("249")
+                                Text("\(store.totalFixesMade > 0 ? store.totalFixesMade : 249)")
                                     .font(.system(size: 26, weight: .bold, design: .rounded))
                                     .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
                             }
@@ -1499,15 +1499,16 @@ struct SaynStudioView: View {
                                 }
                             }
                         }
+                                       let isDesktop = (insightsPlatform == "Desktop")
                         
                         VStack(alignment: .leading, spacing: 1) {
                             Text("Total words dictated")
                                 .font(.system(size: 11.5, weight: .semibold))
                                 .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
-                            Text("1,575")
+                            Text(isDesktop ? (store.totalWordsDictated > 0 ? "\(store.totalWordsDictated)" : "1,575") : "0")
                                 .font(.system(size: 26, weight: .bold, design: .rounded))
                                 .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
-                            Text("That's about 6 pages!")
+                            Text(isDesktop ? (store.totalWordsDictated > 0 ? "That's about \(max(1, store.totalWordsDictated / 250)) pages!" : "That's about 6 pages!") : "No mobile dictations yet")
                                 .font(.system(size: 11, weight: .regular))
                                 .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
                         }
@@ -1516,31 +1517,39 @@ struct SaynStudioView: View {
                         
                         // Desktop vs Mobile Buttons
                         HStack(spacing: 8) {
-                            Button(action: { insightsPlatform = "Desktop" }) {
+                            Button(action: {
+                                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                                    insightsPlatform = "Desktop"
+                                }
+                            }) {
                                 HStack(spacing: 5) {
                                     Image(systemName: "display")
                                         .font(.system(size: 11))
-                                    Text("Desktop (69)")
-                                        .font(.system(size: 11, weight: .bold))
+                                    Text("Desktop (\(store.history.isEmpty ? 69 : store.history.count))")
+                                        .font(.system(size: 11, weight: isDesktop ? .bold : .medium))
                                 }
-                                .foregroundColor(.white)
+                                .foregroundColor(isDesktop ? .white : Color(red: 111/255, green: 16/255, blue: 37/255))
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 6)
-                                .background(Capsule().fill(Color(red: 111/255, green: 16/255, blue: 37/255)))
+                                .background(Capsule().fill(isDesktop ? Color(red: 111/255, green: 16/255, blue: 37/255) : Color(red: 248/255, green: 241/255, blue: 237/255)))
                             }
                             .buttonStyle(PlainButtonStyle())
                             
-                            Button(action: { insightsPlatform = "Mobile" }) {
+                            Button(action: {
+                                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                                    insightsPlatform = "Mobile"
+                                }
+                            }) {
                                 HStack(spacing: 4) {
                                     Image(systemName: "iphone")
                                         .font(.system(size: 11))
-                                    Text("Mobile")
-                                        .font(.system(size: 11, weight: .medium))
+                                    Text("Mobile (0)")
+                                        .font(.system(size: 11, weight: !isDesktop ? .bold : .medium))
                                 }
-                                .foregroundColor(Color(red: 111/255, green: 16/255, blue: 37/255))
+                                .foregroundColor(!isDesktop ? .white : Color(red: 111/255, green: 16/255, blue: 37/255))
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 6)
-                                .background(Capsule().fill(Color(red: 248/255, green: 241/255, blue: 237/255)))
+                                .background(Capsule().fill(!isDesktop ? Color(red: 111/255, green: 16/255, blue: 37/255) : Color(red: 248/255, green: 241/255, blue: 237/255)))
                             }
                             .buttonStyle(PlainButtonStyle())
                         }
@@ -1552,75 +1561,102 @@ struct SaynStudioView: View {
                 
                 // Middle Row: 2 Cards (What you use SAYN for + Your streak)
                 HStack(alignment: .top, spacing: 16) {
-                    // Left: Donut Chart
+                    let isDesktop = (insightsPlatform == "Desktop")
+                    
+                    // Left: Donut Chart / Usage
                     VStack(alignment: .leading, spacing: 14) {
                         HStack {
-                            Text("What you use SAYN for")
+                            Text(isDesktop ? "Desktop usage" : "Mobile usage")
                                 .font(.system(size: 14.5, weight: .bold))
                                 .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
                             Spacer()
-                            Text("Total dictations: 69")
+                            Text(isDesktop ? "Total dictations: \(store.history.isEmpty ? 69 : store.history.count)" : "Total dictations: 0")
                                 .font(.system(size: 11.5, weight: .regular))
                                 .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
                         }
                         
-                        HStack(spacing: 24) {
-                            // Donut Ring
-                            ZStack {
-                                // Segment 3: Messages & chat 62%
-                                Circle()
-                                    .trim(from: 0.0, to: 0.62)
-                                    .stroke(Color(red: 217/255, green: 110/255, blue: 132/255), lineWidth: 16)
-                                    .rotationEffect(.degrees(-90))
+                        if isDesktop {
+                            HStack(spacing: 24) {
+                                // Donut Ring
+                                ZStack {
+                                    // Segment 3: Messages & chat 62%
+                                    Circle()
+                                        .trim(from: 0.0, to: 0.62)
+                                        .stroke(Color(red: 217/255, green: 110/255, blue: 132/255), lineWidth: 16)
+                                        .rotationEffect(.degrees(-90))
+                                    
+                                    // Segment 2: Code & technical 13%
+                                    Circle()
+                                        .trim(from: 0.62, to: 0.75)
+                                        .stroke(Color(red: 154/255, green: 43/255, blue: 67/255), lineWidth: 16)
+                                        .rotationEffect(.degrees(-90))
+                                    
+                                    // Segment 1: General & writing 25%
+                                    Circle()
+                                        .trim(from: 0.75, to: 1.0)
+                                        .stroke(Color(red: 82/255, green: 22/255, blue: 34/255), lineWidth: 16)
+                                        .rotationEffect(.degrees(-90))
+                                    
+                                    VStack(spacing: 1) {
+                                        Text("\(store.history.isEmpty ? 69 : store.history.count)")
+                                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                                            .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                                        Text("dictations")
+                                            .font(.system(size: 10, weight: .regular))
+                                            .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
+                                    }
+                                }
+                                .frame(width: 110, height: 110)
+                                .padding(.vertical, 8)
                                 
-                                // Segment 2: Code & technical 13%
-                                Circle()
-                                    .trim(from: 0.62, to: 0.75)
-                                    .stroke(Color(red: 154/255, green: 43/255, blue: 67/255), lineWidth: 16)
-                                    .rotationEffect(.degrees(-90))
+                                // Legend
+                                VStack(alignment: .leading, spacing: 10) {
+                                    HStack(spacing: 8) {
+                                        Circle().fill(Color(red: 82/255, green: 22/255, blue: 34/255)).frame(width: 8, height: 8)
+                                        Text("General & writing").font(.system(size: 12)).foregroundColor(Color(red: 45/255, green: 42/255, blue: 40/255))
+                                        Spacer()
+                                        Text("25%").font(.system(size: 12, weight: .bold)).foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                                    }
+                                    
+                                    HStack(spacing: 8) {
+                                        Circle().fill(Color(red: 154/255, green: 43/255, blue: 67/255)).frame(width: 8, height: 8)
+                                        Text("Code & technical").font(.system(size: 12)).foregroundColor(Color(red: 45/255, green: 42/255, blue: 40/255))
+                                        Spacer()
+                                        Text("13%").font(.system(size: 12, weight: .bold)).foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                                    }
+                                    
+                                    HStack(spacing: 8) {
+                                        Circle().fill(Color(red: 217/255, green: 110/255, blue: 132/255)).frame(width: 8, height: 8)
+                                        Text("Messages & chat").font(.system(size: 12)).foregroundColor(Color(red: 45/255, green: 42/255, blue: 40/255))
+                                        Spacer()
+                                        Text("62%").font(.system(size: 12, weight: .bold)).foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
+                                    }
+                                }
+                                .frame(maxWidth: .infinity)
+                            }
+                        } else {
+                            HStack(spacing: 16) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .fill(Color(red: 248/255, green: 241/255, blue: 237/255))
+                                        .frame(width: 76, height: 76)
+                                    Image(systemName: "iphone.radiowaves.left.and.right")
+                                        .font(.system(size: 30))
+                                        .foregroundColor(Color(red: 111/255, green: 16/255, blue: 37/255))
+                                }
                                 
-                                // Segment 1: General & writing 25%
-                                Circle()
-                                    .trim(from: 0.75, to: 1.0)
-                                    .stroke(Color(red: 82/255, green: 22/255, blue: 34/255), lineWidth: 16)
-                                    .rotationEffect(.degrees(-90))
-                                
-                                VStack(spacing: 1) {
-                                    Text("69")
-                                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                                VStack(alignment: .leading, spacing: 5) {
+                                    Text("No Mobile Dictations Yet")
+                                        .font(.system(size: 13.5, weight: .bold))
                                         .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
-                                    Text("dictations")
-                                        .font(.system(size: 10, weight: .regular))
+                                    Text("Dictate on the go using SAYN on Android or iOS. Your mobile dictations and voice insights will automatically sync here.")
+                                        .font(.system(size: 11, weight: .regular))
                                         .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
+                                        .lineSpacing(2)
                                 }
+                                .frame(maxWidth: .infinity, alignment: .leading)
                             }
-                            .frame(width: 110, height: 110)
-                            .padding(.vertical, 8)
-                            
-                            // Legend
-                            VStack(alignment: .leading, spacing: 10) {
-                                HStack(spacing: 8) {
-                                    Circle().fill(Color(red: 82/255, green: 22/255, blue: 34/255)).frame(width: 8, height: 8)
-                                    Text("General & writing").font(.system(size: 12)).foregroundColor(Color(red: 45/255, green: 42/255, blue: 40/255))
-                                    Spacer()
-                                    Text("25%").font(.system(size: 12, weight: .bold)).foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
-                                }
-                                
-                                HStack(spacing: 8) {
-                                    Circle().fill(Color(red: 154/255, green: 43/255, blue: 67/255)).frame(width: 8, height: 8)
-                                    Text("Code & technical").font(.system(size: 12)).foregroundColor(Color(red: 45/255, green: 42/255, blue: 40/255))
-                                    Spacer()
-                                    Text("13%").font(.system(size: 12, weight: .bold)).foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
-                                }
-                                
-                                HStack(spacing: 8) {
-                                    Circle().fill(Color(red: 217/255, green: 110/255, blue: 132/255)).frame(width: 8, height: 8)
-                                    Text("Messages & chat").font(.system(size: 12)).foregroundColor(Color(red: 45/255, green: 42/255, blue: 40/255))
-                                    Spacer()
-                                    Text("62%").font(.system(size: 12, weight: .bold)).foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
                         }
                     }
                     .padding(18)
@@ -4162,9 +4198,6 @@ struct SaynStudioView: View {
                     Text("Settings")
                         .font(.system(size: 26, weight: .bold, design: .rounded))
                         .foregroundColor(textDark)
-                    Text("Manage your preferences and account settings.")
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
                 }
                 
                 // 2-Column Layout
@@ -4272,9 +4305,6 @@ struct SaynStudioView: View {
                     Text("Account")
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(Color(red: 24/255, green: 22/255, blue: 22/255))
-                    Text("Update your personal information and account details.")
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundColor(Color(red: 125/255, green: 122/255, blue: 118/255))
                 }
             }
             
@@ -4313,10 +4343,6 @@ struct SaynStudioView: View {
                                 .background(RoundedRectangle(cornerRadius: 7).fill(Color(red: 254/255, green: 238/255, blue: 238/255)))
                             }
                             .buttonStyle(PlainButtonStyle())
-                            
-                            Text("JPG, PNG or GIF. Max 5MB.")
-                                .font(.system(size: 10.5, weight: .regular))
-                                .foregroundColor(Color(red: 135/255, green: 132/255, blue: 128/255))
                         }
                     }
                     Spacer()

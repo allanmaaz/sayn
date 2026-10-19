@@ -14,7 +14,7 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
     private var lastAppleTranscript: String = ""
     private var meterTimer: Timer?
     
-    @Published var audioLevels: [Float] = [0.1, 0.2, 0.4, 0.6, 0.5, 0.3, 0.2, 0.1]
+    @Published var audioLevels: [Float] = Array(repeating: 0.12, count: 13)
     @Published var isRecording: Bool = false
     @Published var isProcessing: Bool = false
     @Published var currentMode: SanExecutionMode = .dictate
@@ -25,6 +25,8 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
     private var hasSpokenVoice: Bool = false
     private var lastSpokenTimestamp: Date? = nil
     private var hasTriggeredSilenceCommit: Bool = false
+    private var smoothedLevel: Float = 0.1
+    private var wavePhase: Float = 0.0
     
     @Published var activeStyle: String = "flow"
     @Published var activeAngle: String = "normal"
@@ -135,9 +137,9 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
             print("Audio recorder failed to start: \(error)")
         }
         
-        // 2. Start live audio visualizer meter timer (runs every 45ms)
+        // 2. Start live audio visualizer meter timer (runs every 35ms for buttery 30+ fps fluidity)
         meterTimer?.invalidate()
-        meterTimer = Timer.scheduledTimer(withTimeInterval: 0.045, repeats: true) { [weak self] _ in
+        meterTimer = Timer.scheduledTimer(withTimeInterval: 0.035, repeats: true) { [weak self] _ in
             guard let self = self, self.isRecording, let recorder = self.audioRecorder else { return }
             recorder.updateMeters()
             let power = recorder.averagePower(forChannel: 0) // range: -160 dB to 0 dB
@@ -161,10 +163,18 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
                 }
             }
             
+            // Fluffy, ultra-smooth harmonic low-pass audio wave
+            self.smoothedLevel = self.smoothedLevel * 0.65 + normalized * 0.35
+            self.wavePhase += 0.22
+            let currentPhase = self.wavePhase
+            let lvl = self.smoothedLevel
+            
             DispatchQueue.main.async {
-                self.audioLevels = (0..<9).map { i in
-                    let variance = Float.random(in: 0.8...1.2)
-                    return min(normalized * variance * (0.8 + Float(i % 3) * 0.1), 1.0)
+                self.audioLevels = (0..<13).map { i in
+                    let dist = abs(Float(i) - 6.0) / 6.0
+                    let bell = cos(dist * Float.pi * 0.48)
+                    let harmonic = sin(currentPhase + Float(i) * 0.42) * 0.20 + 0.80
+                    return min(max(lvl * Float(bell) * Float(harmonic), 0.12), 1.0)
                 }
             }
         }
@@ -188,7 +198,7 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
         isRecording = false
         
         DispatchQueue.main.async {
-            self.audioLevels = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+            self.audioLevels = Array(repeating: 0.12, count: 13)
             self.isProcessing = true
         }
         
@@ -202,7 +212,7 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
         }
         
         DispatchQueue.main.async {
-            self.audioLevels = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+            self.audioLevels = Array(repeating: 0.12, count: 13)
             self.isProcessing = true
         }
         
