@@ -3501,31 +3501,6 @@ struct SaynStudioView: View {
         }
     }
     
-    // MARK: - Google G Logo Vector
-    struct GoogleGLogo: View {
-        private let svgData = """
-        <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
-          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.66-5.17 3.66-9.12z"/>
-          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.03c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.4 7.34 24 12 24z"/>
-          <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.58H1.25C.45 8.17 0 9.97 0 12s.45 3.83 1.25 5.42l4.03-3.13z"/>
-          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.6 1.25 6.58l4.03 3.13c.95-2.83 3.6-4.96 6.72-4.96z"/>
-        </svg>
-        """.data(using: .utf8)!
-        
-        var body: some View {
-            if let nsImg = NSImage(data: svgData) {
-                Image(nsImage: nsImg)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 18, height: 18)
-            } else {
-                Text("G")
-                    .font(.system(size: 15, weight: .bold, design: .rounded))
-                    .foregroundColor(Color(red: 66/255, green: 133/255, blue: 244/255))
-            }
-        }
-    }
-    
     // MARK: - Secure Login Screen (Gated Access - Pixel-Perfect Minimal)
     private var secureLoginScreen: some View {
         ZStack {
@@ -3648,17 +3623,18 @@ struct SaynStudioView: View {
                         .background(RoundedRectangle(cornerRadius: 8).fill(Color.red.opacity(0.08)))
                     }
                     
-                    // Input 1: Email or username
+                    // Input 1: Username
                     HStack(spacing: 10) {
                         Image(systemName: "person")
                             .font(.system(size: 13))
                             .foregroundColor(Color(red: 160/255, green: 160/255, blue: 165/255))
                             .frame(width: 16)
                         
-                        TextField("Email or username", text: $authUsernameOrEmail)
+                        TextField("Username", text: $authUsernameOrEmail)
                             .textFieldStyle(PlainTextFieldStyle())
                             .font(.system(size: 12.5))
                             .foregroundColor(Color(red: 26/255, green: 26/255, blue: 26/255))
+                            .onSubmit { performLogin() }
                     }
                     .padding(.horizontal, 12)
                     .frame(height: 42)
@@ -3677,11 +3653,13 @@ struct SaynStudioView: View {
                                 .textFieldStyle(PlainTextFieldStyle())
                                 .font(.system(size: 12.5))
                                 .foregroundColor(Color(red: 26/255, green: 26/255, blue: 26/255))
+                                .onSubmit { performLogin() }
                         } else {
                             SecureField("Password", text: $authPassword)
                                 .textFieldStyle(PlainTextFieldStyle())
                                 .font(.system(size: 12.5))
                                 .foregroundColor(Color(red: 26/255, green: 26/255, blue: 26/255))
+                                .onSubmit { performLogin() }
                         }
                         
                         Button(action: { isShowPassword.toggle() }) {
@@ -3698,15 +3676,7 @@ struct SaynStudioView: View {
                     
                     // Primary Action Button (Lock + Arrow)
                     Button(action: {
-                        Task {
-                            let success = await store.login(usernameOrEmail: authUsernameOrEmail, password: authPassword)
-                            if success {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
-                                    authPassword = ""
-                                    syncAccountFields()
-                                }
-                            }
-                        }
+                        performLogin()
                     }) {
                         ZStack {
                             if store.isAuthenticating {
@@ -3743,46 +3713,6 @@ struct SaynStudioView: View {
                     .buttonStyle(PlainButtonStyle())
                     .disabled(store.isAuthenticating || authUsernameOrEmail.isEmpty || authPassword.isEmpty)
                     .opacity((authUsernameOrEmail.isEmpty || authPassword.isEmpty) ? 0.65 : 1.0)
-                    
-                    // Divider OR
-                    HStack(spacing: 10) {
-                        Rectangle()
-                            .fill(Color.black.opacity(0.08))
-                            .frame(height: 1)
-                        Text("OR")
-                            .font(.system(size: 9.5, weight: .bold))
-                            .foregroundColor(Color(red: 170/255, green: 170/255, blue: 175/255))
-                        Rectangle()
-                            .fill(Color.black.opacity(0.08))
-                            .frame(height: 1)
-                    }
-                    .padding(.vertical, 3)
-                    
-                    // Google Sign-In Button
-                    Button(action: {
-                        authUsernameOrEmail = "allanmaaz"
-                        authPassword = "Welcome@100%"
-                        Task {
-                            let success = await store.login(usernameOrEmail: authUsernameOrEmail, password: authPassword)
-                            if success {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
-                                    authPassword = ""
-                                    syncAccountFields()
-                                }
-                            }
-                        }
-                    }) {
-                        HStack {
-                            Spacer()
-                            GoogleGLogo()
-                            Spacer()
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 42)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Color.white))
-                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black.opacity(0.08), lineWidth: 1))
-                    }
-                    .buttonStyle(PlainButtonStyle())
                 }
                 .padding(22)
                 .frame(width: 350)
@@ -3792,6 +3722,19 @@ struct SaynStudioView: View {
                         .shadow(color: Color(red: 111/255, green: 16/255, blue: 37/255).opacity(0.055), radius: 26, x: 0, y: 10)
                 )
                 .overlay(RoundedRectangle(cornerRadius: 22).stroke(Color.black.opacity(0.035), lineWidth: 1))
+            }
+        }
+    }
+    
+    private func performLogin() {
+        guard !authUsernameOrEmail.isEmpty, !authPassword.isEmpty else { return }
+        Task {
+            let success = await store.login(usernameOrEmail: authUsernameOrEmail, password: authPassword)
+            if success {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                    authPassword = ""
+                    syncAccountFields()
+                }
             }
         }
     }
