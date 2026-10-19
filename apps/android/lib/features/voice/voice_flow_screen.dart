@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/theme.dart';
 import '../../services/platform_channels.dart';
+import '../../services/auth_service.dart';
 import '../../core/api_client.dart';
 
 class VoiceFlowScreen extends StatefulWidget {
@@ -98,6 +99,12 @@ class _VoiceFlowScreenState extends State<VoiceFlowScreen>
           _polishedResult = res['refinedText'] ?? rawText;
           _lastLatencyMs = stopwatch.elapsedMilliseconds;
         });
+
+        // Synchronize polished transcription to Supabase in real time
+        AuthService.instance.uploadWritingHistory(
+          text: _polishedResult,
+          mode: _selectedTone,
+        );
       }
     } catch (_) {
       // Offline fallback: deterministic local cleanup

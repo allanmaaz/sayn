@@ -7,6 +7,8 @@ import 'features/workspace/workspace_screen.dart';
 import 'features/overlay/overlay_settings_screen.dart';
 import 'features/keyboard/keyboard_settings_screen.dart';
 import 'features/onboarding/onboarding_dialog.dart';
+import 'features/auth/login_screen.dart';
+import 'services/auth_service.dart';
 import 'services/update_service.dart';
 
 void main() {
@@ -50,10 +52,24 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
+    AuthService.instance.addListener(_onAuthChanged);
+    AuthService.instance.init();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAutoUpdate();
-      _checkOnboarding();
+      if (AuthService.instance.isAuthenticated) {
+        _checkOnboarding();
+      }
     });
+  }
+
+  void _onAuthChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    AuthService.instance.removeListener(_onAuthChanged);
+    super.dispose();
   }
 
   Future<void> _checkOnboarding() async {
@@ -74,6 +90,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!AuthService.instance.isAuthenticated) {
+      return LoginScreen(
+        onAuthenticated: () {
+          setState(() {});
+          _checkOnboarding();
+        },
+      );
+    }
+
     return Scaffold(
       extendBody: true,
       backgroundColor: SaynColors.darkBg,
