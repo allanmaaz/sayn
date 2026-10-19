@@ -46,7 +46,23 @@ jobs:
       - name: Build Release APK
         run: |
           cd apps/android
-          flutter build apk --release -v
+          if ! flutter build apk --release -v > build.log 2>&1; then
+            ERR=$(grep -E "(e: |FAILURE:|error:|Exception:)" build.log | tail -n 10 | tr '\n' ' ' | tr '"' "'")
+            if [ -z "$ERR" ]; then
+              ERR=$(tail -n 25 build.log | tr '\n' ' ' | tr '"' "'")
+            fi
+            echo "::error::BUILD_FAILED: $ERR"
+            tail -n 300 build.log
+            exit 1
+          fi
+
+      - name: Upload Build Log on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build-log
+          path: apps/android/build.log
+          retention-days: 1
 
       - name: Copy APK to Root Release
         run: |
