@@ -1429,7 +1429,7 @@ class SaynInputMethodService : InputMethodService() {
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.2f)
                 setOnClickListener {
                     triggerKeyFeedback("ENTER")
-                    handleAcceptCurrentSuggestion()
+                    handleAcceptGrammarSuggestion()
                 }
             }
             gActions.addView(btnAccept)
@@ -1608,7 +1608,7 @@ class SaynInputMethodService : InputMethodService() {
         Toast.makeText(this, "Polished text applied", Toast.LENGTH_SHORT).show()
     }
 
-    private fun handleAcceptCurrentSuggestion() {
+    private fun handleAcceptGrammarSuggestion() {
         val ic = currentInputConnection ?: return
         val replacement = grammarDiffNewText?.text?.toString() ?: lastSuggestion
         if (replacement.isEmpty()) return
@@ -2171,6 +2171,20 @@ class SaynInputMethodService : InputMethodService() {
             } finally {
                 ic.endBatchEdit()
             }
+
+            val words = lastSuggestion.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }.size
+            if (words > 0) {
+                try {
+                    val flutterPrefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+                    val currentTotal = flutterPrefs.getLong("flutter.sayn_stat_total_words", 22340L)
+                    val currentWeekly = flutterPrefs.getLong("flutter.sayn_stat_weekly_words", 0L)
+                    flutterPrefs.edit()
+                        .putLong("flutter.sayn_stat_total_words", currentTotal + words)
+                        .putLong("flutter.sayn_stat_weekly_words", (currentWeekly + words) % 1000)
+                        .apply()
+                } catch (e: Exception) {}
+            }
+
             Toast.makeText(this, "Accepted & replaced!", Toast.LENGTH_SHORT).show()
         }
         closeFullAiPanel()
