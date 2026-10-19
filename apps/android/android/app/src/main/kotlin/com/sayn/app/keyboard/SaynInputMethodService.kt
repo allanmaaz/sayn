@@ -469,21 +469,14 @@ class SaynInputMethodService : InputMethodService() {
 
         symbolLayoutMode = 0
         isCapsLock = false
-        val ic = currentInputConnection
-        val reqModes = android.text.TextUtils.CAP_MODE_CHARACTERS or
-                       android.text.TextUtils.CAP_MODE_WORDS or
-                       android.text.TextUtils.CAP_MODE_SENTENCES
-        val capsMode = if (ic != null) ic.getCursorCapsMode(reqModes) else 0
-        val before = ic?.getTextBeforeCursor(4, 0)?.toString() ?: ""
-        isShifted = !isSensitiveField && (capsMode != 0 || before.isEmpty() || before.endsWith("\n") || 
-                     before.endsWith(". ") || before.endsWith("? ") || before.endsWith("! "))
+        isShifted = false
+        checkAutoCapitalization()
 
         if (!::keysContainer.isInitialized || keysContainer.childCount == 0 || letterKeyViews.isEmpty()) {
             renderKeys()
         } else {
             updateShiftState()
         }
-        checkAutoCapitalization()
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
@@ -896,13 +889,66 @@ class SaynInputMethodService : InputMethodService() {
             }
             return
         }
-        val reqModes = android.text.TextUtils.CAP_MODE_CHARACTERS or
-                       android.text.TextUtils.CAP_MODE_WORDS or
-                       android.text.TextUtils.CAP_MODE_SENTENCES
-        val capsMode = ic.getCursorCapsMode(reqModes)
-        val before = ic.getTextBeforeCursor(4, 0)?.toString() ?: ""
-        val shouldShift = (capsMode != 0) || before.isEmpty() || before.endsWith("\n") || 
-                          before.endsWith(". ") || before.endsWith("? ") || before.endsWith("! ")
+
+        val inputType = currentInputEditorInfo?.inputType ?: 0
+        val typeClass = inputType and android.text.InputType.TYPE_MASK_CLASS
+        if (typeClass != 0 && typeClass != android.text.InputType.TYPE_CLASS_TEXT) {
+            if (isShifted) {
+                isShifted = false
+                updateShiftState()
+            }
+            return
+        }
+
+        // If the editor explicitly requests ALL-CAPS (e.g. license plate or serial code)
+        if ((inputType and android.text.InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS) != 0) {
+            if (!isShifted) {
+                isShifted = true
+                updateShiftState()
+            }
+            return
+        }
+
+        val variation = inputType and android.text.InputType.TYPE_MASK_VARIATION
+        val isPasswordOrUri = variation == android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD ||
+                variation == android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
+                variation == android.text.InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD ||
+                variation == android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS ||
+                variation == android.text.InputType.TYPE_TEXT_VARIATION_URI ||
+                variation == android.text.InputType.TYPE_TEXT_VARIATION_FILTER
+
+        if (isPasswordOrUri) {
+            if (isShifted) {
+                isShifted = false
+                updateShiftState()
+            }
+            return
+        }
+
+        var reqModes = 0
+        if ((inputType and android.text.InputType.TYPE_TEXT_FLAG_CAP_WORDS) != 0) {
+            reqModes = reqModes or android.text.TextUtils.CAP_MODE_WORDS
+        }
+        if ((inputType and android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES) != 0) {
+            reqModes = reqModes or android.text.TextUtils.CAP_MODE_SENTENCES
+        }
+        if (reqModes == 0) {
+            reqModes = android.text.TextUtils.CAP_MODE_SENTENCES
+        }
+
+        val before = ic.getTextBeforeCursor(16, 0)?.toString() ?: ""
+        val lastChar = before.lastOrNull()
+
+        // If the cursor is immediately preceded by an alphanumeric character, apostrophe, or hyphen,
+        // we are in the middle of a word: never auto-capitalize the next character!
+        val shouldShift = if (lastChar != null && (Character.isLetterOrDigit(lastChar) || lastChar == '\'' || lastChar == '-')) {
+            false
+        } else {
+            val capsMode = if (reqModes != 0) ic.getCursorCapsMode(reqModes) else 0
+            (capsMode != 0) || before.isEmpty() || before.endsWith("\n") || 
+                    before.endsWith(". ") || before.endsWith("? ") || before.endsWith("! ")
+        }
+
         if (shouldShift != isShifted) {
             isShifted = shouldShift
             updateShiftState()
