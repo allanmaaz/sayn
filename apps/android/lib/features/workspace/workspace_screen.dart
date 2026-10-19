@@ -647,14 +647,14 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                             icon: Icon(
                               _copied ? Icons.check : Icons.copy_rounded,
                               size: 14,
-                              color: _copied ? SaynColors.darkSuccess : Colors.white70,
+                              color: _copied ? SaynColors.roseMaroon : SaynColors.warmCream,
                             ),
                             label: Text(
                               _copied ? 'Copied' : 'Copy',
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: _copied ? SaynColors.darkSuccess : Colors.white70,
+                                color: _copied ? SaynColors.roseMaroon : SaynColors.warmCream,
                               ),
                             ),
                           ),
@@ -746,10 +746,14 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
             ),
             const SizedBox(width: 6),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: SaynColors.darkSuccess.withOpacity(0.18),
+                color: SaynColors.roseMaroon.withOpacity(0.25),
                 borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: SaynColors.roseMaroon.withOpacity(0.45),
+                  width: 1,
+                ),
               ),
               child: const Text(
                 'INVITED',
@@ -757,7 +761,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                   fontSize: 8.5,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.3,
-                  color: SaynColors.darkSuccess,
+                  color: SaynColors.warmCream,
                 ),
               ),
             ),
@@ -816,15 +820,19 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: SaynColors.darkSuccess.withOpacity(0.18),
+                                color: SaynColors.roseMaroon.withOpacity(0.25),
                                 borderRadius: BorderRadius.circular(4),
+                                border: Border.all(
+                                  color: SaynColors.roseMaroon.withOpacity(0.45),
+                                  width: 1,
+                                ),
                               ),
                               child: const Text(
                                 'ACTIVE',
                                 style: TextStyle(
                                   fontSize: 9,
                                   fontWeight: FontWeight.w800,
-                                  color: SaynColors.darkSuccess,
+                                  color: SaynColors.warmCream,
                                 ),
                               ),
                             ),

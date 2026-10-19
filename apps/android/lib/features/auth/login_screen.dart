@@ -243,10 +243,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                 decoration: BoxDecoration(
-                                  color: SaynColors.darkSuccess.withOpacity(0.12),
+                                  color: SaynColors.roseMaroon.withOpacity(0.18),
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(
-                                    color: SaynColors.darkSuccess.withOpacity(0.3),
+                                    color: SaynColors.roseMaroon.withOpacity(0.45),
                                     width: 1,
                                   ),
                                 ),
@@ -255,7 +255,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                   style: TextStyle(
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w700,
-                                    color: SaynColors.darkSuccess,
+                                    color: SaynColors.warmCream,
                                   ),
                                 ),
                               ),

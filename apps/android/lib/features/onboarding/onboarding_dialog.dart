@@ -61,13 +61,13 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
       'title': 'Samsung One UI Keyboard',
       'subtitle': 'Custom layout with spacebar cursor trackpad, clipboard history drawer, and one-tap voice flow.',
       'icon': Icons.keyboard_rounded,
-      'color': Colors.amber,
+      'color': SaynColors.warmCream,
     },
     {
       'title': 'Privacy & Real-Time Sync',
       'subtitle': 'Local-first architecture with zero audio retention. Custom dictionary and snippets sync seamlessly across devices.',
       'icon': Icons.shield_rounded,
-      'color': Colors.greenAccent,
+      'color': SaynColors.roseMaroon,
     },
   ];
 
@@ -89,9 +89,9 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1C1A),
+          color: SaynColors.darkSurface,
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: Colors.white.withOpacity(0.12)),
+          border: Border.all(color: SaynColors.darkDivider),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.6),

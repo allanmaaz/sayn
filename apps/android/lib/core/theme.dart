@@ -19,9 +19,9 @@ class SaynColors {
   static const Color accentTeal = Color(0xFFA83249);
   
   static const Color darkAccent = Color(0xFF6F1025);
-  static const Color darkSuccess = Color(0xFF30D158);
-  static const Color darkWarning = Color(0xFFFFD60A);
-  static const Color darkError = Color(0xFFFF453A);
+  static const Color darkSuccess = Color(0xFFA83249);
+  static const Color darkWarning = Color(0xFFD6C7B2);
+  static const Color darkError = Color(0xFF8C1632);
 
   // Audio accent (strictly for waveform / mic activity)
   static const Color audioWave = Color(0xFFA83249);
