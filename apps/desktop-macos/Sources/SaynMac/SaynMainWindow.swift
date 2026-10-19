@@ -3538,19 +3538,6 @@ struct SaynStudioView: View {
                         .font(.system(size: 26, weight: .black, design: .rounded))
                         .tracking(1.8)
                         .foregroundColor(textDark)
-                    
-                    HStack(spacing: 6) {
-                        Image(systemName: "lock.shield.fill")
-                            .font(.system(size: 11))
-                            .foregroundColor(accentAmber)
-                        Text("SECURE GATEWAY • AUTHORIZED ACCESS ONLY")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(accentAmber)
-                            .tracking(0.6)
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(Capsule().fill(accentAmber.opacity(0.12)))
                 }
                 
                 // Card Container
