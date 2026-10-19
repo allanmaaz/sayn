@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/theme.dart';
 import '../../services/platform_channels.dart';
-import '../../services/auth_service.dart';
 import '../../services/user_stats_service.dart';
 import '../../core/api_client.dart';
 

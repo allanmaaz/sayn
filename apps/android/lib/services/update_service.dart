@@ -128,6 +128,22 @@ class UpdateService {
       builder: (ctx) => _UpdateDialogContent(info: info),
     );
   }
+
+  static Future<void> checkForUpdate(BuildContext context, {bool manual = false}) async {
+    try {
+      final info = await checkUpdate();
+      if (info != null && info.hasUpdate && context.mounted) {
+        showUpdateDialog(context, info);
+      } else if (manual && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('SAYN is up to date (v1.1.5).'),
+            backgroundColor: Color(0xFF6F1025),
+          ),
+        );
+      }
+    } catch (_) {}
+  }
 }
 
 class _UpdateDialogContent extends StatefulWidget {
