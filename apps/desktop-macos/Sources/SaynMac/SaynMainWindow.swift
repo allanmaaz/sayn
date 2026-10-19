@@ -166,6 +166,25 @@ struct SaynStudioView: View {
         ZStack {
             bgCanvas.ignoresSafeArea()
             
+            if store.isAuthenticated {
+                authenticatedStudioView
+                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
+            } else {
+                secureLoginScreen
+                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
+            }
+        }
+        .frame(minWidth: 960, minHeight: 640)
+        .onAppear {
+            if store.isAuthenticated {
+                syncAccountFields()
+            }
+        }
+    }
+    
+    // MARK: - Authenticated Studio Workspace
+    private var authenticatedStudioView: some View {
+        ZStack {
             VStack(spacing: 0) {
                 // Top Navigation Bar / Chrome Toolbar
                 topToolbar
@@ -238,31 +257,11 @@ struct SaynStudioView: View {
                     .transition(.scale(scale: 0.95).combined(with: .opacity))
             }
             
-            // Floating Invite-Only Auth Modal Sheet (Gated Access)
-            if !store.isAuthenticated || showAuthModal {
-                Color.black.opacity(0.55)
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        if store.isAuthenticated {
-                            withAnimation(.easeInOut(duration: 0.16)) {
-                                showAuthModal = false
-                            }
-                        }
-                    }
-                
-                authModalView
-                    .transition(.scale(scale: 0.95).combined(with: .opacity))
-            }
-            
             // Interactive Onboarding Walkthrough Overlay (Initial Install & Settings Replay)
             if store.showOnboardingWalkthrough || (!store.hasCompletedOnboarding && store.isAuthenticated) {
                 onboardingWalkthroughView
                     .transition(.opacity.combined(with: .scale(scale: 0.96)))
             }
-        }
-        .frame(minWidth: 960, minHeight: 640)
-        .onAppear {
-            syncAccountFields()
         }
     }
     
@@ -3502,180 +3501,194 @@ struct SaynStudioView: View {
         }
     }
     
-    // MARK: - Invite-Only Authentication Modal
-    private var authModalView: some View {
-        VStack(spacing: 20) {
-            // Header with Close Button
-            HStack {
-                HStack(spacing: 6) {
-                    Image(systemName: "lock.shield.fill")
-                        .foregroundColor(Color(red: 212/255, green: 160/255, blue: 23/255))
-                        .font(.system(size: 12))
-                    Text("INVITE ONLY • PRIVATE BETA")
-                        .font(.system(size: 10.5, weight: .bold))
-                        .foregroundColor(Color(red: 212/255, green: 160/255, blue: 23/255))
-                        .tracking(0.6)
+    // MARK: - Secure Login Screen (Gated Access - Zero Data Exposure)
+    private var secureLoginScreen: some View {
+        ZStack {
+            bgCanvas.ignoresSafeArea()
+            
+            // Subtle ambient backdrop glow
+            Circle()
+                .fill(accentTeal.opacity(0.04))
+                .frame(width: 600, height: 600)
+                .blur(radius: 60)
+            
+            VStack(spacing: 24) {
+                // Top Brand Mark
+                VStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 18)
+                            .fill(accentTeal)
+                            .frame(width: 58, height: 58)
+                            .shadow(color: accentTeal.opacity(0.3), radius: 12, x: 0, y: 6)
+                        
+                        HStack(spacing: 2.5) {
+                            RoundedRectangle(cornerRadius: 1.5)
+                                .fill(Color(red: 245/255, green: 235/255, blue: 221/255))
+                                .frame(width: 3.5, height: 16)
+                            RoundedRectangle(cornerRadius: 1.5)
+                                .fill(Color(red: 245/255, green: 235/255, blue: 221/255))
+                                .frame(width: 3.5, height: 28)
+                            RoundedRectangle(cornerRadius: 1.5)
+                                .fill(Color(red: 245/255, green: 235/255, blue: 221/255))
+                                .frame(width: 3.5, height: 18)
+                        }
+                    }
+                    
+                    Text("SAYN")
+                        .font(.system(size: 26, weight: .black, design: .rounded))
+                        .tracking(1.8)
+                        .foregroundColor(textDark)
+                    
+                    HStack(spacing: 6) {
+                        Image(systemName: "lock.shield.fill")
+                            .font(.system(size: 11))
+                            .foregroundColor(accentAmber)
+                        Text("SECURE GATEWAY • AUTHORIZED ACCESS ONLY")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(accentAmber)
+                            .tracking(0.6)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Capsule().fill(accentAmber.opacity(0.12)))
                 }
-                .padding(.horizontal, 9)
-                .padding(.vertical, 4)
-                .background(Capsule().fill(Color(red: 212/255, green: 160/255, blue: 23/255).opacity(0.14)))
                 
-                Spacer()
-                
-                if store.isAuthenticated {
+                // Card Container
+                VStack(spacing: 18) {
+                    VStack(spacing: 6) {
+                        Text("Sign In to SAYN Studio")
+                            .font(.system(size: 20, weight: .bold, design: .serif))
+                            .foregroundColor(textDark)
+                        
+                        Text("Authentication is required to access your dictation workspace and voice settings. All data is protected.")
+                            .font(.system(size: 12))
+                            .foregroundColor(textMuted)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: 340)
+                    }
+                    
+                    // Error Banner
+                    if let err = store.authErrorMessage {
+                        HStack(spacing: 8) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(.red)
+                                .font(.system(size: 13))
+                            Text(err)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.red)
+                                .multilineTextAlignment(.leading)
+                            Spacer()
+                        }
+                        .padding(10)
+                        .background(RoundedRectangle(cornerRadius: 8).fill(Color.red.opacity(0.1)))
+                    }
+                    
+                    // Input Fields
+                    VStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("USERNAME OR EMAIL")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(textMuted)
+                                .tracking(0.5)
+                            
+                            HStack(spacing: 8) {
+                                Image(systemName: "person.crop.circle")
+                                    .foregroundColor(textMuted)
+                                    .font(.system(size: 14))
+                                TextField("Enter username (e.g. allanmaaz)", text: $authUsernameOrEmail)
+                                    .textFieldStyle(PlainTextFieldStyle())
+                                    .font(.system(size: 13))
+                            }
+                            .padding(10)
+                            .background(RoundedRectangle(cornerRadius: 10).fill(surfaceBeige))
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(borderDivider, lineWidth: 1))
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("PASSWORD")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(textMuted)
+                                .tracking(0.5)
+                            
+                            HStack(spacing: 8) {
+                                Image(systemName: "lock")
+                                    .foregroundColor(textMuted)
+                                    .font(.system(size: 14))
+                                if isShowPassword {
+                                    TextField("Enter password", text: $authPassword)
+                                        .textFieldStyle(PlainTextFieldStyle())
+                                        .font(.system(size: 13))
+                                } else {
+                                    SecureField("Enter password", text: $authPassword)
+                                        .textFieldStyle(PlainTextFieldStyle())
+                                        .font(.system(size: 13))
+                                }
+                                Button(action: { isShowPassword.toggle() }) {
+                                    Image(systemName: isShowPassword ? "eye.slash" : "eye")
+                                        .foregroundColor(textMuted)
+                                        .font(.system(size: 12))
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                            .padding(10)
+                            .background(RoundedRectangle(cornerRadius: 10).fill(surfaceBeige))
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(borderDivider, lineWidth: 1))
+                        }
+                    }
+                    
+                    // Submit Button
                     Button(action: {
-                        withAnimation(.easeInOut(duration: 0.16)) {
-                            showAuthModal = false
+                        Task {
+                            let success = await store.login(usernameOrEmail: authUsernameOrEmail, password: authPassword)
+                            if success {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                                    authPassword = ""
+                                    syncAccountFields()
+                                }
+                            }
                         }
                     }) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(textMuted)
-                            .padding(6)
-                            .background(Circle().fill(surfaceBeige))
+                        HStack(spacing: 8) {
+                            if store.isAuthenticating {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                    .colorInvert()
+                                Text("Verifying Credentials...")
+                            } else {
+                                Image(systemName: "lock.open.fill")
+                                Text("Unlock & Enter Studio")
+                            }
+                        }
+                        .font(.system(size: 13.5, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(accentTeal))
                     }
                     .buttonStyle(PlainButtonStyle())
+                    .disabled(store.isAuthenticating || authUsernameOrEmail.isEmpty || authPassword.isEmpty)
+                    .opacity((authUsernameOrEmail.isEmpty || authPassword.isEmpty) ? 0.6 : 1.0)
                 }
-            }
-            
-            // Branding & Title
-            VStack(spacing: 6) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(accentTeal)
-                        .frame(width: 48, height: 48)
-                    Text("S")
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                }
+                .padding(26)
+                .frame(width: 420)
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(cardWhite)
+                        .shadow(color: Color.black.opacity(0.08), radius: 24, x: 0, y: 8)
+                )
+                .overlay(RoundedRectangle(cornerRadius: 20).stroke(borderDivider, lineWidth: 1))
                 
-                Text("Sign In to SAYN Studio")
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
-                    .foregroundColor(textDark)
-                
-                Text("Enter your invite username or email and password to connect your private voice cloud.")
-                    .font(.system(size: 12))
-                    .foregroundColor(textMuted)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 10)
-            }
-            
-            // Error Message Banner (if any)
-            if let err = store.authErrorMessage {
-                HStack(spacing: 8) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundColor(.red)
-                        .font(.system(size: 13))
-                    Text(err)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.red)
-                        .multilineTextAlignment(.leading)
-                    Spacer()
-                }
-                .padding(10)
-                .background(RoundedRectangle(cornerRadius: 8).fill(Color.red.opacity(0.1)))
-            }
-            
-            // Form Fields: Username/Email & Password
-            VStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("USERNAME OR EMAIL")
-                        .font(.system(size: 10, weight: .bold))
+                // Security note
+                HStack(spacing: 6) {
+                    Image(systemName: "shield.lefthalf.filled")
+                        .font(.system(size: 11))
                         .foregroundColor(textMuted)
-                        .tracking(0.5)
-                    
-                    HStack(spacing: 8) {
-                        Image(systemName: "person.crop.circle")
-                            .foregroundColor(textMuted)
-                            .font(.system(size: 14))
-                        TextField("e.g. allanmaaz or name@sayn.ai", text: $authUsernameOrEmail)
-                            .textFieldStyle(PlainTextFieldStyle())
-                            .font(.system(size: 13))
-                    }
-                    .padding(10)
-                    .background(RoundedRectangle(cornerRadius: 10).fill(surfaceBeige))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(borderDivider, lineWidth: 1))
-                }
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("PASSWORD")
-                        .font(.system(size: 10, weight: .bold))
+                    Text("Zero Data Leakage Security • Encrypted Session Store")
+                        .font(.system(size: 11, weight: .medium))
                         .foregroundColor(textMuted)
-                        .tracking(0.5)
-                    
-                    HStack(spacing: 8) {
-                        Image(systemName: "lock")
-                            .foregroundColor(textMuted)
-                            .font(.system(size: 14))
-                        if isShowPassword {
-                            TextField("Enter your password", text: $authPassword)
-                                .textFieldStyle(PlainTextFieldStyle())
-                                .font(.system(size: 13))
-                        } else {
-                            SecureField("Enter your password", text: $authPassword)
-                                .textFieldStyle(PlainTextFieldStyle())
-                                .font(.system(size: 13))
-                        }
-                        Button(action: { isShowPassword.toggle() }) {
-                            Image(systemName: isShowPassword ? "eye.slash" : "eye")
-                                .foregroundColor(textMuted)
-                                .font(.system(size: 12))
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                    .padding(10)
-                    .background(RoundedRectangle(cornerRadius: 10).fill(surfaceBeige))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(borderDivider, lineWidth: 1))
                 }
             }
-            
-            // Action Button
-            Button(action: {
-                Task {
-                    let success = await store.login(usernameOrEmail: authUsernameOrEmail, password: authPassword)
-                    if success {
-                        withAnimation {
-                            showAuthModal = false
-                            authPassword = ""
-                        }
-                    }
-                }
-            }) {
-                HStack(spacing: 8) {
-                    if store.isAuthenticating {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                            .colorInvert()
-                        Text("Verifying Invite...")
-                    } else {
-                        Image(systemName: "arrow.right.circle.fill")
-                        Text("Access Studio")
-                    }
-                }
-                .font(.system(size: 13.5, weight: .bold))
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(RoundedRectangle(cornerRadius: 10).fill(accentTeal))
-            }
-            .buttonStyle(PlainButtonStyle())
-            .disabled(store.isAuthenticating || authUsernameOrEmail.isEmpty || authPassword.isEmpty)
-            .opacity((authUsernameOrEmail.isEmpty || authPassword.isEmpty) ? 0.6 : 1.0)
-            
-            // Footnote
-            Text("SAYN Studio is invite-only. Credentials are created by workspace admins.")
-                .font(.system(size: 11))
-                .foregroundColor(textMuted)
-                .multilineTextAlignment(.center)
         }
-        .padding(24)
-        .frame(width: 420)
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(cardWhite)
-                .shadow(color: Color.black.opacity(0.2), radius: 25, x: 0, y: 10)
-        )
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(borderDivider, lineWidth: 1))
     }
     
     // MARK: - Interactive Onboarding Walkthrough

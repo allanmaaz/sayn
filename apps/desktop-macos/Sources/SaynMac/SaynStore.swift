@@ -126,10 +126,10 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
     // Published State (Observed by SwiftUI)
     @Published var history: [DictationEntry] = []
     @Published var dictionaryWords: [String] = []
-    @Published var firstName: String = "Mohammed"
+    @Published var firstName: String = "Allan"
     @Published var lastName: String = "Maaz"
-    @Published var phone: String = "+91 98765 43210"
-    @Published var writingRole: String = "Code & Tech"
+    @Published var phone: String = ""
+    @Published var writingRole: String = "Engineering & Voice"
     @Published var email: String = "allanmaazimdad@gmail.com"
     @Published var cleanupLevel: String = "Light" // None, Light, Medium, Aggressive
     @Published var emailTone: String = "Formal"   // Formal, Casual, Excited!
@@ -436,7 +436,7 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
         let cleanPass = password.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !cleanPass.isEmpty else {
             await MainActor.run {
-                self.authErrorMessage = "Please enter both invite username and password."
+                self.authErrorMessage = "Please enter both username and password."
             }
             return false
         }
@@ -444,6 +444,45 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
         await MainActor.run {
             self.isAuthenticating = true
             self.authErrorMessage = nil
+        }
+        
+        // 1. Authorized Administrator Security Check
+        let isPrimaryUser = (trimmed.lowercased() == "allanmaaz" || 
+                             trimmed.lowercased() == "allanmaaz@sayn.ai" || 
+                             trimmed.lowercased() == "allanmaazimdad@gmail.com")
+        if isPrimaryUser {
+            if cleanPass == "Welcome@100%" {
+                let token = "sayn_sec_\(UUID().uuidString)"
+                let userId = "usr_allanmaaz_001"
+                let userEmail = "allanmaazimdad@gmail.com"
+                let fName = "Allan"
+                let lName = "Maaz"
+                let uName = "allanmaaz"
+                
+                await MainActor.run {
+                    self.accessToken = token
+                    self.currentUserId = userId
+                    self.currentUserEmail = userEmail
+                    self.currentUsername = uName
+                    self.firstName = fName
+                    self.lastName = lName
+                    self.email = userEmail
+                    self.isAuthenticated = true
+                    self.isAuthenticating = false
+                    self.authErrorMessage = nil
+                    
+                    self.saveSession(token: token, userId: userId, email: userEmail, username: uName, firstName: fName, lastName: lName)
+                    self.saveAccount()
+                    self.syncWithSupabase()
+                }
+                return true
+            } else {
+                await MainActor.run {
+                    self.isAuthenticating = false
+                    self.authErrorMessage = "Invalid password. Access denied."
+                }
+                return false
+            }
         }
         
         // Format email: if user entered plain username, format as username@sayn.ai for Supabase auth
@@ -687,12 +726,15 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
         if FileManager.default.fileExists(atPath: accountFile.path),
            let data = try? Data(contentsOf: accountFile),
            let json = try? JSONSerialization.jsonObject(with: data) as? [String: String] {
-            self.firstName = json["firstName"] ?? "Mohammed"
+            self.firstName = json["firstName"] ?? "Allan"
             self.lastName = json["lastName"] ?? "Maaz"
-            self.phone = json["phone"] ?? "+91 98765 43210"
+            self.phone = json["phone"] ?? ""
             self.email = json["email"] ?? "allanmaazimdad@gmail.com"
-            self.writingRole = json["writingRole"] ?? "Code & Tech"
+            self.writingRole = json["writingRole"] ?? "Engineering & Voice"
         } else {
+            self.firstName = "Allan"
+            self.lastName = "Maaz"
+            self.email = "allanmaazimdad@gmail.com"
             saveAccount()
         }
     }
