@@ -26,14 +26,25 @@ class SaynColors {
   // Audio accent (strictly for waveform / mic activity)
   static const Color audioWave = Color(0xFFA83249);
 
-  // Light Theme
-  static const Color lightBg = Color(0xFFFAF4EB);
+  // Light Theme & Editorial Paper Palette
+  static const Color lightBg = Color(0xFFFAF5EE);
   static const Color lightSurface = Color(0xFFFFFFFF);
   static const Color lightSurface2 = Color(0xFFF5EBDD);
-  static const Color lightText = Color(0xFF100709);
-  static const Color lightSecondary = Color(0xFF6E665A);
-  static const Color lightDivider = Color(0xFFE5D6C2);
+  static const Color lightText = Color(0xFF2A0E15);
+  static const Color lightSecondary = Color(0xFF7E6067);
+  static const Color lightDivider = Color(0xFFEADECF);
   static const Color lightAccent = Color(0xFF6F1025);
+
+  // Direct Semantic Tokens for Redesign
+  static const Color paperBg = Color(0xFFFAF5EE);
+  static const Color paperCard = Color(0xFFFFFFFF);
+  static const Color paperSurface = Color(0xFFF5EBDD);
+  static const Color paperBorder = Color(0xFFEADECF);
+  static const Color paperText = Color(0xFF2A0E15);
+  static const Color paperTextMuted = Color(0xFF7E6067);
+  static const Color wineMaroon = Color(0xFF6F1025);
+  static const Color wineMaroonDark = Color(0xFF580C1E);
+  static const Color wineMaroonLight = Color(0xFFA83249);
 }
 
 class SaynTheme {

@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'core/theme.dart';
-import 'features/voice/voice_flow_screen.dart';
+import 'features/home/home_screen.dart';
 import 'features/workspace/workspace_screen.dart';
 import 'features/overlay/overlay_settings_screen.dart';
 import 'features/keyboard/keyboard_settings_screen.dart';
@@ -26,7 +26,7 @@ class SaynApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: SaynTheme.lightTheme,
       darkTheme: SaynTheme.darkTheme,
-      themeMode: ThemeMode.dark,
+      themeMode: ThemeMode.light,
       home: const MainNavigationScreen(),
     );
   }
@@ -41,17 +41,14 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
+  String? _pendingStudioStyle;
 
-  final List<Widget> _screens = const [
-    VoiceFlowScreen(),
-    WorkspaceScreen(),
-    OverlaySettingsScreen(),
-    KeyboardSettingsScreen(),
-  ];
+  late final List<Widget> _screens;
 
   @override
   void initState() {
     super.initState();
+    _initScreens();
     AuthService.instance.addListener(_onAuthChanged);
     AuthService.instance.init();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -60,6 +57,25 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         _checkOnboarding();
       }
     });
+  }
+
+  void _initScreens() {
+    _screens = [
+      HomeScreen(
+        onSwitchTab: (tabIndex) {
+          setState(() => _currentIndex = tabIndex);
+        },
+        onSelectWritingTool: (toolMode) {
+          setState(() {
+            _pendingStudioStyle = toolMode;
+            _currentIndex = 1; // Switch to Studio
+          });
+        },
+      ),
+      const WorkspaceScreen(),
+      const OverlaySettingsScreen(),
+      const KeyboardSettingsScreen(),
+    ];
   }
 
   void _onAuthChanged() {
@@ -101,7 +117,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     return Scaffold(
       extendBody: true,
-      backgroundColor: SaynColors.darkBg,
+      backgroundColor: SaynColors.paperBg,
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
@@ -120,19 +136,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     return SafeArea(
       child: Container(
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+        margin: const EdgeInsets.fromLTRB(18, 0, 18, 14),
         height: 64,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(32),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.55),
-              blurRadius: 28,
-              offset: const Offset(0, 10),
+              color: SaynColors.wineMaroon.withOpacity(0.12),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
             ),
             BoxShadow(
-              color: SaynColors.darkAccent.withOpacity(0.08),
-              blurRadius: 18,
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
               offset: const Offset(0, 2),
             ),
           ],
@@ -140,15 +156,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(32),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xEE180B0F),
+                color: const Color(0xF6F5EBDD), // Warm Paper Surface
                 borderRadius: BorderRadius.circular(32),
                 border: Border.all(
-                  color: SaynColors.darkDivider,
-                  width: 1.2,
+                  color: SaynColors.paperBorder,
+                  width: 1.5,
                 ),
               ),
               child: Row(
@@ -169,10 +185,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 220),
                         curve: Curves.easeOutCubic,
-                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? SaynColors.darkAccent
+                              ? SaynColors.wineMaroon
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(24),
                         ),
@@ -181,10 +197,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           children: [
                             Icon(
                               iconData,
-                              size: 20,
+                              size: 19,
                               color: isSelected
                                   ? SaynColors.warmCream
-                                  : SaynColors.darkSecondary,
+                                  : SaynColors.paperTextMuted,
                             ),
                             if (isSelected) ...[
                               const SizedBox(width: 6),

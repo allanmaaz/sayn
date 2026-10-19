@@ -4,9 +4,17 @@ import '../../core/theme.dart';
 import '../../core/api_client.dart';
 import '../../services/platform_channels.dart';
 import '../../services/auth_service.dart';
+import '../navigation/sayn_drawer.dart';
 
 class WorkspaceScreen extends StatefulWidget {
-  const WorkspaceScreen({super.key});
+  final String? initialStyle;
+  final String? initialText;
+
+  const WorkspaceScreen({
+    super.key,
+    this.initialStyle,
+    this.initialText,
+  });
 
   @override
   State<WorkspaceScreen> createState() => _WorkspaceScreenState();
@@ -67,6 +75,12 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialStyle != null) {
+      _selectedStyle = widget.initialStyle!;
+    }
+    if (widget.initialText != null && widget.initialText!.isNotEmpty) {
+      _inputController.text = widget.initialText!;
+    }
     _inputController.addListener(_updateMetrics);
   }
 
@@ -274,34 +288,46 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: SaynColors.darkBg,
+      backgroundColor: SaynColors.paperBg,
+      drawer: const SaynDrawer(),
       appBar: AppBar(
-        backgroundColor: SaynColors.darkBg,
+        backgroundColor: SaynColors.paperBg,
         elevation: 0,
+        leading: Builder(
+          builder: (ctx) => IconButton(
+            icon: const Icon(Icons.menu_rounded, color: SaynColors.wineMaroon, size: 26),
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
+          ),
+        ),
         title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 28,
-              height: 28,
+              width: 30,
+              height: 30,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(7),
-                border: Border.all(color: SaynColors.roseMaroon.withOpacity(0.4)),
+                color: SaynColors.wineMaroon,
+                borderRadius: BorderRadius.circular(8),
               ),
               clipBehavior: Clip.antiAlias,
               child: Image.asset(
                 'assets/images/logo.png',
-                width: 28,
-                height: 28,
                 fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.graphic_eq_rounded,
+                  color: SaynColors.warmCream,
+                  size: 20,
+                ),
               ),
             ),
             const SizedBox(width: 10),
             const Text(
               'SAYN Studio',
               style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-                color: SaynColors.darkText,
+                fontFamily: 'serif',
+                fontWeight: FontWeight.w800,
+                fontSize: 18,
+                color: SaynColors.wineMaroon,
               ),
             ),
           ],
@@ -328,20 +354,20 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                     child: ChoiceChip(
                       avatar: Icon(
                         s['icon'] as IconData,
-                        size: 14,
-                        color: isSelected ? SaynColors.warmCream : SaynColors.darkAccent,
+                        size: 15,
+                        color: isSelected ? Colors.white : SaynColors.wineMaroon,
                       ),
                       label: Text(s['label'] as String),
                       selected: isSelected,
-                      selectedColor: SaynColors.darkAccent,
+                      selectedColor: SaynColors.wineMaroon,
                       labelStyle: TextStyle(
-                        fontSize: 12,
+                        fontSize: 12.5,
                         fontWeight: FontWeight.w700,
-                        color: isSelected ? SaynColors.warmCream : Colors.white,
+                        color: isSelected ? Colors.white : SaynColors.wineMaroon,
                       ),
-                      backgroundColor: SaynColors.darkSurface,
+                      backgroundColor: SaynColors.paperCard,
                       side: BorderSide(
-                        color: isSelected ? SaynColors.darkAccent : SaynColors.darkDivider,
+                        color: isSelected ? SaynColors.wineMaroon : SaynColors.paperBorder,
                         width: isSelected ? 1.5 : 1.0,
                       ),
                       onSelected: (val) {
@@ -357,9 +383,16 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
             // ─── 2. INPUT CARD WITH TWO HERO ACTION ICONS ───
             Container(
               decoration: BoxDecoration(
-                color: SaynColors.darkSurface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: SaynColors.darkDivider),
+                color: SaynColors.paperCard,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: SaynColors.paperBorder, width: 1.2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.02),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Column(
                 children: [
@@ -373,23 +406,23 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                           onTap: _pasteFromClipboard,
                           borderRadius: BorderRadius.circular(8),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: SaynColors.darkElevated,
+                              color: SaynColors.paperSurface,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: SaynColors.darkDivider),
+                              border: Border.all(color: SaynColors.paperBorder),
                             ),
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.paste_rounded, size: 13, color: SaynColors.darkAccent),
-                                SizedBox(width: 5),
+                                Icon(Icons.paste_rounded, size: 14, color: SaynColors.wineMaroon),
+                                SizedBox(width: 6),
                                 Text(
                                   'Paste Chat / Text',
                                   style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: SaynColors.wineMaroon,
                                   ),
                                 ),
                               ],
@@ -405,32 +438,32 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                             },
                             child: const Text(
                               'Clear',
-                              style: TextStyle(fontSize: 11, color: SaynColors.darkError),
+                              style: TextStyle(fontSize: 11.5, color: SaynColors.paperTextMuted, fontWeight: FontWeight.bold),
                             ),
                           ),
                       ],
                     ),
                   ),
-                  const Divider(height: 1, color: SaynColors.darkDivider),
+                  const Divider(height: 1, color: SaynColors.paperBorder),
 
                   // Text Input Field
                   TextField(
                     controller: _inputController,
                     maxLines: 6,
-                    style: const TextStyle(fontSize: 14, color: SaynColors.darkText, height: 1.5),
+                    style: const TextStyle(fontSize: 14.5, color: SaynColors.paperText, height: 1.5),
                     decoration: const InputDecoration(
                       hintText: 'Type, talk, or paste chats & document excerpts here...',
-                      hintStyle: TextStyle(fontSize: 13, color: SaynColors.darkMuted),
+                      hintStyle: TextStyle(fontSize: 13.5, color: SaynColors.paperTextMuted),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.all(14),
                     ),
                   ),
 
-                  const Divider(height: 1, color: SaynColors.darkDivider),
+                  const Divider(height: 1, color: SaynColors.paperBorder),
 
                   // ─── TWO ACTION ICONS (Talk Icon & Grammar Icon) ───
                   Padding(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(12),
                     child: Row(
                       children: [
                         // 1. TALK FEATURE ICON (Microphone)
@@ -438,32 +471,30 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                           onTap: _isDictating ? null : _startTalking,
                           borderRadius: BorderRadius.circular(12),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
                             decoration: BoxDecoration(
-                              color: _isDictating
-                                  ? SaynColors.darkAccent.withOpacity(0.2)
-                                  : SaynColors.darkElevated,
+                              color: SaynColors.paperSurface,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: _isDictating
-                                    ? SaynColors.darkAccent
-                                    : SaynColors.darkDivider,
+                                    ? SaynColors.wineMaroon
+                                    : SaynColors.paperBorder,
                               ),
                             ),
                             child: Row(
                               children: [
                                 Icon(
                                   _isDictating ? Icons.graphic_eq : Icons.mic_rounded,
-                                  size: 18,
-                                  color: SaynColors.darkAccent,
+                                  size: 19,
+                                  color: SaynColors.wineMaroon,
                                 ),
-                                const SizedBox(width: 6),
+                                const SizedBox(width: 8),
                                 Text(
                                   _isDictating ? 'Listening...' : 'Talk',
                                   style: const TextStyle(
-                                    fontSize: 13,
+                                    fontSize: 13.5,
                                     fontWeight: FontWeight.w700,
-                                    color: Colors.white,
+                                    color: SaynColors.wineMaroon,
                                   ),
                                 ),
                               ],
@@ -477,9 +508,9 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                           child: ElevatedButton.icon(
                             onPressed: _isPolishing ? null : _runGrammarPolish,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: SaynColors.darkAccent,
-                              foregroundColor: SaynColors.warmCream,
-                              padding: const EdgeInsets.symmetric(vertical: 11),
+                              backgroundColor: SaynColors.wineMaroon,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -491,14 +522,14 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                                     height: 16,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: SaynColors.warmCream,
+                                      color: Colors.white,
                                     ),
                                   )
                                 : const Icon(Icons.auto_fix_high_rounded, size: 18),
                             label: Text(
                               _isPolishing ? 'Polishing...' : 'Correct Grammar',
                               style: const TextStyle(
-                                fontSize: 13,
+                                fontSize: 13.5,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
@@ -515,33 +546,33 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
             // ─── 3. CUSTOM SETTINGS FOR CHATS / PDFS (Expandable) ───
             Container(
               decoration: BoxDecoration(
-                color: SaynColors.darkSurface,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: SaynColors.darkDivider),
+                color: SaynColors.paperCard,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: SaynColors.paperBorder),
               ),
               child: Column(
                 children: [
                   ListTile(
                     dense: true,
-                    leading: const Icon(Icons.tune_rounded, size: 18, color: SaynColors.darkAccent),
+                    leading: const Icon(Icons.tune_rounded, size: 19, color: SaynColors.wineMaroon),
                     title: const Text(
                       'Custom Prompt & Settings',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                      style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: SaynColors.paperText),
                     ),
                     subtitle: const Text(
                       'Apply custom instructions to chats, PDFs, or articles',
-                      style: TextStyle(fontSize: 11, color: SaynColors.darkSecondary),
+                      style: TextStyle(fontSize: 11.5, color: SaynColors.paperTextMuted),
                     ),
                     trailing: Icon(
-                      _showCustomSettings ? Icons.expand_less : Icons.expand_more,
-                      color: SaynColors.darkSecondary,
+                      _showCustomSettings ? Icons.expand_less : Icons.chevron_right_rounded,
+                      color: SaynColors.paperTextMuted,
                     ),
                     onTap: () {
                       setState(() => _showCustomSettings = !_showCustomSettings);
                     },
                   ),
                   if (_showCustomSettings) ...[
-                    const Divider(height: 1, color: SaynColors.darkDivider),
+                    const Divider(height: 1, color: SaynColors.paperBorder),
                     Padding(
                       padding: const EdgeInsets.all(12),
                       child: Column(
@@ -605,13 +636,13 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
             if (_outputController.text.isNotEmpty)
               Container(
                 decoration: BoxDecoration(
-                  color: SaynColors.darkSurface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: SaynColors.darkAccent.withOpacity(0.5)),
+                  color: SaynColors.paperCard,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: SaynColors.wineMaroon.withOpacity(0.4), width: 1.2),
                   boxShadow: [
                     BoxShadow(
-                      color: SaynColors.darkAccent.withOpacity(0.08),
-                      blurRadius: 20,
+                      color: SaynColors.wineMaroon.withOpacity(0.06),
+                      blurRadius: 18,
                       offset: const Offset(0, 4),
                     ),
                   ],
@@ -625,14 +656,14 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.check_circle_rounded, size: 16, color: SaynColors.darkAccent),
+                              const Icon(Icons.check_circle_rounded, size: 16, color: SaynColors.wineMaroon),
                               const SizedBox(width: 6),
                               Text(
                                 'Polished Output (${_selectedStyle.toUpperCase()})',
                                 style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: SaynColors.darkAccent,
+                                  color: SaynColors.wineMaroon,
                                 ),
                               ),
                             ],
@@ -661,14 +692,14 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                         ],
                       ),
                     ),
-                    const Divider(height: 1, color: SaynColors.darkDivider),
+                    const Divider(height: 1, color: SaynColors.paperBorder),
                     TextField(
                       controller: _outputController,
                       readOnly: true,
                       maxLines: 6,
                       style: const TextStyle(
-                        fontSize: 14,
-                        color: SaynColors.darkText,
+                        fontSize: 14.5,
+                        color: SaynColors.paperText,
                         height: 1.5,
                       ),
                       decoration: const InputDecoration(
@@ -712,57 +743,41 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     final initial = username.isNotEmpty ? username[0].toUpperCase() : 'A';
 
     return GestureDetector(
-      onTap: () => _showProfileSheet(context),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AccountScreen()),
+        );
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: SaynColors.darkElevated,
+          color: SaynColors.paperCard,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: SaynColors.darkDivider, width: 1),
+          border: Border.all(color: SaynColors.paperBorder, width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             CircleAvatar(
-              radius: 11,
-              backgroundColor: SaynColors.roseMaroon,
+              radius: 12,
+              backgroundColor: SaynColors.wineMaroon,
               child: Text(
                 initial,
                 style: const TextStyle(
-                  fontSize: 11,
+                  fontSize: 11.5,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
             ),
-            const SizedBox(width: 7),
+            const SizedBox(width: 8),
             Text(
               username,
               style: const TextStyle(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
-                color: SaynColors.warmCream,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: SaynColors.roseMaroon.withOpacity(0.25),
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(
-                  color: SaynColors.roseMaroon.withOpacity(0.45),
-                  width: 1,
-                ),
-              ),
-              child: const Text(
-                'INVITED',
-                style: TextStyle(
-                  fontSize: 8.5,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.3,
-                  color: SaynColors.warmCream,
-                ),
+                color: SaynColors.paperText,
               ),
             ),
           ],
