@@ -2887,6 +2887,7 @@ struct SaynStudioView: View {
                 HStack(spacing: 14) {
                     helpStatusItem(icon: "checkmark.shield.fill", title: "Accessibility", desc: "Granted", ok: true)
                     helpStatusItem(icon: "bolt.fill", title: "Groq LPU API", desc: "<320ms latency", ok: true)
+                    helpStatusItem(icon: "cloud.fill", title: "Supabase Cloud", desc: store.supabaseSyncStatus, ok: true)
                     helpStatusItem(icon: "mic.fill", title: "Microphone", desc: "Active (48kHz)", ok: true)
                 }
             }

@@ -2414,7 +2414,8 @@ class SaynInputMethodService : InputMethodService() {
 
     private fun setupSpacebarSwipe(view: View) {
         var startX = 0f
-        var lastStepX = 0f
+        var startY = 0f
+        var lastReportedStep = 0
         var isSwiping = false
 
         view.setOnTouchListener { v, event ->
@@ -2422,25 +2423,31 @@ class SaynInputMethodService : InputMethodService() {
                 MotionEvent.ACTION_DOWN -> {
                     v.isPressed = true
                     startX = event.x
-                    lastStepX = event.x
+                    startY = event.y
+                    lastReportedStep = 0
                     isSwiping = false
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
                     val totalDx = event.x - startX
-                    if (!isSwiping && Math.abs(totalDx) > dpToPx(10)) {
+                    val totalDy = event.y - startY
+                    val threshold = dpToPx(7)
+
+                    if (!isSwiping && Math.abs(totalDx) > dpToPx(10) && Math.abs(totalDx) > Math.abs(totalDy) * 1.3f) {
                         isSwiping = true
-                        spacebarTextView?.text = "◄ Cursor Control ►"
+                        spacebarTextView?.text = "◄  Cursor Trackpad  ►"
                         spacebarTextView?.setTextColor(COLOR_ROSE_MAROON)
                         vibrateTap()
                     }
                     if (isSwiping) {
-                        val stepDx = event.x - lastStepX
-                        val threshold = dpToPx(8)
-                        if (Math.abs(stepDx) >= threshold) {
-                            val dir = if (stepDx > 0) 1 else -1
-                            moveCursor(dir)
-                            lastStepX = event.x
+                        val currentStep = (totalDx / threshold).toInt()
+                        val stepsDiff = currentStep - lastReportedStep
+                        if (stepsDiff != 0) {
+                            val dir = if (stepsDiff > 0) 1 else -1
+                            for (i in 0 until Math.abs(stepsDiff)) {
+                                moveCursor(dir)
+                            }
+                            lastReportedStep = currentStep
                             vibrateTap()
                         }
                     }
@@ -2464,23 +2471,14 @@ class SaynInputMethodService : InputMethodService() {
     }
 
     private fun moveCursor(direction: Int) {
-        val ic = currentInputConnection ?: return
-        try {
-            val extracted = ic.getExtractedText(android.view.inputmethod.ExtractedTextRequest(), 0)
-            if (extracted != null && extracted.selectionStart >= 0) {
-                val newPos = Math.max(0, extracted.selectionStart + direction)
-                ic.setSelection(newPos, newPos)
-                return
-            }
-        } catch (e: Exception) {}
-
-        val keycode = if (direction < 0) android.view.KeyEvent.KEYCODE_DPAD_LEFT else android.view.KeyEvent.KEYCODE_DPAD_RIGHT
-        ic.sendKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, keycode))
-        ic.sendKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, keycode))
+        val keycode = if (direction < 0) KeyEvent.KEYCODE_DPAD_LEFT else KeyEvent.KEYCODE_DPAD_RIGHT
+        sendDownUpKeyEvents(keycode)
     }
 
     private fun setupKeyTouchWithLongPress(view: View, key: String, hintChar: String?) {
         var isLongPressed = false
+        var downX = 0f
+        var downY = 0f
         val longPressRunnable = Runnable {
             if (hintChar != null) {
                 isLongPressed = true
@@ -2499,8 +2497,19 @@ class SaynInputMethodService : InputMethodService() {
                 MotionEvent.ACTION_DOWN -> {
                     v.isPressed = true
                     isLongPressed = false
+                    downX = event.x
+                    downY = event.y
                     if (hintChar != null) {
-                        longPressHandler.postDelayed(longPressRunnable, 240)
+                        longPressHandler.postDelayed(longPressRunnable, 220)
+                    }
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    if (!isLongPressed) {
+                        val dist = Math.hypot((event.x - downX).toDouble(), (event.y - downY).toDouble())
+                        if (dist > dpToPx(14)) {
+                            longPressHandler.removeCallbacks(longPressRunnable)
+                        }
                     }
                     true
                 }

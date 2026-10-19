@@ -159,6 +159,14 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
     // Audio playback status
     @Published var playingEntryId: UUID? = nil
     
+    // MARK: - Supabase Live Cloud Sync Configuration
+    static let supabaseUrl = "https://utevlgdyqqavvtmokwvo.supabase.co"
+    static let supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZXZsZ2R5cXFhdnZ0bW9rd3ZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3NDIyMDAsImV4cCI6MjEwNzMxODIwMH0.gudEGqLAnR0lT9irIqA89eVR_Iqcg1in2M7lbFcd5vI"
+    
+    @Published var isSupabaseSyncing: Bool = false
+    @Published var lastSupabaseSyncDate: Date? = nil
+    @Published var supabaseSyncStatus: String = "Connected"
+    
     // Calculated Real Stats
     var totalWordsDictated: Int {
         let historyWords = history.reduce(0) { $0 + $1.wordCount }
@@ -203,6 +211,7 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
         loadSnippets()
         loadMeetings()
         scanRunningIDEs()
+        syncWithSupabase()
     }
     
     // MARK: - Directory Setup
@@ -240,6 +249,7 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
         DispatchQueue.main.async {
             self.history.insert(entry, at: 0)
             self.saveHistory()
+            self.uploadEntryToSupabase(entry)
         }
     }
     
@@ -252,7 +262,102 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
             }
             history.remove(at: idx)
             saveHistory()
+            deleteEntryFromSupabase(id: id)
         }
+    }
+    
+    // MARK: - Supabase Live Sync Implementation
+    func uploadEntryToSupabase(_ entry: DictationEntry) {
+        guard let url = URL(string: "\(Self.supabaseUrl)/rest/v1/writing_history") else { return }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(Self.supabaseAnonKey, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(Self.supabaseAnonKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("return=minimal", forHTTPHeaderField: "Prefer")
+        
+        let payload: [String: Any] = [
+            "id": entry.id.uuidString,
+            "source_text": entry.text,
+            "result_text": entry.text,
+            "writing_mode": "dictation",
+            "input_language": "en",
+            "output_language": "en",
+            "provider": "macos-desktop"
+        ]
+        
+        guard let httpBody = try? JSONSerialization.data(withJSONObject: payload) else { return }
+        request.httpBody = httpBody
+        
+        URLSession.shared.dataTask(with: request) { [weak self] _, response, error in
+            DispatchQueue.main.async {
+                if let httpRes = response as? HTTPURLResponse, (200...299).contains(httpRes.statusCode) {
+                    self?.lastSupabaseSyncDate = Date()
+                    self?.supabaseSyncStatus = "Synced Just Now"
+                } else if let error = error {
+                    self?.supabaseSyncStatus = "Offline (Local Only)"
+                    print("[Supabase Sync] Upload warning: \(error.localizedDescription)")
+                }
+            }
+        }.resume()
+    }
+    
+    func syncWithSupabase() {
+        guard !isSupabaseSyncing else { return }
+        guard let url = URL(string: "\(Self.supabaseUrl)/rest/v1/writing_history?select=id,source_text,result_text,writing_mode,created_at&order=created_at.desc&limit=50") else { return }
+        
+        isSupabaseSyncing = true
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue(Self.supabaseAnonKey, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(Self.supabaseAnonKey)", forHTTPHeaderField: "Authorization")
+        
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            DispatchQueue.main.async {
+                self?.isSupabaseSyncing = false
+                guard let self = self else { return }
+                
+                if let data = data,
+                   let jsonArray = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+                    var mergedCount = 0
+                    for item in jsonArray {
+                        guard let idStr = item["id"] as? String,
+                              let id = UUID(uuidString: idStr),
+                              let text = (item["result_text"] as? String) ?? (item["source_text"] as? String) else { continue }
+                        
+                        if !self.history.contains(where: { $0.id == id }) {
+                            let newEntry = DictationEntry(
+                                id: id,
+                                timestamp: Date(),
+                                text: text,
+                                durationSeconds: 2.5
+                            )
+                            self.history.append(newEntry)
+                            mergedCount += 1
+                        }
+                    }
+                    if mergedCount > 0 {
+                        self.history.sort(by: { $0.timestamp > $1.timestamp })
+                        self.saveHistory()
+                    }
+                    self.lastSupabaseSyncDate = Date()
+                    self.supabaseSyncStatus = "Synced (\(self.history.count) items)"
+                } else if let error = error {
+                    self.supabaseSyncStatus = "Offline"
+                    print("[Supabase Sync] Pull warning: \(error.localizedDescription)")
+                }
+            }
+        }.resume()
+    }
+    
+    func deleteEntryFromSupabase(id: UUID) {
+        guard let url = URL(string: "\(Self.supabaseUrl)/rest/v1/writing_history?id=eq.\(id.uuidString)") else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue(Self.supabaseAnonKey, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(Self.supabaseAnonKey)", forHTTPHeaderField: "Authorization")
+        URLSession.shared.dataTask(with: request).resume()
     }
     
     func toggleFlag(id: UUID) {
