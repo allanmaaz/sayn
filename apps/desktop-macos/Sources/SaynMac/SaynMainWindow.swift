@@ -194,12 +194,15 @@ struct SaynStudioView: View {
         ZStack {
             HStack(spacing: 0) {
                 // Left Sidebar (Full Height, Traffic lights at top)
-                sidebarView
-                    .frame(width: 200)
-                    .background(bgCanvas)
-                
-                Divider()
-                    .background(borderDivider)
+                if !isSidebarCollapsed {
+                    sidebarView
+                        .frame(width: 228)
+                        .background(bgCanvas)
+                        .transition(.move(edge: .leading).combined(with: .opacity))
+                    
+                    Divider()
+                        .background(borderDivider)
+                }
                 
                 // Right Main Area: Top Bar + Content Router
                 VStack(spacing: 0) {
@@ -278,8 +281,13 @@ struct SaynStudioView: View {
     // MARK: - Top Chrome Toolbar
     private var topToolbar: some View {
         HStack {
+            if isSidebarCollapsed {
+                Spacer()
+                    .frame(width: 68)
+            }
+            
             Button(action: {
-                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
                     isSidebarCollapsed.toggle()
                 }
             }) {
@@ -505,8 +513,13 @@ struct SaynStudioView: View {
                 sidebarNavItem(tab: .dictionary, label: "Dictionary", icon: "character.book.closed")
                 sidebarNavItem(tab: .snippets, label: "Snippets", icon: "scissors")
                 sidebarNavItem(tab: .style, label: "Style", customIcon: AnyView(
-                    Text("Aa")
-                        .font(.system(size: 13.5, weight: .bold, design: .serif))
+                    HStack(alignment: .lastTextBaseline, spacing: 0.5) {
+                        Text("A")
+                            .font(.system(size: 13.5, weight: .bold, design: .serif))
+                        Text("a")
+                            .font(.system(size: 11, weight: .bold, design: .serif))
+                    }
+                    .fixedSize()
                 ))
                 sidebarNavItem(tab: .transforms, label: "Transforms", icon: "arrow.triangle.branch")
                 sidebarNavItem(tab: .scratchpad, label: "Scratchpad", icon: "doc.text")
@@ -657,11 +670,11 @@ struct SaynStudioView: View {
                 Group {
                     if let custom = customIcon {
                         custom
-                            .frame(width: 18)
+                            .frame(width: 20, alignment: .center)
                     } else if let icon = icon {
                         Image(systemName: icon)
                             .font(.system(size: 14, weight: isSelected ? .semibold : .regular))
-                            .frame(width: 18)
+                            .frame(width: 20, alignment: .center)
                     }
                 }
                 .foregroundColor(isSelected ? Color(red: 88/255, green: 20/255, blue: 34/255) : Color(red: 95/255, green: 92/255, blue: 90/255))
@@ -669,15 +682,18 @@ struct SaynStudioView: View {
                 Text(label)
                     .font(.system(size: 13.5, weight: isSelected ? .bold : .medium, design: .rounded))
                     .foregroundColor(isSelected ? Color(red: 88/255, green: 20/255, blue: 34/255) : Color(red: 45/255, green: 42/255, blue: 40/255))
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
                 
                 if let b = badge {
-                    Spacer()
+                    Spacer(minLength: 8)
                     Text(b)
                         .font(.system(size: 9.5, weight: .bold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(Capsule().fill(Color(red: 111/255, green: 16/255, blue: 37/255)))
+                        .layoutPriority(1)
                 } else {
                     Spacer()
                 }
@@ -697,12 +713,14 @@ struct SaynStudioView: View {
             HStack(spacing: 12) {
                 Image(systemName: icon)
                     .font(.system(size: 14))
-                    .frame(width: 18)
+                    .frame(width: 20, alignment: .center)
                     .foregroundColor(Color(red: 95/255, green: 92/255, blue: 90/255))
                 
                 Text(title)
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(Color(red: 55/255, green: 52/255, blue: 50/255))
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
                 
                 Spacer()
             }

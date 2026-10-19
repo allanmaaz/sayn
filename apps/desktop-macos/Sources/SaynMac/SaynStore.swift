@@ -153,6 +153,7 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
     @Published var selectedAutoTransform: String = "Polish"
     @Published var scratchpadText: String = "Dictate or draft freely here. When done, you can apply a Transform or copy directly."
     @Published var isHeroBannerDismissed: Bool = false
+    @Published var isNotetakerPromoDismissed: Bool = false
     
     // Extended Functional Domains
     @Published var teamMembers: [TeamMember] = []
@@ -778,7 +779,8 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
             "vibeCodingCasing": vibeCodingCasing,
             "vibeCodingDocstring": vibeCodingDocstring,
             "vibeCodingFileTagging": vibeCodingFileTagging,
-            "isHeroBannerDismissed": isHeroBannerDismissed
+            "isHeroBannerDismissed": isHeroBannerDismissed,
+            "isNotetakerPromoDismissed": isNotetakerPromoDismissed
         ]
         if let data = try? JSONSerialization.data(withJSONObject: payload, options: .prettyPrinted) {
             try? data.write(to: configFile, options: .atomic)
@@ -812,6 +814,7 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
             self.vibeCodingDocstring = json["vibeCodingDocstring"] as? Bool ?? true
             self.vibeCodingFileTagging = json["vibeCodingFileTagging"] as? Bool ?? true
             self.isHeroBannerDismissed = json["isHeroBannerDismissed"] as? Bool ?? false
+            self.isNotetakerPromoDismissed = json["isNotetakerPromoDismissed"] as? Bool ?? false
         }
     }
     
