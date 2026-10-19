@@ -174,6 +174,7 @@ struct SaynStudioView: View {
                     .transition(.opacity.combined(with: .scale(scale: 0.98)))
             }
         }
+        .background(WindowAppearanceController(isDark: store.isAuthenticated))
         .frame(minWidth: 960, minHeight: 640)
         .onAppear {
             if store.isAuthenticated {
@@ -3501,6 +3502,90 @@ struct SaynStudioView: View {
         }
     }
     
+    // MARK: - Window Appearance Controller (Dynamic Light/Dark Mode)
+    struct WindowAppearanceController: NSViewRepresentable {
+        let isDark: Bool
+        
+        func makeNSView(context: Context) -> NSView {
+            let view = NSView()
+            DispatchQueue.main.async {
+                view.window?.appearance = NSAppearance(named: isDark ? .darkAqua : .aqua)
+            }
+            return view
+        }
+        
+        func updateNSView(_ nsView: NSView, context: Context) {
+            DispatchQueue.main.async {
+                nsView.window?.appearance = NSAppearance(named: isDark ? .darkAqua : .aqua)
+            }
+        }
+    }
+
+    // MARK: - Sayn macOS AppKit Text Field (Guaranteed Crisp Dark Text & Visible Placeholders)
+    struct SaynMacTextField: NSViewRepresentable {
+        let placeholder: String
+        @Binding var text: String
+        var isSecure: Bool = false
+        var onSubmit: (() -> Void)? = nil
+        
+        func makeCoordinator() -> Coordinator {
+            Coordinator(self)
+        }
+        
+        func makeNSView(context: Context) -> NSTextField {
+            let tf: NSTextField
+            if isSecure {
+                tf = NSSecureTextField()
+            } else {
+                tf = NSTextField()
+            }
+            tf.delegate = context.coordinator
+            tf.isBordered = false
+            tf.drawsBackground = false
+            tf.focusRingType = .none
+            tf.font = NSFont.systemFont(ofSize: 13, weight: .regular)
+            tf.textColor = NSColor(red: 25/255, green: 25/255, blue: 25/255, alpha: 1.0)
+            tf.placeholderAttributedString = NSAttributedString(
+                string: placeholder,
+                attributes: [
+                    .foregroundColor: NSColor(red: 145/255, green: 145/255, blue: 150/255, alpha: 1.0),
+                    .font: NSFont.systemFont(ofSize: 13, weight: .regular)
+                ]
+            )
+            tf.appearance = NSAppearance(named: .aqua)
+            return tf
+        }
+        
+        func updateNSView(_ nsView: NSTextField, context: Context) {
+            if nsView.stringValue != text {
+                nsView.stringValue = text
+            }
+            nsView.textColor = NSColor(red: 25/255, green: 25/255, blue: 25/255, alpha: 1.0)
+            nsView.appearance = NSAppearance(named: .aqua)
+        }
+        
+        class Coordinator: NSObject, NSTextFieldDelegate {
+            var parent: SaynMacTextField
+            init(_ parent: SaynMacTextField) {
+                self.parent = parent
+            }
+            
+            func controlTextDidChange(_ obj: Notification) {
+                if let tf = obj.object as? NSTextField {
+                    parent.text = tf.stringValue
+                }
+            }
+            
+            func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+                if commandSelector == #selector(NSResponder.insertNewline(_:)) {
+                    parent.onSubmit?()
+                    return true
+                }
+                return false
+            }
+        }
+    }
+    
     // MARK: - Secure Login Screen (Gated Access - Pixel-Perfect Minimal)
     private var secureLoginScreen: some View {
         ZStack {
@@ -3626,53 +3711,43 @@ struct SaynStudioView: View {
                     // Input 1: Username
                     HStack(spacing: 10) {
                         Image(systemName: "person")
-                            .font(.system(size: 13))
-                            .foregroundColor(Color(red: 160/255, green: 160/255, blue: 165/255))
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(Color(red: 130/255, green: 130/255, blue: 135/255))
                             .frame(width: 16)
                         
-                        TextField("Username", text: $authUsernameOrEmail)
-                            .textFieldStyle(PlainTextFieldStyle())
-                            .font(.system(size: 12.5))
-                            .foregroundColor(Color(red: 26/255, green: 26/255, blue: 26/255))
-                            .onSubmit { performLogin() }
+                        SaynMacTextField(placeholder: "Username", text: $authUsernameOrEmail, isSecure: false, onSubmit: performLogin)
                     }
                     .padding(.horizontal, 12)
                     .frame(height: 42)
-                    .background(RoundedRectangle(cornerRadius: 10).fill(Color(red: 249/255, green: 248/255, blue: 248/255)))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black.opacity(0.045), lineWidth: 1))
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color(red: 248/255, green: 247/255, blue: 247/255)))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black.opacity(0.065), lineWidth: 1))
                     
                     // Input 2: Password
                     HStack(spacing: 10) {
                         Image(systemName: "lock")
-                            .font(.system(size: 13))
-                            .foregroundColor(Color(red: 160/255, green: 160/255, blue: 165/255))
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(Color(red: 130/255, green: 130/255, blue: 135/255))
                             .frame(width: 16)
                         
                         if isShowPassword {
-                            TextField("Password", text: $authPassword)
-                                .textFieldStyle(PlainTextFieldStyle())
-                                .font(.system(size: 12.5))
-                                .foregroundColor(Color(red: 26/255, green: 26/255, blue: 26/255))
-                                .onSubmit { performLogin() }
+                            SaynMacTextField(placeholder: "Password", text: $authPassword, isSecure: false, onSubmit: performLogin)
+                                .id("pwd_plain")
                         } else {
-                            SecureField("Password", text: $authPassword)
-                                .textFieldStyle(PlainTextFieldStyle())
-                                .font(.system(size: 12.5))
-                                .foregroundColor(Color(red: 26/255, green: 26/255, blue: 26/255))
-                                .onSubmit { performLogin() }
+                            SaynMacTextField(placeholder: "Password", text: $authPassword, isSecure: true, onSubmit: performLogin)
+                                .id("pwd_secure")
                         }
                         
                         Button(action: { isShowPassword.toggle() }) {
                             Image(systemName: isShowPassword ? "eye.slash" : "eye")
-                                .font(.system(size: 12))
-                                .foregroundColor(Color(red: 160/255, green: 160/255, blue: 165/255))
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(Color(red: 130/255, green: 130/255, blue: 135/255))
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
                     .padding(.horizontal, 12)
                     .frame(height: 42)
-                    .background(RoundedRectangle(cornerRadius: 10).fill(Color(red: 249/255, green: 248/255, blue: 248/255)))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black.opacity(0.045), lineWidth: 1))
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color(red: 248/255, green: 247/255, blue: 248/255)))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black.opacity(0.065), lineWidth: 1))
                     
                     // Primary Action Button (Lock + Arrow)
                     Button(action: {
@@ -3685,13 +3760,13 @@ struct SaynStudioView: View {
                                     .colorInvert()
                             } else {
                                 Image(systemName: "lock.fill")
-                                    .font(.system(size: 12.5, weight: .semibold))
+                                    .font(.system(size: 13, weight: .semibold))
                                     .foregroundColor(.white)
                                 
                                 HStack {
                                     Spacer()
                                     Image(systemName: "arrow.right")
-                                        .font(.system(size: 12.5, weight: .semibold))
+                                        .font(.system(size: 13, weight: .semibold))
                                         .foregroundColor(.white)
                                         .padding(.trailing, 14)
                                 }
@@ -3708,11 +3783,11 @@ struct SaynStudioView: View {
                                         endPoint: .trailing
                                     )
                                 )
+                                .shadow(color: Color(red: 111/255, green: 16/255, blue: 37/255).opacity(0.20), radius: 5, x: 0, y: 2)
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
-                    .disabled(store.isAuthenticating || authUsernameOrEmail.isEmpty || authPassword.isEmpty)
-                    .opacity((authUsernameOrEmail.isEmpty || authPassword.isEmpty) ? 0.65 : 1.0)
+                    .disabled(store.isAuthenticating)
                 }
                 .padding(22)
                 .frame(width: 350)
