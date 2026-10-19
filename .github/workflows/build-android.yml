@@ -46,7 +46,13 @@ jobs:
       - name: Flutter Analyze
         run: |
           cd apps/android
-          flutter analyze
+          OUT=$(flutter analyze 2>&1 || true)
+          echo "$OUT"
+          FIRST_ERRORS=$(echo "$OUT" | grep -E "(error •|warning •|info •)" | head -n 15 | tr '\n' ' | ' | tr '"' "'")
+          echo "::error::ANALYZE: $FIRST_ERRORS"
+          if echo "$OUT" | grep -q "error •"; then
+            exit 1
+          fi
 
       - name: Build Release APK
         run: |
