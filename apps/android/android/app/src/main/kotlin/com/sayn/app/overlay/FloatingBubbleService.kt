@@ -204,25 +204,107 @@ class FloatingBubbleService : Service() {
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // 1. Idle Squircle View (38dp x 38dp translucent dark glass)
+        // 1. Idle Glowing Circular Burgundy Orb with Top Gripper Handle (Image 1)
         // ─────────────────────────────────────────────────────────────────────
         squircleView = FrameLayout(this).apply {
-            val bg = GradientDrawable().apply {
-                shape = GradientDrawable.RECTANGLE
-                cornerRadius = dpToPx(11f).toFloat()
-                setColor(Color.parseColor("#E6180B0F")) // Translucent dark obsidian glass
-                setStroke(dpToPx(1.2f), Color.parseColor("#4DA83249"))
-            }
-            background = bg
-            elevation = dpToPx(6).toFloat()
-            layoutParams = FrameLayout.LayoutParams(dpToPx(38), dpToPx(38))
+            layoutParams = FrameLayout.LayoutParams(dpToPx(66), dpToPx(78))
 
-            val micIcon = ImageView(this@FloatingBubbleService).apply {
-                setImageResource(R.drawable.ic_sayn_mic)
-                setColorFilter(Color.parseColor("#F5EBDD")) // Warm Cream
-                layoutParams = FrameLayout.LayoutParams(dpToPx(18), dpToPx(18), Gravity.CENTER)
+            val mainColumn = LinearLayout(this@FloatingBubbleService).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER_HORIZONTAL
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+                )
+
+                // A. 6-Dot Vertical Tactile Gripper Handle (2 columns of 3 dots)
+                val gripperLayout = LinearLayout(this@FloatingBubbleService).apply {
+                    orientation = LinearLayout.VERTICAL
+                    gravity = Gravity.CENTER_HORIZONTAL
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).apply { bottomMargin = dpToPx(3) }
+
+                    for (r in 0..2) {
+                        val row = LinearLayout(this@FloatingBubbleService).apply {
+                            orientation = LinearLayout.HORIZONTAL
+                            layoutParams = LinearLayout.LayoutParams(
+                                LinearLayout.LayoutParams.WRAP_CONTENT,
+                                LinearLayout.LayoutParams.WRAP_CONTENT
+                            ).apply { bottomMargin = dpToPx(1.5f) }
+
+                            for (c in 0..1) {
+                                val dot = View(this@FloatingBubbleService).apply {
+                                    val dotBg = GradientDrawable().apply {
+                                        shape = GradientDrawable.OVAL
+                                        setColor(Color.parseColor("#B3FAF5EE")) // Warm cream 70% opacity
+                                    }
+                                    background = dotBg
+                                    layoutParams = LinearLayout.LayoutParams(dpToPx(2.5f), dpToPx(2.5f)).apply {
+                                        marginStart = dpToPx(1.2f)
+                                        marginEnd = dpToPx(1.2f)
+                                    }
+                                }
+                                addView(dot)
+                            }
+                        }
+                        addView(row)
+                    }
+                }
+                addView(gripperLayout)
+
+                // B. Glowing Concentric Rings Container (Outer Pulse Halo + Inner Deep Maroon Orb)
+                val orbContainer = FrameLayout(this@FloatingBubbleService).apply {
+                    layoutParams = LinearLayout.LayoutParams(dpToPx(56), dpToPx(56))
+
+                    // Outer Halo Glow Ring
+                    val haloView = View(this@FloatingBubbleService).apply {
+                        val haloBg = GradientDrawable().apply {
+                            shape = GradientDrawable.OVAL
+                            setColor(Color.parseColor("#336F1025")) // Subtle burgundy glow halo
+                            setStroke(dpToPx(1.5f), Color.parseColor("#4D872639"))
+                        }
+                        background = haloBg
+                        layoutParams = FrameLayout.LayoutParams(dpToPx(56), dpToPx(56), Gravity.CENTER)
+                    }
+                    addView(haloView)
+
+                    // Middle Luminous Wine Ring
+                    val midRing = View(this@FloatingBubbleService).apply {
+                        val ringBg = GradientDrawable().apply {
+                            shape = GradientDrawable.OVAL
+                            setColor(Color.parseColor("#666F1025"))
+                            setStroke(dpToPx(1f), Color.parseColor("#80A83249"))
+                        }
+                        background = ringBg
+                        layoutParams = FrameLayout.LayoutParams(dpToPx(50), dpToPx(50), Gravity.CENTER)
+                    }
+                    addView(midRing)
+
+                    // Inner Solid Deep Maroon Orb
+                    val innerOrb = FrameLayout(this@FloatingBubbleService).apply {
+                        val orbBg = GradientDrawable().apply {
+                            shape = GradientDrawable.OVAL
+                            setColor(Color.parseColor("#6F1025")) // Deep Wine Maroon Base
+                            setStroke(dpToPx(1.5f), Color.parseColor("#A83249"))
+                        }
+                        background = orbBg
+                        elevation = dpToPx(8).toFloat()
+                        layoutParams = FrameLayout.LayoutParams(dpToPx(44), dpToPx(44), Gravity.CENTER)
+
+                        // Center SAYN Official Voice Wave Logo
+                        val logoView = ImageView(this@FloatingBubbleService).apply {
+                            setImageResource(R.drawable.sayn_logo)
+                            layoutParams = FrameLayout.LayoutParams(dpToPx(28), dpToPx(28), Gravity.CENTER)
+                        }
+                        addView(logoView)
+                    }
+                    addView(innerOrb)
+                }
+                addView(orbContainer)
             }
-            addView(micIcon)
+            addView(mainColumn)
         }
 
         // ─────────────────────────────────────────────────────────────────────

@@ -78,6 +78,12 @@ class SaynInputMethodService : InputMethodService() {
     private lateinit var btnCopy: TextView
     private lateinit var btnDismiss: ImageView
 
+    // Dual AI Suggestion Cards (Matching Image 1)
+    private var grammarDiffOldText: TextView? = null
+    private var grammarDiffNewText: TextView? = null
+    private var grammarContextText: TextView? = null
+    private var rewriteBodyText: TextView? = null
+
     // Full AI Assistant Panel (Matching Screenshot 2)
     private lateinit var fullAiPanelContainer: LinearLayout
     private lateinit var aiPanelModesRow: LinearLayout
@@ -1325,105 +1331,219 @@ class SaynInputMethodService : InputMethodService() {
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // 2. AI Suggestion Card Area (For Typed Text Refinement)
+    // 2. Dual AI Suggestion Cards Container (Matching Image 1)
     // ─────────────────────────────────────────────────────────────────────────────
 
     private fun buildSuggestionArea() {
         suggestionArea = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
             visibility = View.GONE
+            setPadding(dpToPx(4), dpToPx(2), dpToPx(4), dpToPx(4))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = dpToPx(2) }
+        }
+
+        // 1. Left Card: ✨ Grammar correction
+        val grammarCard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
             val bg = GradientDrawable().apply {
-                cornerRadius = dpToPx(8).toFloat()
+                cornerRadius = dpToPx(12).toFloat()
                 setColor(COLOR_SURFACE)
                 setStroke(dpToPx(1f), COLOR_BORDER)
             }
             background = bg
-            setPadding(dpToPx(6), dpToPx(2), dpToPx(6), dpToPx(2))
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                dpToPx(38)
-            ).apply { bottomMargin = dpToPx(4) }
-        }
-
-        // 1. Left: Mode Chiclet (e.g. "✦ Flow ▾" or "✦ Mammals ▾")
-        suggestionBadge = TextView(this).apply {
-            text = "✦ FLOW ▾"
-            textSize = 11f
-            setTextColor(COLOR_WARM_CREAM)
-            typeface = Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER
-            val pBg = GradientDrawable().apply {
-                cornerRadius = dpToPx(12).toFloat()
-                setColor(COLOR_MAROON)
+            setPadding(dpToPx(10), dpToPx(8), dpToPx(10), dpToPx(8))
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginEnd = dpToPx(3)
             }
-            background = pBg
-            setPadding(dpToPx(8), 0, dpToPx(8), 0)
-            isClickable = true
-            isFocusable = false
-            setOnClickListener {
-                cycleNextMode()
-            }
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                dpToPx(28)
-            ).apply { marginEnd = dpToPx(6) }
-        }
-        suggestionArea.addView(suggestionBadge)
 
-        // 2. Center: One-line preview of the refined text
-        suggestionText = TextView(this).apply {
-            text = ""
-            textSize = 12.5f
-            setTextColor(COLOR_WARM_CREAM)
-            gravity = Gravity.CENTER_VERTICAL
-            isSingleLine = true
-            ellipsize = android.text.TextUtils.TruncateAt.END
-            setPadding(dpToPx(4), 0, dpToPx(4), 0)
-            isClickable = true
-            isFocusable = false
-            setOnClickListener {
-                handleReplace()
+            val header = TextView(this@SaynInputMethodService).apply {
+                text = "✨ Grammar correction"
+                textSize = 10.5f
+                setTextColor(COLOR_MUTED_CREAM)
+                typeface = Typeface.DEFAULT_BOLD
             }
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
-        }
-        suggestionArea.addView(suggestionText)
+            addView(header)
 
-        // 3. Right Action 1: [ ✓ ] Apply Button
-        btnReplace = TextView(this).apply {
-            text = "✓"
-            textSize = 14f
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(COLOR_WARM_CREAM)
-            gravity = Gravity.CENTER
+            val diffRow = LinearLayout(this@SaynInputMethodService).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(0, dpToPx(4), 0, dpToPx(2))
+            }
+            grammarDiffOldText = TextView(this@SaynInputMethodService).apply {
+                text = "there"
+                textSize = 12f
+                setTextColor(COLOR_WARM_CREAM)
+            }
+            diffRow.addView(grammarDiffOldText)
+
+            val arrow = TextView(this@SaynInputMethodService).apply {
+                text = " → "
+                textSize = 12f
+                setTextColor(COLOR_FAINT_CREAM)
+            }
+            diffRow.addView(arrow)
+
+            grammarDiffNewText = TextView(this@SaynInputMethodService).apply {
+                text = "THERE"
+                textSize = 11.5f
+                setTextColor(COLOR_WARM_CREAM)
+                typeface = Typeface.DEFAULT_BOLD
+                val badge = GradientDrawable().apply {
+                    cornerRadius = dpToPx(4).toFloat()
+                    setColor(COLOR_MAROON)
+                    setStroke(dpToPx(1f), COLOR_ROSE_MAROON)
+                }
+                background = badge
+                setPadding(dpToPx(6), dpToPx(1), dpToPx(6), dpToPx(1))
+            }
+            diffRow.addView(grammarDiffNewText)
+            addView(diffRow)
+
+            grammarContextText = TextView(this@SaynInputMethodService).apply {
+                text = "BYE there → BYE THERE"
+                textSize = 10.5f
+                setTextColor(COLOR_MUTED_CREAM)
+                setPadding(0, 0, 0, dpToPx(6))
+            }
+            addView(grammarContextText)
+
+            val gActions = LinearLayout(this@SaynInputMethodService).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+            }
+            val btnAccept = TextView(this@SaynInputMethodService).apply {
+                text = "✓ Accept"
+                textSize = 11f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(COLOR_MAROON)
+                gravity = Gravity.CENTER
+                val aBg = GradientDrawable().apply {
+                    cornerRadius = dpToPx(8).toFloat()
+                    setColor(COLOR_WARM_CREAM)
+                }
+                background = aBg
+                setPadding(dpToPx(12), dpToPx(6), dpToPx(12), dpToPx(6))
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.2f)
+                setOnClickListener {
+                    triggerKeyFeedback("ENTER")
+                    handleAcceptCurrentSuggestion()
+                }
+            }
+            gActions.addView(btnAccept)
+
+            val btnDismissG = TextView(this@SaynInputMethodService).apply {
+                text = "✕ Dismiss"
+                textSize = 11f
+                setTextColor(COLOR_MUTED_CREAM)
+                gravity = Gravity.CENTER
+                val dBg = GradientDrawable().apply {
+                    cornerRadius = dpToPx(8).toFloat()
+                    setColor(COLOR_KEY_NORMAL)
+                    setStroke(dpToPx(1f), COLOR_BORDER)
+                }
+                background = dBg
+                setPadding(dpToPx(8), dpToPx(6), dpToPx(8), dpToPx(6))
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    marginStart = dpToPx(4)
+                }
+                setOnClickListener {
+                    triggerKeyFeedback("DEL")
+                    hideSuggestionArea()
+                }
+            }
+            gActions.addView(btnDismissG)
+            addView(gActions)
+        }
+        suggestionArea.addView(grammarCard)
+
+        // 2. Right Card: 🔄 Rewrite suggestion
+        val rewriteCard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
             val bg = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
-                setColor(COLOR_ROSE_MAROON)
+                cornerRadius = dpToPx(12).toFloat()
+                setColor(COLOR_SURFACE)
+                setStroke(dpToPx(1f), COLOR_BORDER)
             }
             background = bg
-            isClickable = true
-            isFocusable = false
-            layoutParams = LinearLayout.LayoutParams(dpToPx(30), dpToPx(30)).apply {
-                marginStart = dpToPx(4)
+            setPadding(dpToPx(10), dpToPx(8), dpToPx(10), dpToPx(8))
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginStart = dpToPx(3)
             }
-            setOnClickListener { handleReplace() }
-        }
-        suggestionArea.addView(btnReplace)
 
-        // 4. Right Action 2: [ ✕ ] Cancel Button
-        btnDismiss = ImageView(this).apply {
-            setImageResource(R.drawable.ic_sayn_close)
-            setColorFilter(COLOR_MUTED_CREAM, PorterDuff.Mode.SRC_IN)
-            layoutParams = LinearLayout.LayoutParams(dpToPx(28), dpToPx(28)).apply {
-                marginStart = dpToPx(4)
+            val header = TextView(this@SaynInputMethodService).apply {
+                text = "🔄 Rewrite suggestion"
+                textSize = 10.5f
+                setTextColor(COLOR_MUTED_CREAM)
+                typeface = Typeface.DEFAULT_BOLD
             }
-            setPadding(dpToPx(6), dpToPx(6), dpToPx(6), dpToPx(6))
-            isClickable = true
-            isFocusable = false
-            setOnClickListener { hideSuggestionArea() }
-        }
-        suggestionArea.addView(btnDismiss)
+            addView(header)
 
+            rewriteBodyText = TextView(this@SaynInputMethodService).apply {
+                text = "Goodbye there."
+                textSize = 12f
+                setTextColor(COLOR_WARM_CREAM)
+                maxLines = 2
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                setPadding(0, dpToPx(4), 0, dpToPx(8))
+            }
+            addView(rewriteBodyText)
+
+            val rActions = LinearLayout(this@SaynInputMethodService).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+            }
+            val btnReplaceR = TextView(this@SaynInputMethodService).apply {
+                text = "📋 Replace"
+                textSize = 11f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(COLOR_MAROON)
+                gravity = Gravity.CENTER
+                val rBg = GradientDrawable().apply {
+                    cornerRadius = dpToPx(8).toFloat()
+                    setColor(COLOR_WARM_CREAM)
+                }
+                background = rBg
+                setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6))
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.2f)
+                setOnClickListener {
+                    triggerKeyFeedback("ENTER")
+                    handleReplace()
+                }
+            }
+            rActions.addView(btnReplaceR)
+
+            val btnRetryR = TextView(this@SaynInputMethodService).apply {
+                text = "⏱ Retry"
+                textSize = 11f
+                setTextColor(COLOR_MUTED_CREAM)
+                gravity = Gravity.CENTER
+                val dBg = GradientDrawable().apply {
+                    cornerRadius = dpToPx(8).toFloat()
+                    setColor(COLOR_KEY_NORMAL)
+                    setStroke(dpToPx(1f), COLOR_BORDER)
+                }
+                background = dBg
+                setPadding(dpToPx(8), dpToPx(6), dpToPx(8), dpToPx(6))
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    marginStart = dpToPx(4)
+                }
+                setOnClickListener {
+                    triggerKeyFeedback("SPACE")
+                    runFullAiRefinement("rewrite")
+                }
+            }
+            rActions.addView(btnRetryR)
+            addView(rActions)
+        }
+        suggestionArea.addView(rewriteCard)
+
+        suggestionBadge = TextView(this)
+        suggestionText = TextView(this)
+        btnReplace = TextView(this)
+        btnDismiss = ImageView(this)
         btnInsert = TextView(this)
         btnCopy = TextView(this)
 
@@ -1432,35 +1552,23 @@ class SaynInputMethodService : InputMethodService() {
 
     private fun showSuggestion(refined: String, mode: String) {
         lastSuggestion = refined
-        suggestionBadge.text = "✦ ${formatModeTitle(mode).uppercase()} ▾"
-        suggestionText.text = refined
+        rewriteBodyText?.text = if (refined.isNotBlank()) refined else "No suggestions for this text yet."
+        if (lastOriginalText.isNotBlank()) {
+            val wordsOld = lastOriginalText.trim().split(Regex("\\s+"))
+            val wordsNew = refined.trim().split(Regex("\\s+"))
+            val lastOld = wordsOld.lastOrNull() ?: lastOriginalText
+            val lastNew = wordsNew.lastOrNull() ?: refined
+            grammarDiffOldText?.text = lastOld
+            grammarDiffNewText?.text = lastNew.uppercase(Locale.ROOT)
+            grammarContextText?.text = "$lastOld → $lastNew"
+        }
         suggestionArea.visibility = View.VISIBLE
-        if (::candidateStrip.isInitialized) candidateStrip.visibility = View.GONE
         hideVoiceLiveBar()
     }
 
     private fun hideSuggestionArea() {
         suggestionArea.visibility = View.GONE
         if (::candidateStrip.isInitialized && !isSensitiveField) candidateStrip.visibility = View.VISIBLE
-    }
-
-    private fun cycleNextMode() {
-        val coreModes = listOf("flow", "professional", "humanize", "mammals")
-        val currentIndex = coreModes.indexOf(activeMode.lowercase())
-        val nextMode = if (currentIndex != -1) {
-            coreModes[(currentIndex + 1) % coreModes.size]
-        } else {
-            coreModes[0]
-        }
-        activeMode = nextMode
-        getSharedPreferences("com.sayn.app.PREFS", Context.MODE_PRIVATE)
-            .edit().putString("default_mode", nextMode).apply()
-
-        if (lastOriginalText.isNotBlank()) {
-            runFullAiRefinement(nextMode)
-        } else {
-            suggestionBadge.text = "✦ ${formatModeTitle(nextMode).uppercase()} ▾"
-        }
     }
 
     private fun handleReplace() {
@@ -1487,24 +1595,43 @@ class SaynInputMethodService : InputMethodService() {
         Toast.makeText(this, "Polished text applied", Toast.LENGTH_SHORT).show()
     }
 
-    private fun handleInsert() {
+    private fun handleAcceptCurrentSuggestion() {
         val ic = currentInputConnection ?: return
-        if (lastSuggestion.isEmpty()) return
+        val replacement = grammarDiffNewText?.text?.toString() ?: lastSuggestion
+        if (replacement.isEmpty()) return
 
-        ic.commitText(lastSuggestion, 1)
+        ic.beginBatchEdit()
+        try {
+            val oldWord = grammarDiffOldText?.text?.toString() ?: ""
+            if (oldWord.isNotEmpty()) {
+                val before = ic.getTextBeforeCursor(oldWord.length + 2, 0)?.toString() ?: ""
+                if (before.trimEnd().endsWith(oldWord, ignoreCase = true)) {
+                    ic.deleteSurroundingText(oldWord.length, 0)
+                    ic.commitText(replacement, 1)
+                } else {
+                    handleReplace()
+                }
+            } else {
+                handleReplace()
+            }
+        } finally {
+            ic.endBatchEdit()
+        }
+
         hideSuggestionArea()
-        Toast.makeText(this, "Inserted at cursor", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Grammar correction applied", Toast.LENGTH_SHORT).show()
     }
 
-    private fun handleCopy() {
-        if (lastSuggestion.isEmpty()) return
-        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        clipboard.setPrimaryClip(ClipData.newPlainText("SAYN Refinement", lastSuggestion))
-        Toast.makeText(this, "Copied", Toast.LENGTH_SHORT).show()
+    private fun toggleAiSuggestionCards() {
+        if (suggestionArea.visibility == View.VISIBLE) {
+            hideSuggestionArea()
+        } else {
+            openFullAiPanel(activeMode)
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // 3. SAYN AI Toolbar (With Sparkle Button & Mic)
+    // 3. SAYN AI Toolbar (Matching Image 1: Logo, Pills, Down-Chevron)
     // ─────────────────────────────────────────────────────────────────────────────
 
     private fun buildAiToolbar() {
@@ -1517,14 +1644,41 @@ class SaynInputMethodService : InputMethodService() {
                 setStroke(dpToPx(1f), COLOR_BORDER)
             }
             background = bg
-            setPadding(dpToPx(6), dpToPx(2), dpToPx(6), dpToPx(2))
+            setPadding(dpToPx(4), dpToPx(2), dpToPx(4), dpToPx(2))
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 dpToPx(40)
             ).apply { bottomMargin = dpToPx(4) }
         }
 
-        // Left: Writing-Style Horizontal Pills ScrollView
+        // 1. Far Left: SAYN Brand Squircle Logo Button (Image 1)
+        val btnBrandLogo = FrameLayout(this).apply {
+            val bg = GradientDrawable().apply {
+                cornerRadius = dpToPx(8).toFloat()
+                setColor(COLOR_MAROON)
+                setStroke(dpToPx(1f), COLOR_ROSE_MAROON)
+            }
+            background = bg
+            isClickable = true
+            isFocusable = false
+            layoutParams = LinearLayout.LayoutParams(dpToPx(32), dpToPx(32)).apply {
+                marginEnd = dpToPx(4)
+            }
+
+            val logoImg = ImageView(this@SaynInputMethodService).apply {
+                setImageResource(R.drawable.sayn_logo)
+                layoutParams = FrameLayout.LayoutParams(dpToPx(22), dpToPx(22), Gravity.CENTER)
+            }
+            addView(logoImg)
+
+            setOnClickListener {
+                triggerKeyFeedback("ENTER")
+                toggleAiSuggestionCards()
+            }
+        }
+        aiToolbar.addView(btnBrandLogo)
+
+        // 2. Center: Mode Pills (✨ Grammar, 🔄 Rewrite, 📄 Humanize, 💼 Formal)
         val pillsScroll = HorizontalScrollView(this).apply {
             isHorizontalScrollBarEnabled = false
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -1535,25 +1689,35 @@ class SaynInputMethodService : InputMethodService() {
             gravity = Gravity.CENTER_VERTICAL
         }
 
-        for ((modeId, label) in modes) {
+        val displayModes = listOf(
+            "grammar" to "✨ Grammar",
+            "rewrite" to "🔄 Rewrite",
+            "humanize" to "📄 Humanize",
+            "formal" to "💼 Formal",
+            "flow" to "Fluency",
+            "mammals" to "Concise"
+        )
+
+        for ((modeId, label) in displayModes) {
             val pill = TextView(this).apply {
                 text = label
                 textSize = 11.5f
                 gravity = Gravity.CENTER
                 val isSelected = modeId == activeMode
-                setTextColor(if (isSelected) COLOR_WARM_CREAM else COLOR_MUTED_CREAM)
+                setTextColor(if (isSelected) COLOR_MAROON else COLOR_MUTED_CREAM)
                 val pillBg = GradientDrawable().apply {
                     cornerRadius = dpToPx(13).toFloat()
-                    setColor(if (isSelected) COLOR_MAROON else COLOR_KEY_NORMAL)
+                    setColor(if (isSelected) COLOR_WARM_CREAM else COLOR_KEY_NORMAL)
+                    if (!isSelected) setStroke(dpToPx(1f), COLOR_BORDER)
                 }
                 background = pillBg
-                setPadding(dpToPx(12), 0, dpToPx(12), 0)
+                setPadding(dpToPx(11), 0, dpToPx(11), 0)
                 setOnClickListener {
                     triggerKeyFeedback("SPACE")
                     activeMode = modeId
                     getSharedPreferences("com.sayn.app.PREFS", Context.MODE_PRIVATE)
                         .edit().putString("default_mode", modeId).apply()
-                    updateToolbarPills(pillsRow)
+                    updateToolbarPills(pillsRow, displayModes)
                     openFullAiPanel(modeId)
                 }
                 layoutParams = LinearLayout.LayoutParams(
@@ -1570,35 +1734,8 @@ class SaynInputMethodService : InputMethodService() {
         pillsScroll.addView(pillsRow)
         aiToolbar.addView(pillsScroll)
 
-        // Right 1: Rose-Maroon Sparkle Circle Button [ Sparkle ]
-        val btnSparkle = FrameLayout(this).apply {
-            val sBg = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
-                setColor(COLOR_ROSE_MAROON)
-            }
-            background = sBg
-            isClickable = true
-            isFocusable = false
-            layoutParams = LinearLayout.LayoutParams(dpToPx(34), dpToPx(34)).apply {
-                marginStart = dpToPx(6)
-            }
-
-            val sIcon = ImageView(this@SaynInputMethodService).apply {
-                setImageResource(R.drawable.ic_sayn_sparkles)
-                setColorFilter(COLOR_WARM_CREAM)
-                layoutParams = FrameLayout.LayoutParams(dpToPx(18), dpToPx(18), Gravity.CENTER)
-            }
-            addView(sIcon)
-
-            setOnClickListener {
-                triggerKeyFeedback("ENTER")
-                openFullAiPanel(activeMode)
-            }
-        }
-        aiToolbar.addView(btnSparkle)
-
-        // Right 2: The Voice Dictation Mic Circle Button [ Mic ]
-        val btnVoice = FrameLayout(this).apply {
+        // 3. Far Right: Down-Chevron Toggle Button (Image 1)
+        val btnChevron = FrameLayout(this).apply {
             val vBg = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
                 setColor(COLOR_KEY_NORMAL)
@@ -1607,36 +1744,37 @@ class SaynInputMethodService : InputMethodService() {
             background = vBg
             isClickable = true
             isFocusable = false
-            layoutParams = LinearLayout.LayoutParams(dpToPx(34), dpToPx(34)).apply {
-                marginStart = dpToPx(5)
+            layoutParams = LinearLayout.LayoutParams(dpToPx(32), dpToPx(32)).apply {
+                marginStart = dpToPx(4)
             }
 
             val vIcon = ImageView(this@SaynInputMethodService).apply {
-                setImageResource(R.drawable.ic_sayn_mic)
+                setImageResource(R.drawable.ic_sayn_down)
                 setColorFilter(COLOR_WARM_CREAM)
-                layoutParams = FrameLayout.LayoutParams(dpToPx(17), dpToPx(17), Gravity.CENTER)
+                layoutParams = FrameLayout.LayoutParams(dpToPx(16), dpToPx(16), Gravity.CENTER)
             }
             addView(vIcon)
 
             setOnClickListener {
                 triggerKeyFeedback("SPACE")
-                toggleInKeyboardVoice()
+                toggleAiSuggestionCards()
             }
         }
-        aiToolbar.addView(btnVoice)
+        aiToolbar.addView(btnChevron)
 
         rootLayout.addView(aiToolbar)
     }
 
-    private fun updateToolbarPills(pillsRow: LinearLayout) {
+    private fun updateToolbarPills(pillsRow: LinearLayout, displayModes: List<Pair<String, String>>) {
         for (i in 0 until pillsRow.childCount) {
             val pill = pillsRow.getChildAt(i) as? TextView ?: continue
-            val modeId = modes[i].first
+            val modeId = displayModes[i].first
             val isSelected = modeId == activeMode
-            pill.setTextColor(if (isSelected) COLOR_WARM_CREAM else COLOR_MUTED_CREAM)
+            pill.setTextColor(if (isSelected) COLOR_MAROON else COLOR_MUTED_CREAM)
             val pillBg = GradientDrawable().apply {
                 cornerRadius = dpToPx(13).toFloat()
-                setColor(if (isSelected) COLOR_MAROON else COLOR_KEY_NORMAL)
+                setColor(if (isSelected) COLOR_WARM_CREAM else COLOR_KEY_NORMAL)
+                if (!isSelected) setStroke(dpToPx(1f), COLOR_BORDER)
             }
             pill.background = pillBg
         }
@@ -2612,7 +2750,7 @@ class SaynInputMethodService : InputMethodService() {
                     v.isPressed = false
                     if (isSwiping) {
                         isSwiping = false
-                        spacebarTextView?.text = "SAYN English"
+                        spacebarTextView?.text = "SAYN"
                         spacebarTextView?.setTextColor(COLOR_FAINT_CREAM)
                     } else if (event.action == MotionEvent.ACTION_UP) {
                         triggerKeyFeedback("SPACE")

@@ -84,25 +84,26 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: v1.1.4
-          name: "SAYN Android Release v1.1.4 (Samsung One UI Keyboard & Wispr Flow Engine)"
+          tag_name: v1.1.5
+          name: "SAYN Android Release v1.1.5 (Universal Floating Overlay & Dual AI Cards)"
           body: |
-            ### SAYN v1.1.4 — Samsung One UI Keyboard & Wispr Flow Engine
+            ### SAYN v1.1.5 — Universal Floating Overlay & Dual AI Suggestion Cards
             Official signed release for Android.
             
-            **What's New in v1.1.4:**
-            * **1:1 Samsung One UI Keyboard Layout & Mechanics:**
-              - **Spacebar Sliding Cursor Trackpad**: Slide your finger left or right across the spacebar for smooth character-by-character cursor navigation with tactile feedback.
-              - **Secondary Symbol & Numeric Sub-Labels**: Numbers 1-0 atop Q-P, punctuation (@, #, $, %, &, *, -, +, (, ), !, ?, :, ;, ', ", /) on lower rows; instant 240ms long-press emission.
-              - **One UI Quick Action Toolbar**: Direct access to Stickers/Emoji, Clipboard paste tray, Voice Mic, SAYN AI, Settings, and Prediction row switcher.
-              - **Samsung One UI Key Geometry**: 6.5dp corner radius keycaps with authentic obsidian plum and warm cream palette.
-            * **Wispr Flow Real-Time Conciseness Engine:**
-              - **Spoken Punctuation Parsing**: Automatically converts spoken commands ("question mark", "period", "comma", "new line", "new paragraph") into clean typographic punctuation.
-              - **Disfluency & Hesitation Stripping**: Eliminates "um", "uh", "you know", "like", "basically", and "sort of" in real time.
-              - **Currency & Number Formatting**: Formats "$20" from "twenty dollars" and percentages cleanly.
-              - **Mammals Casual Texting Tone**: Strictly maintains zero trailing periods for effortless modern messaging.
-            * **GEC Training Pipeline (Lakhs of Datasets):**
-              - Comprehensive multi-source dataset aggregator (Lang-8, BEA-2019, JFLEG, synthetic mobile corruptor) for fine-tuning LLaMA 3.2 1B & Gemma 2 2B with QLoRA.
+            **What's New in v1.1.5:**
+            * **Universal Floating Mic Overlay:**
+              - Glowing circular burgundy orb (`#6F1025`) with concentric halo rings and official SAYN wave ribbon logo.
+              - 6-dot vertical tactile gripper handle (`:::`) for smooth fluid dragging anywhere on screen.
+              - Auto-wakes across any keyboard (Samsung, Gboard, SwiftKey) whenever an editable text field is tapped.
+            * **Dual AI Suggestion Cards Above Keyboard:**
+              - Left card: `✨ Grammar correction` with diff badges (`there → THERE`), `✓ Accept`, and `✕ Dismiss`.
+              - Right card: `🔄 Rewrite suggestion` with `📋 Replace` and `⏱ Retry`.
+            * **Top Quick-Action Toolbar:**
+              - SAYN brand squircle logo button on left.
+              - Style pills: `✨ Grammar`, `🔄 Rewrite`, `📄 Humanize`, `💼 Formal`.
+              - Down chevron toggle to collapse and expand cards.
+            * **In-App Auto-Update System:**
+              - Seamless detection and 1-tap in-app download and installation.
             
             **Installation:**
             Download `sayn-release.apk` below and install directly on your Android device.

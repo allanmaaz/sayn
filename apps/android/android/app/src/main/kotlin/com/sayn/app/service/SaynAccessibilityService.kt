@@ -4,8 +4,10 @@ import android.accessibilityservice.AccessibilityService
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityWindowInfo
@@ -28,26 +30,47 @@ class SaynAccessibilityService : AccessibilityService() {
         isConnected = true
     }
 
+    private fun ensureFloatingBubbleRunning() {
+        if (!FloatingBubbleService.isRunning && Settings.canDrawOverlays(this)) {
+            try {
+                val intent = Intent(this, FloatingBubbleService::class.java)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(intent)
+                } else {
+                    startService(intent)
+                }
+            } catch (e: Exception) {
+                // Ignore service start issues
+            }
+        }
+    }
+
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         when (event.eventType) {
             AccessibilityEvent.TYPE_VIEW_FOCUSED -> {
                 val node = event.source ?: rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
                 if (node != null && node.isEditable) {
                     lastFocusedNode = node
+                    ensureFloatingBubbleRunning()
                     FloatingBubbleService.setUniversalInputActive(true)
                 }
             }
-            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
+            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED,
+            AccessibilityEvent.TYPE_WINDOWS_CHANGED -> {
                 val focused = findEditableTargetNode()
                 if (focused != null) {
                     lastFocusedNode = focused
+                    ensureFloatingBubbleRunning()
                     FloatingBubbleService.setUniversalInputActive(true)
+                } else {
+                    FloatingBubbleService.setUniversalInputActive(false)
                 }
             }
             AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED -> {
                 val node = event.source
                 if (node != null && node.isEditable && node.isFocused) {
                     lastFocusedNode = node
+                    ensureFloatingBubbleRunning()
                     FloatingBubbleService.setUniversalInputActive(true)
                 }
             }

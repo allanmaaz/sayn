@@ -182,8 +182,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildSettingItem(
                 icon: Icons.info_outline_rounded,
                 title: 'App version',
-                subtitle: 'v1.1.4',
-                onTap: () => _showSimpleNotice('App Version', 'SAYN v1.1.4 is up to date on your device.'),
+                subtitle: 'v1.1.5',
+                onTap: () => _showSimpleNotice('App Version', 'SAYN v1.1.5 is up to date on your device.'),
               ),
             ]),
             const SizedBox(height: 40),
