@@ -55,7 +55,7 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
       'title': 'Floating Voice Pill',
       'subtitle': 'Dictate anywhere without switching apps. Tap or hold the floating capsule to speak into WhatsApp, Notes, or Chrome.',
       'icon': Icons.layers_rounded,
-      'color': SaynColors.accentTeal,
+      'color': SaynColors.roseMaroon,
     },
     {
       'title': 'Samsung One UI Keyboard',

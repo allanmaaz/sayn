@@ -16,6 +16,7 @@ class SaynColors {
   static const Color deepMaroon = Color(0xFF6F1025);
   static const Color roseMaroon = Color(0xFFA83249);
   static const Color warmCream = Color(0xFFF5EBDD);
+  static const Color accentTeal = Color(0xFFA83249);
   
   static const Color darkAccent = Color(0xFF6F1025);
   static const Color darkSuccess = Color(0xFF30D158);
