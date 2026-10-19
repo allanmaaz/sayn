@@ -1,5 +1,6 @@
 import { Env } from '../types.js';
 import { TranscribeResponse } from '@sayn/shared-types';
+import { cleanWisprFlowText } from './wisprFlowCleaner.js';
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   let binary = '';
@@ -97,9 +98,10 @@ export async function handleTranscription(
             const data: any = await response.json();
             const textPart = data.candidates?.[0]?.content?.parts?.[0]?.text;
             if (textPart && textPart.trim()) {
+              const cleaned = cleanWisprFlowText(textPart.trim());
               return {
                 success: true,
-                transcript: textPart.trim(),
+                transcript: cleaned,
                 provider: `Google Gemini (${model})`,
               };
             }
@@ -144,9 +146,10 @@ export async function handleTranscription(
     }
 
     const data: any = await response.json();
+    const cleaned = cleanWisprFlowText(data.text || '');
     return {
       success: true,
-      transcript: data.text || '',
+      transcript: cleaned,
       provider: 'OpenAI Whisper',
     };
   }
@@ -159,9 +162,10 @@ export async function handleTranscription(
         audio: [...new Uint8Array(arrayBuffer)],
       };
       const response: any = await env.AI.run('@cf/openai/whisper', input);
+      const cleaned = cleanWisprFlowText(response.text || '');
       return {
         success: true,
-        transcript: response.text || '',
+        transcript: cleaned,
         provider: 'Cloudflare Whisper AI',
       };
     } catch (err: any) {

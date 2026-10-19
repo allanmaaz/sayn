@@ -4,6 +4,7 @@ import { getCorsHeaders, handleOptions } from './middleware/cors.js';
 import { authenticateRequest } from './middleware/auth.js';
 import { ProviderRouter } from './providers/router.js';
 import { handleTranscription } from './speech/transcribe.js';
+import { cleanWisprFlowText } from './speech/wisprFlowCleaner.js';
 import {
   HealthCheckResponse,
   RefineResponse,
@@ -105,11 +106,11 @@ export default {
       // 1b. PUBLIC APP VERSION CHECK & UPDATE SERVER
       if (url.pathname === '/api/v1/version' && request.method === 'GET') {
         const updatePayload = {
-          version: '1.1.3',
-          versionCode: 14,
-          name: 'SAYN v1.1.3',
-          releaseNotes: 'Zero-view-destruction chiclet keycaps, resolved first-letter auto-clear typing glitch, ultra-compact mic pill, and multi-angle voice tones.',
-          downloadUrl: 'https://github.com/allanmaaz/sayn/releases/download/v1.1.3/sayn-release.apk',
+          version: '1.1.4',
+          versionCode: 15,
+          name: 'SAYN v1.1.4',
+          releaseNotes: '1:1 Samsung One UI keyboard replication (sliding spacebar cursor trackpad, secondary symbol keys, One UI toolbar) + Wispr Flow ultra-fast grammar & conciseness engine.',
+          downloadUrl: 'https://github.com/allanmaaz/sayn/releases/download/v1.1.4/sayn-release.apk',
           publishedAt: new Date().toISOString(),
         };
         return jsonResponse(updatePayload, 200, origin);
@@ -202,10 +203,9 @@ export default {
           const originalWords = parsed.data.text.trim().split(/\s+/).filter(Boolean).length;
           const refinedWords = providerResult.refinedText.trim().split(/\s+/).filter(Boolean).length;
 
-          let finalRefinedText = providerResult.refinedText;
-          if (parsed.data.mode === 'mammals' && finalRefinedText.endsWith('.')) {
-            finalRefinedText = finalRefinedText.slice(0, -1).trimEnd();
-          }
+          let finalRefinedText = cleanWisprFlowText(providerResult.refinedText, {
+            removeTrailingPeriod: parsed.data.mode === 'mammals',
+          });
 
           const responsePayload: RefineResponse = {
             success: true,

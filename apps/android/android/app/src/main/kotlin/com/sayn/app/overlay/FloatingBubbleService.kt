@@ -579,8 +579,43 @@ class FloatingBubbleService : Service() {
         }
     }
 
+    private fun cleanWisprFlowLocal(text: String, isMammals: Boolean = true): String {
+        if (text.isBlank()) return ""
+        var res = text
+        // Spoken punctuation
+        res = res.replace(Regex("(?i)\\b(new line|next line)\\b"), "\n")
+        res = res.replace(Regex("(?i)\\b(new paragraph|next paragraph)\\b"), "\n\n")
+        res = res.replace(Regex("(?i)\\bquestion mark\\b"), "?")
+        res = res.replace(Regex("(?i)\\b(exclamation mark|exclamation point)\\b"), "!")
+        res = res.replace(Regex("(?i)\\b(full stop|period)\\b"), ".")
+        res = res.replace(Regex("(?i)\\bcomma\\b"), ",")
+        res = res.replace(Regex("(?i)\\bcolon\\b"), ":")
+        res = res.replace(Regex("(?i)\\bsemicolon\\b"), ";")
+
+        // Disfluencies
+        res = res.replace(Regex("(?i)\\b(um|uh|er|ah)\\b,?\\s*"), " ")
+        res = res.replace(Regex("(?i)\\b(you know|sort of|kind of|basically|so yeah|i mean)\\b,?\\s*"), " ")
+
+        // Spacing cleanup
+        res = res.replace(Regex("\\s+([,.:;?!])"), "$1")
+        res = res.replace(Regex("([,.:;?!])([a-zA-Z0-9])"), "$1 $2")
+        res = res.replace(Regex("[ \\t]+"), " ")
+        res = res.replace(Regex("\\n{3,}"), "\n\n")
+
+        // Sentence capitalization
+        res = res.replace(Regex("(^|[.?!]\\s+|\\n\\s*)([a-z])")) { mr ->
+            mr.groupValues[1] + mr.groupValues[2].uppercase()
+        }
+        res = res.trim()
+        if (isMammals && res.endsWith(".")) {
+            res = res.substring(0, res.length - 1).trimEnd()
+        }
+        return res
+    }
+
     private fun commitVoiceDictation() {
-        val textToInsert = currentSpokenText.trim()
+        val rawSpoken = currentSpokenText.trim()
+        val textToInsert = cleanWisprFlowLocal(rawSpoken, isMammals = true)
         currentSpokenText = ""
         stopSpeechRecognizer()
 
@@ -590,7 +625,8 @@ class FloatingBubbleService : Service() {
 
             CoroutineScope(Dispatchers.Main).launch {
                 val hostPackage = SaynAccessibilityService.instance?.findEditableTargetNode()?.packageName?.toString()
-                val refined = SaynCloudVoiceClient.refineText(textToInsert, hostPackage, mode = "mammals")
+                val rawRefined = SaynCloudVoiceClient.refineText(textToInsert, hostPackage, mode = "mammals")
+                val refined = cleanWisprFlowLocal(rawRefined, isMammals = true)
 
                 // 1. If SAYN Keyboard is actively connected, inject directly via InputConnection
                 var injected = SaynInputMethodService.instance?.commitTextFromExternal(refined) ?: false

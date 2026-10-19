@@ -65,26 +65,25 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: v1.1.3
-          name: "SAYN Android Release v1.1.3 (Minimal Chiclet Keyboard & Bug Fixes)"
+          tag_name: v1.1.4
+          name: "SAYN Android Release v1.1.4 (Samsung One UI Keyboard & Wispr Flow Engine)"
           body: |
-            ### SAYN v1.1.3 — Minimal Chiclet Keyboard & System Enhancements
+            ### SAYN v1.1.4 — Samsung One UI Keyboard & Wispr Flow Engine
             Official signed release for Android.
             
-            **What's New in v1.1.3:**
-            * **Zero-View-Destruction In-Place Case Shifting:**
-              - Completely resolved first-character clear glitch.
-              - Sentence capitalization and Shift toggling update keycaps in-place with zero latency and zero view tree destruction.
-              - Atomic batch editing (`beginBatchEdit`/`endBatchEdit`) on key commitments and suggestion replacements.
-            * **Instant Universal Text Injection:**
-              - Direct injection through active SAYN keyboard `InputConnection` with instant fallback to `SaynAccessibilityService` and clipboard.
-            * **Android 13–15 Restricted Settings Bypass:**
-              - In-app guided 4-step assistant with direct App Info deep link to allow restricted accessibility settings on sideloaded APKs.
-            * **Signature Mammals Voice Tone:**
-              - Clean casual texting with zero trailing periods promoted across all voice tools.
-            * **Harmonized Minimal Architecture:**
-              - Stripped mode drawer clutter from keyboard; voice dictation and refinement are consolidated into the floating overlay.
-              - Bottom navigation labels refined to prevent text clipping on all devices.
+            **What's New in v1.1.4:**
+            * **1:1 Samsung One UI Keyboard Layout & Mechanics:**
+              - **Spacebar Sliding Cursor Trackpad**: Slide your finger left or right across the spacebar for smooth character-by-character cursor navigation with tactile feedback.
+              - **Secondary Symbol & Numeric Sub-Labels**: Numbers 1-0 atop Q-P, punctuation (@, #, $, %, &, *, -, +, (, ), !, ?, :, ;, ', ", /) on lower rows; instant 240ms long-press emission.
+              - **One UI Quick Action Toolbar**: Direct access to Stickers/Emoji, Clipboard paste tray, Voice Mic, SAYN AI, Settings, and Prediction row switcher.
+              - **Samsung One UI Key Geometry**: 6.5dp corner radius keycaps with authentic obsidian plum and warm cream palette.
+            * **Wispr Flow Real-Time Conciseness Engine:**
+              - **Spoken Punctuation Parsing**: Automatically converts spoken commands ("question mark", "period", "comma", "new line", "new paragraph") into clean typographic punctuation.
+              - **Disfluency & Hesitation Stripping**: Eliminates "um", "uh", "you know", "like", "basically", and "sort of" in real time.
+              - **Currency & Number Formatting**: Formats "$20" from "twenty dollars" and percentages cleanly.
+              - **Mammals Casual Texting Tone**: Strictly maintains zero trailing periods for effortless modern messaging.
+            * **GEC Training Pipeline (Lakhs of Datasets):**
+              - Comprehensive multi-source dataset aggregator (Lang-8, BEA-2019, JFLEG, synthetic mobile corruptor) for fine-tuning LLaMA 3.2 1B & Gemma 2 2B with QLoRA.
             
             **Installation:**
             Download `sayn-release.apk` below and install directly on your Android device.

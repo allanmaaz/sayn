@@ -49,7 +49,11 @@ class SaynInputMethodService : InputMethodService() {
 
     private lateinit var rootLayout: LinearLayout
     private lateinit var aiToolbar: LinearLayout
-    private lateinit var candidateStrip: LinearLayout
+    private lateinit var candidateStrip: FrameLayout
+    private lateinit var stripToolbarContainer: LinearLayout
+    private lateinit var stripCandidatesContainer: LinearLayout
+    private var isToolbarForced = false
+    private var spacebarTextView: TextView? = null
     private lateinit var candidateLeft: TextView
     private lateinit var candidateCenter: TextView
     private lateinit var candidateRight: TextView
@@ -111,15 +115,16 @@ class SaynInputMethodService : InputMethodService() {
     private var shiftKeyContainer: FrameLayout? = null
     private var shiftKeyIcon: ImageView? = null
 
-    // Long-press key hints from user reference screenshot
+    // Long-press secondary key hints (Exact Samsung One UI Layout)
     private val keyHintMap = mapOf(
         "Q" to "1", "W" to "2", "E" to "3", "R" to "4", "T" to "5",
         "Y" to "6", "U" to "7", "I" to "8", "O" to "9", "P" to "0",
-        "A" to "@", "S" to "#", "D" to "$", "F" to "-", "G" to "!",
-        "H" to "_", "J" to "*", "K" to "(", "L" to ")",
-        "Z" to "+", "X" to "'", "C" to "\"", "V" to ":", "B" to ";",
-        "N" to ",", "M" to "?",
-        "." to "..."
+        "A" to "@", "S" to "#", "D" to "$", "F" to "%", "G" to "&",
+        "H" to "*", "J" to "-", "K" to "+", "L" to "(",
+        "Z" to "!", "X" to "\"", "C" to "'", "V" to ":", "B" to ";",
+        "N" to "/", "M" to "?",
+        "." to "...",
+        "@" to ","
     )
 
     // 4 Core AI Writing Styles + Utilities
@@ -520,45 +525,104 @@ class SaynInputMethodService : InputMethodService() {
     // 0. Real-Time Auto-Suggest & Prediction Candidate Strip
     // ─────────────────────────────────────────────────────────────────────────────
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 0. Real-Time Auto-Suggest & Samsung One UI Quick Toolbar Strip
+    // ─────────────────────────────────────────────────────────────────────────────
+
     private fun buildCandidateStrip() {
-        candidateStrip = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
+        candidateStrip = FrameLayout(this).apply {
             setBackgroundColor(COLOR_BG)
-            setPadding(dpToPx(6), dpToPx(2), dpToPx(6), dpToPx(2))
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 dpToPx(38)
             ).apply { bottomMargin = dpToPx(4) }
         }
 
-        // 1. Far Left: Sparkle / Quick Action Icon
-        val sparkleBtn = FrameLayout(this).apply {
-            val sIcon = ImageView(this@SaynInputMethodService).apply {
+        // 1. Samsung One UI Quick Action Toolbar (Emoji, Clipboard, Mic, SAYN AI, Settings, Switch)
+        stripToolbarContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dpToPx(8), 0, dpToPx(8), 0)
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        }
+
+        val btnEmoji = createToolbarIconButton(R.drawable.ic_sayn_emoji) {
+            triggerKeyFeedback("ENTER")
+            setSymbolLayout(3)
+        }
+        val btnClipboard = createToolbarIconButton(R.drawable.ic_sayn_clipboard) {
+            triggerKeyFeedback("ENTER")
+            pasteFromClipboard()
+        }
+        val btnMic = createToolbarIconButton(R.drawable.ic_sayn_mic) {
+            triggerKeyFeedback("SPACE")
+            toggleInKeyboardVoice()
+        }
+        val btnAi = createToolbarIconButton(R.drawable.ic_sayn_sparkles) {
+            triggerKeyFeedback("ENTER")
+            val ic = currentInputConnection
+            val before = ic?.getTextBeforeCursor(40, 0)?.toString() ?: ""
+            val selected = ic?.getSelectedText(0)?.toString() ?: ""
+            if (before.isNotBlank() || selected.isNotBlank()) {
+                openFullAiPanel(activeMode)
+            } else {
+                toggleInKeyboardVoice()
+            }
+        }
+        val btnSettings = createToolbarIconButton(R.drawable.ic_sayn_settings) {
+            triggerKeyFeedback("ENTER")
+            openKeyboardSettings()
+        }
+        val btnSwitchToPredictions = createToolbarIconButton(R.drawable.ic_sayn_keyboard) {
+            triggerKeyFeedback("SPACE")
+            isToolbarForced = false
+            showCandidatesView()
+        }
+
+        stripToolbarContainer.addView(btnEmoji)
+        stripToolbarContainer.addView(createToolbarSpacer())
+        stripToolbarContainer.addView(btnClipboard)
+        stripToolbarContainer.addView(createToolbarSpacer())
+        stripToolbarContainer.addView(btnMic)
+        stripToolbarContainer.addView(createToolbarSpacer())
+        stripToolbarContainer.addView(btnAi)
+        stripToolbarContainer.addView(createToolbarSpacer())
+        stripToolbarContainer.addView(btnSettings)
+        stripToolbarContainer.addView(createToolbarSpacer())
+        stripToolbarContainer.addView(btnSwitchToPredictions)
+
+        // 2. Candidate Predictions Row (Switch to Toolbar, Candidate Left, Center, Right, Quick Mic)
+        stripCandidatesContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dpToPx(6), 0, dpToPx(6), 0)
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+            visibility = View.GONE
+        }
+
+        val btnSwitchToToolbar = FrameLayout(this).apply {
+            val icon = ImageView(this@SaynInputMethodService).apply {
                 setImageResource(R.drawable.ic_sayn_sparkles)
                 setColorFilter(COLOR_WARM_CREAM, PorterDuff.Mode.SRC_IN)
-                layoutParams = FrameLayout.LayoutParams(dpToPx(18), dpToPx(18), Gravity.CENTER)
+                layoutParams = FrameLayout.LayoutParams(dpToPx(17), dpToPx(17), Gravity.CENTER)
             }
-            addView(sIcon)
+            addView(icon)
             isClickable = true
             isFocusable = false
             setOnClickListener {
-                triggerKeyFeedback("ENTER")
-                val ic = currentInputConnection
-                val before = ic?.getTextBeforeCursor(40, 0)?.toString() ?: ""
-                val selected = ic?.getSelectedText(0)?.toString() ?: ""
-                if (before.isNotBlank() || selected.isNotBlank()) {
-                    openFullAiPanel(activeMode)
-                } else {
-                    toggleInKeyboardVoice()
-                }
+                triggerKeyFeedback("SPACE")
+                isToolbarForced = true
+                showToolbarView()
             }
-            layoutParams = LinearLayout.LayoutParams(dpToPx(34), dpToPx(34))
+            layoutParams = LinearLayout.LayoutParams(dpToPx(32), dpToPx(32))
         }
 
-        val div0 = createDividerView()
-
-        // 2. Candidate Left (Standard word prediction)
         candidateLeft = TextView(this).apply {
             text = "I"
             textSize = 14f
@@ -578,9 +642,6 @@ class SaynInputMethodService : InputMethodService() {
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
         }
 
-        val div1 = createDividerView()
-
-        // 3. Candidate Center (Best word prediction)
         candidateCenter = TextView(this).apply {
             text = "the"
             textSize = 14.5f
@@ -589,8 +650,6 @@ class SaynInputMethodService : InputMethodService() {
             gravity = Gravity.CENTER
             isSingleLine = true
             ellipsize = android.text.TextUtils.TruncateAt.END
-            background = null
-            setPadding(dpToPx(6), 0, dpToPx(6), 0)
             isClickable = true
             isFocusable = false
             setOnClickListener {
@@ -603,9 +662,6 @@ class SaynInputMethodService : InputMethodService() {
             layoutParams = LinearLayout.LayoutParams(0, dpToPx(32), 1.2f)
         }
 
-        val div2 = createDividerView()
-
-        // 4. Candidate Right (Secondary word prediction)
         candidateRight = TextView(this).apply {
             text = "thanks"
             textSize = 14f
@@ -625,14 +681,11 @@ class SaynInputMethodService : InputMethodService() {
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
         }
 
-        val div3 = createDividerView()
-
-        // 5. Far Right: Voice Dictation Mic Button (🎙️)
-        val micBtn = FrameLayout(this).apply {
+        val quickMicBtn = FrameLayout(this).apply {
             val mIcon = ImageView(this@SaynInputMethodService).apply {
                 setImageResource(R.drawable.ic_sayn_mic)
                 setColorFilter(COLOR_WARM_CREAM, PorterDuff.Mode.SRC_IN)
-                layoutParams = FrameLayout.LayoutParams(dpToPx(18), dpToPx(18), Gravity.CENTER)
+                layoutParams = FrameLayout.LayoutParams(dpToPx(17), dpToPx(17), Gravity.CENTER)
             }
             addView(mIcon)
             isClickable = true
@@ -641,22 +694,78 @@ class SaynInputMethodService : InputMethodService() {
                 triggerKeyFeedback("SPACE")
                 toggleInKeyboardVoice()
             }
-            layoutParams = LinearLayout.LayoutParams(dpToPx(34), dpToPx(34))
+            layoutParams = LinearLayout.LayoutParams(dpToPx(32), dpToPx(32))
         }
 
-        candidateStrip.addView(sparkleBtn)
-        candidateStrip.addView(div0)
-        candidateStrip.addView(candidateLeft)
-        candidateStrip.addView(div1)
-        candidateStrip.addView(candidateCenter)
-        candidateStrip.addView(div2)
-        candidateStrip.addView(candidateRight)
-        candidateStrip.addView(div3)
-        candidateStrip.addView(micBtn)
+        stripCandidatesContainer.addView(btnSwitchToToolbar)
+        stripCandidatesContainer.addView(createDividerView())
+        stripCandidatesContainer.addView(candidateLeft)
+        stripCandidatesContainer.addView(createDividerView())
+        stripCandidatesContainer.addView(candidateCenter)
+        stripCandidatesContainer.addView(createDividerView())
+        stripCandidatesContainer.addView(candidateRight)
+        stripCandidatesContainer.addView(createDividerView())
+        stripCandidatesContainer.addView(quickMicBtn)
+
+        candidateStrip.addView(stripToolbarContainer)
+        candidateStrip.addView(stripCandidatesContainer)
 
         rootLayout.addView(candidateStrip)
     }
 
+    private fun createToolbarIconButton(iconRes: Int, onClick: () -> Unit): View {
+        return FrameLayout(this).apply {
+            val icon = ImageView(this@SaynInputMethodService).apply {
+                setImageResource(iconRes)
+                setColorFilter(COLOR_WARM_CREAM, PorterDuff.Mode.SRC_IN)
+                layoutParams = FrameLayout.LayoutParams(dpToPx(18), dpToPx(18), Gravity.CENTER)
+            }
+            addView(icon)
+            isClickable = true
+            isFocusable = false
+            setOnClickListener { onClick() }
+            layoutParams = LinearLayout.LayoutParams(dpToPx(34), dpToPx(34))
+        }
+    }
+
+    private fun createToolbarSpacer(): View {
+        return View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
+        }
+    }
+
+    private fun showToolbarView() {
+        if (!::stripToolbarContainer.isInitialized) return
+        stripToolbarContainer.visibility = View.VISIBLE
+        stripCandidatesContainer.visibility = View.GONE
+    }
+
+    private fun showCandidatesView() {
+        if (!::stripCandidatesContainer.isInitialized) return
+        stripToolbarContainer.visibility = View.GONE
+        stripCandidatesContainer.visibility = View.VISIBLE
+    }
+
+    private fun pasteFromClipboard() {
+        val cm = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+        val clip = cm?.primaryClip?.getItemAt(0)?.text?.toString()
+        if (!clip.isNullOrEmpty()) {
+            currentInputConnection?.commitText(clip, 1)
+            Toast.makeText(this, "Pasted from clipboard", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "Clipboard is empty", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun openKeyboardSettings() {
+        try {
+            val intent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                putExtra("route", "/keyboard-settings")
+            }
+            if (intent != null) startActivity(intent)
+        } catch (_: Exception) {}
+    }
     private fun createDividerView(): View {
         return View(this).apply {
             setBackgroundColor(COLOR_DIVIDER)
@@ -696,14 +805,20 @@ class SaynInputMethodService : InputMethodService() {
             candidateStrip.visibility = View.VISIBLE
         }
 
-        val before = ic.getTextBeforeCursor(40, 0)?.toString() ?: ""
-
-        // Case 1: Empty or start of sentence -> Show standard starter words
-        if (before.isEmpty()) {
-            isPredictionActive = true
-            setCandidateTexts("I", "The", "Thanks")
+        if (isToolbarForced) {
+            showToolbarView()
             return
         }
+
+        val before = ic.getTextBeforeCursor(40, 0)?.toString() ?: ""
+
+        // Case 1: Empty or start of sentence -> Show One UI Quick Action Toolbar!
+        if (before.isEmpty()) {
+            showToolbarView()
+            return
+        }
+
+        showCandidatesView()
 
         if (before.endsWith(". ") || before.endsWith("? ") || before.endsWith("! ") || before.endsWith("\n")) {
             isPredictionActive = true
@@ -936,8 +1051,43 @@ class SaynInputMethodService : InputMethodService() {
         hideVoiceLiveBar()
     }
 
+    private fun cleanWisprFlowLocal(text: String, isMammals: Boolean = false): String {
+        if (text.isBlank()) return ""
+        var res = text
+        // Spoken punctuation
+        res = res.replace(Regex("(?i)\\b(new line|next line)\\b"), "\n")
+        res = res.replace(Regex("(?i)\\b(new paragraph|next paragraph)\\b"), "\n\n")
+        res = res.replace(Regex("(?i)\\bquestion mark\\b"), "?")
+        res = res.replace(Regex("(?i)\\b(exclamation mark|exclamation point)\\b"), "!")
+        res = res.replace(Regex("(?i)\\b(full stop|period)\\b"), ".")
+        res = res.replace(Regex("(?i)\\bcomma\\b"), ",")
+        res = res.replace(Regex("(?i)\\bcolon\\b"), ":")
+        res = res.replace(Regex("(?i)\\bsemicolon\\b"), ";")
+
+        // Disfluencies
+        res = res.replace(Regex("(?i)\\b(um|uh|er|ah)\\b,?\\s*"), " ")
+        res = res.replace(Regex("(?i)\\b(you know|sort of|kind of|basically|so yeah|i mean)\\b,?\\s*"), " ")
+
+        // Spacing cleanup
+        res = res.replace(Regex("\\s+([,.:;?!])"), "$1")
+        res = res.replace(Regex("([,.:;?!])([a-zA-Z0-9])"), "$1 $2")
+        res = res.replace(Regex("[ \\t]+"), " ")
+        res = res.replace(Regex("\\n{3,}"), "\n\n")
+
+        // Sentence capitalization
+        res = res.replace(Regex("(^|[.?!]\\s+|\\n\\s*)([a-z])")) { mr ->
+            mr.groupValues[1] + mr.groupValues[2].uppercase()
+        }
+        res = res.trim()
+        if (isMammals && res.endsWith(".")) {
+            res = res.substring(0, res.length - 1).trimEnd()
+        }
+        return res
+    }
+
     private fun refineAndCommitSpokenText() {
-        val textToRefine = currentSpokenText.trim()
+        val rawSpoken = currentSpokenText.trim()
+        val textToRefine = cleanWisprFlowLocal(rawSpoken, activeMode == "mammals")
         if (textToRefine.isEmpty()) {
             hideVoiceLiveBar()
             return
@@ -955,14 +1105,16 @@ class SaynInputMethodService : InputMethodService() {
                 withContext(Dispatchers.Main) {
                     val ic = currentInputConnection
                     if (ic != null && refined.isNotBlank()) {
-                        ic.commitText(refined.trim() + " ", 1)
+                        val toCommit = cleanWisprFlowLocal(refined.trim(), activeMode == "mammals")
+                        ic.commitText(toCommit + " ", 1)
                     }
                     currentSpokenText = ""
                     hideVoiceLiveBar()
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    currentInputConnection?.commitText(textToRefine + " ", 1)
+                    val toCommit = cleanWisprFlowLocal(textToRefine, activeMode == "mammals")
+                    currentInputConnection?.commitText(toCommit + " ", 1)
                     currentSpokenText = ""
                     hideVoiceLiveBar()
                 }
@@ -2158,6 +2310,7 @@ class SaynInputMethodService : InputMethodService() {
                     textSize = 12.5f
                     typeface = Typeface.DEFAULT
                     setTextColor(COLOR_FAINT_CREAM)
+                    spacebarTextView = this
                 } else if (key in listOf("123", "ABC", "#+=")) {
                     textSize = 13.5f
                     typeface = Typeface.DEFAULT
@@ -2228,12 +2381,15 @@ class SaynInputMethodService : InputMethodService() {
                 }
                 MotionEvent.ACTION_MOVE -> {
                     val totalDx = event.x - startX
-                    if (!isSwiping && Math.abs(totalDx) > dpToPx(12)) {
+                    if (!isSwiping && Math.abs(totalDx) > dpToPx(10)) {
                         isSwiping = true
+                        spacebarTextView?.text = "◄ Cursor Control ►"
+                        spacebarTextView?.setTextColor(COLOR_ROSE_MAROON)
+                        vibrateTap()
                     }
                     if (isSwiping) {
                         val stepDx = event.x - lastStepX
-                        val threshold = dpToPx(10)
+                        val threshold = dpToPx(8)
                         if (Math.abs(stepDx) >= threshold) {
                             val dir = if (stepDx > 0) 1 else -1
                             moveCursor(dir)
@@ -2243,19 +2399,16 @@ class SaynInputMethodService : InputMethodService() {
                     }
                     true
                 }
-                MotionEvent.ACTION_UP -> {
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     v.isPressed = false
                     if (isSwiping) {
                         isSwiping = false
-                    } else {
+                        spacebarTextView?.text = "SAYN English"
+                        spacebarTextView?.setTextColor(COLOR_FAINT_CREAM)
+                    } else if (event.action == MotionEvent.ACTION_UP) {
                         triggerKeyFeedback("SPACE")
                         handleKeyAction("SPACE")
                     }
-                    true
-                }
-                MotionEvent.ACTION_CANCEL -> {
-                    v.isPressed = false
-                    isSwiping = false
                     true
                 }
                 else -> false
@@ -2265,6 +2418,15 @@ class SaynInputMethodService : InputMethodService() {
 
     private fun moveCursor(direction: Int) {
         val ic = currentInputConnection ?: return
+        try {
+            val extracted = ic.getExtractedText(android.view.inputmethod.ExtractedTextRequest(), 0)
+            if (extracted != null && extracted.selectionStart >= 0) {
+                val newPos = Math.max(0, extracted.selectionStart + direction)
+                ic.setSelection(newPos, newPos)
+                return
+            }
+        } catch (_: Exception) {}
+
         val keycode = if (direction < 0) android.view.KeyEvent.KEYCODE_DPAD_LEFT else android.view.KeyEvent.KEYCODE_DPAD_RIGHT
         ic.sendKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, keycode))
         ic.sendKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, keycode))
@@ -2291,7 +2453,7 @@ class SaynInputMethodService : InputMethodService() {
                     v.isPressed = true
                     isLongPressed = false
                     if (hintChar != null) {
-                        longPressHandler.postDelayed(longPressRunnable, 320)
+                        longPressHandler.postDelayed(longPressRunnable, 240)
                     }
                     true
                 }
@@ -2317,7 +2479,7 @@ class SaynInputMethodService : InputMethodService() {
 
     private fun createObsidianKeyDrawable(key: String, isSpecial: Boolean): StateListDrawable {
         val states = StateListDrawable()
-        val corner = dpToPx(8.5f).toFloat()
+        val corner = dpToPx(6.5f).toFloat() // Samsung One UI key curvature
         val strokeW = dpToPx(1f)
 
         // Active Shift / CapsLock State

@@ -46,7 +46,7 @@ class UpdateService {
             final name = data['name'] as String? ?? 'SAYN Update';
             final body = data['releaseNotes'] as String? ?? '';
             final downloadUrl = data['downloadUrl'] as String? ??
-                'https://github.com/allanmaaz/sayn/releases/download/v1.1.3/sayn-release.apk';
+                'https://github.com/allanmaaz/sayn/releases/download/v1.1.4/sayn-release.apk';
 
             return UpdateInfo(
               hasUpdate: _isNewer(latest, currentVersion),
