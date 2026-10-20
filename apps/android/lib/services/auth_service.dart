@@ -35,6 +35,7 @@ class AuthService extends ChangeNotifier {
   String get username => _username ?? 'allanmaaz';
   String get email => _email ?? 'allanmaazimdad@gmail.com';
   String get userId => _userId ?? '9c9701d7-cfd3-41c5-bcc6-1fab41fdbf7f';
+  String? get accessToken => _accessToken;
   String get displayName => '${_firstName ?? 'Allan'} ${_lastName ?? 'Maaz'}'.trim();
   String get supabaseSyncStatus => _supabaseSyncStatus;
 

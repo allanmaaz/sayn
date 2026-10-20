@@ -341,16 +341,18 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
                         ),
                         const SizedBox(height: 12),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'Vibration intensity',
-                              style: TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w600,
-                                color: SaynColors.wineMaroon,
+                            const Expanded(
+                              child: Text(
+                                'Vibration intensity',
+                                style: TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: SaynColors.wineMaroon,
+                                ),
                               ),
                             ),
+                            const SizedBox(width: 8),
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -584,8 +586,9 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
     final isSelected = _keyVibrationIntensity == label;
     return GestureDetector(
       onTap: () => _updateSettings(intensity: label),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
         decoration: BoxDecoration(
           color: isSelected ? SaynColors.wineMaroon : const Color(0xFFFAF5EE),
           borderRadius: BorderRadius.circular(6),
@@ -597,7 +600,7 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 11.5,
             fontWeight: FontWeight.w700,
             color: isSelected ? Colors.white : SaynColors.wineMaroon,
           ),

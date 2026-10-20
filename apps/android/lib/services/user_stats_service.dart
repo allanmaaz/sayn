@@ -127,7 +127,7 @@ class UserStatsService extends ChangeNotifier {
   final int _weeklyQuota = 1000;
   int _wordsSpoken = 0;
   int _textsPolished = 0;
-  int _avgWpm = 122;
+  int _avgWpm = 0;
   int _streakWeeks = 1;
   String _displayName = 'Mohammed Maaz';
   String _email = 'allanmaazimdad@gmail.com';
@@ -148,7 +148,7 @@ class UserStatsService extends ChangeNotifier {
   String get displayName => _displayName;
   String get email => _email;
 
-  String get streakFormatted => '$_streakWeeks weeks';
+  String get streakFormatted => '$_streakWeeks week${_streakWeeks > 1 ? 's' : ''}';
 
   String get totalWordsFormatted {
     if (_totalWords >= 1000000) {
@@ -168,7 +168,7 @@ class UserStatsService extends ChangeNotifier {
         );
   }
 
-  String get wpmFormatted => '$_avgWpm WPM';
+  String get wpmFormatted => _avgWpm > 0 ? '$_avgWpm WPM' : '0 WPM';
 
   String get weeklyUsageFormatted {
     return '$_weeklyWords / 1,000 words used';
@@ -209,11 +209,9 @@ class UserStatsService extends ChangeNotifier {
         } catch (_) {}
       }
 
-      // Seed authentic initial notes if fresh installation
-      if (_notes.isEmpty) {
-        _seedInitialAuthenticHistory();
-        await _saveNotesToPrefs();
-      }
+      // Purge all legacy mock seeded items so numbers strictly reflect real database & user history
+      _notes.removeWhere((n) => n.id.startsWith('init-hist-') || n.id.startsWith('init-note-'));
+      await _saveNotesToPrefs();
 
       _recomputeStatsFromHistory(prefs);
 
@@ -221,7 +219,7 @@ class UserStatsService extends ChangeNotifier {
       _pollingTimer?.cancel();
       _pollingTimer = Timer.periodic(const Duration(seconds: 3), (_) => refreshLocalStats());
 
-      // Quiet cloud sync
+      // Live cloud sync with Supabase
       syncWithSupabase();
     } catch (_) {}
     _isInitialized = true;
@@ -229,13 +227,11 @@ class UserStatsService extends ChangeNotifier {
   }
 
   void _recomputeStatsFromHistory(SharedPreferences prefs) {
-    // 1. Calculate words spoken and polished count directly from entries
     int spokenWords = 0;
     int polishedCount = 0;
     int wordsSum = 0;
 
     final now = DateTime.now();
-    // Start of current calendar week (Monday)
     final startOfWeek = DateTime(now.year, now.month, now.day)
         .subtract(Duration(days: (now.weekday - 1) % 7));
 
@@ -260,119 +256,28 @@ class UserStatsService extends ChangeNotifier {
       if (note.createdAt.isAfter(startOfWeek)) {
         currentWeekWords += note.wordCount;
       }
-      // Calculate active week key e.g. "2026-W42"
       final weekNum = ((note.createdAt.difference(DateTime(note.createdAt.year, 1, 1)).inDays) / 7).ceil();
       activeWeeks.add('${note.createdAt.year}-W$weekNum');
     }
 
-    // Merge native external increments if any
-    final extTotal = prefs.getInt('sayn_stat_total_words') ?? 0;
-    final extWeekly = prefs.getInt('sayn_stat_weekly_words') ?? 0;
-    final extSpoken = prefs.getInt('sayn_stat_words_spoken') ?? 0;
-
-    _totalWords = (wordsSum > extTotal) ? wordsSum : extTotal;
-    _weeklyWords = (currentWeekWords > extWeekly) ? currentWeekWords : extWeekly;
-    _wordsSpoken = (spokenWords > extSpoken) ? spokenWords : extSpoken;
+    _totalWords = wordsSum;
+    _weeklyWords = currentWeekWords;
+    _wordsSpoken = spokenWords;
     _textsPolished = polishedCount;
-    _streakWeeks = activeWeeks.length > 0 ? activeWeeks.length : 1;
+    _streakWeeks = activeWeeks.isEmpty ? 1 : activeWeeks.length;
 
     if (totalVoiceDurationSeconds > 0 && totalVoiceWordsForWpm > 0) {
       final calcWpm = ((totalVoiceWordsForWpm / totalVoiceDurationSeconds) * 60).round();
-      if (calcWpm >= 50 && calcWpm <= 220) {
+      if (calcWpm >= 30 && calcWpm <= 250) {
         _avgWpm = calcWpm;
+      } else {
+        _avgWpm = 0;
       }
+    } else {
+      _avgWpm = 0;
     }
-  }
 
-  void _seedInitialAuthenticHistory() {
-    final now = DateTime.now();
-    _notes.clear();
-
-    // Note 1: Recent refund message (matching Screenshot 2)
-    _notes.add(WritingNote(
-      id: 'init-note-1',
-      title: 'Refund request message',
-      preview: 'The description says it has 100 papers but for me...',
-      sourceText: 'The description says it has 100 papers but for me it was only 60 papers delivered. I kindly request a refund or replacement for the missing items.',
-      resultText: 'The description says it has 100 papers but for me it was only 60 papers delivered. I kindly request a refund or replacement for the missing items.',
-      mode: 'fluent',
-      createdAt: now.subtract(const Duration(minutes: 18)),
-      wordCount: 28,
-      durationSeconds: 13.5,
-      isVoice: true,
-      isPolished: true,
-    ));
-
-    // Note 2: ML assignment notes (matching Screenshot 2)
-    _notes.add(WritingNote(
-      id: 'init-note-2',
-      title: 'ML assignment notes',
-      preview: 'Feature engineering is the process of creating new...',
-      sourceText: 'Feature engineering is the process of creating new features from raw data to improve machine learning model accuracy and performance.',
-      resultText: 'Feature engineering is the process of creating new features from raw data to improve machine learning model accuracy and performance.',
-      mode: 'professional',
-      createdAt: now.subtract(const Duration(days: 1, hours: 2)),
-      wordCount: 20,
-      durationSeconds: 10.0,
-      isVoice: true,
-      isPolished: true,
-    ));
-
-    // Note 3: Meeting summary (matching Screenshot 2)
-    _notes.add(WritingNote(
-      id: 'init-note-3',
-      title: 'Meeting summary',
-      preview: "Key points from today's discussion are...",
-      sourceText: "Key points from today's discussion are finalizing the mobile keyboard integration, completing the voice waveform UI, and shipping the release.",
-      resultText: "Key points from today's discussion are finalizing the mobile keyboard integration, completing the voice waveform UI, and shipping the release.",
-      mode: 'natural',
-      createdAt: now.subtract(const Duration(days: 4, hours: 3)),
-      wordCount: 21,
-      durationSeconds: 10.5,
-      isVoice: true,
-      isPolished: true,
-    ));
-
-    // Historical records to complete the authentic baseline (18 notes, 11 active weeks, 12,491 words spoken)
-    final historicalTopics = [
-      {'title': 'Weekly sprint retrospective', 'words': 390, 'mode': 'professional', 'days': 7},
-      {'title': 'Client proposal email', 'words': 540, 'mode': 'fluent', 'days': 12},
-      {'title': 'Architecture decision record', 'words': 720, 'mode': 'professional', 'days': 18},
-      {'title': 'Product release notes v1.1', 'words': 650, 'mode': 'natural', 'days': 24},
-      {'title': 'Customer interview transcripts', 'words': 1480, 'mode': 'natural', 'days': 30},
-      {'title': 'Database migration checklist', 'words': 810, 'mode': 'professional', 'days': 38},
-      {'title': 'Quarterly team objectives', 'words': 920, 'mode': 'fluent', 'days': 44},
-      {'title': 'Voice assistant benchmarking', 'words': 1250, 'mode': 'professional', 'days': 51},
-      {'title': 'API payload refactoring', 'words': 710, 'mode': 'fluent', 'days': 58},
-      {'title': 'User feedback review', 'words': 860, 'mode': 'natural', 'days': 64},
-      {'title': 'Onboarding flow brainstorm', 'words': 630, 'mode': 'fluent', 'days': 69},
-      {'title': 'Keyboard shortcut ideas', 'words': 410, 'mode': 'natural', 'days': 73},
-      {'title': 'System prompt experiments', 'words': 1180, 'mode': 'professional', 'days': 76},
-      {'title': 'Audio waveform design review', 'words': 930, 'mode': 'natural', 'days': 80},
-      {'title': 'Initial project scope notes', 'words': 762, 'mode': 'natural', 'days': 84},
-    ];
-
-    for (int i = 0; i < historicalTopics.length; i++) {
-      final topic = historicalTopics[i];
-      final words = topic['words'] as int;
-      final days = topic['days'] as int;
-      final mode = topic['mode'] as String;
-      final isPolished = (i % 5 == 0);
-
-      _notes.add(WritingNote(
-        id: 'init-hist-$i',
-        title: topic['title'] as String,
-        preview: 'Drafted voice session covering ${topic['title']} with real-time dictation...',
-        sourceText: 'Drafted voice session covering ${topic['title']} with real-time dictation.',
-        resultText: 'Drafted voice session covering ${topic['title']} with real-time dictation.',
-        mode: mode,
-        createdAt: now.subtract(Duration(days: days, hours: (i * 3) % 12)),
-        wordCount: words,
-        durationSeconds: (words / 122.0) * 60.0,
-        isVoice: true,
-        isPolished: isPolished,
-      ));
-    }
+    _saveStatsToPrefs(prefs);
   }
 
   Future<void> refreshLocalStats() async {
@@ -569,11 +474,16 @@ class UserStatsService extends ChangeNotifier {
       final url = Uri.parse(
           '${AuthService.supabaseUrl}/rest/v1/writing_history?select=id,source_text,result_text,writing_mode,created_at&order=created_at.desc&limit=50');
 
+      final authHeader = (AuthService.instance.accessToken != null &&
+              !AuthService.instance.accessToken!.startsWith('sayn_sec_'))
+          ? 'Bearer ${AuthService.instance.accessToken}'
+          : 'Bearer ${AuthService.supabaseAnonKey}';
+
       final res = await http.get(
         url,
         headers: {
           'apikey': AuthService.supabaseAnonKey,
-          'Authorization': 'Bearer ${AuthService.supabaseAnonKey}',
+          'Authorization': authHeader,
         },
       ).timeout(const Duration(seconds: 4));
 
@@ -613,6 +523,14 @@ class UserStatsService extends ChangeNotifier {
         }
       }
     } catch (_) {}
+  }
+
+  Future<void> deleteNote(String id) async {
+    _notes.removeWhere((n) => n.id == id);
+    final prefs = await SharedPreferences.getInstance();
+    _recomputeStatsFromHistory(prefs);
+    await _saveNotesToPrefs();
+    notifyListeners();
   }
 
   @override

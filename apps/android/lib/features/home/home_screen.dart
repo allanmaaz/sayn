@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/theme.dart';
 import '../../services/user_stats_service.dart';
 import '../navigation/sayn_drawer.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   final Function(int tabIndex)? onSwitchTab;
   final Function(String mode)? onSelectWritingTool;
   final Function(WritingNote note)? onOpenNote;
@@ -14,6 +15,13 @@ class HomeScreen extends StatelessWidget {
     this.onSelectWritingTool,
     this.onOpenNote,
   });
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  bool _isHeroBannerVisible = true;
 
   String _getTimeGreeting() {
     final hour = DateTime.now().hour;
@@ -83,78 +91,108 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ─── 1. DEEP MAROON HERO CARD ───
-            Container(
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    SaynColors.wineMaroon,
-                    SaynColors.wineMaroonDark,
+            if (_isHeroBannerVisible) ...[
+              // ─── 1. DEEP MAROON HERO CARD ───
+              Container(
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      SaynColors.wineMaroon,
+                      SaynColors.wineMaroonDark,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
+                    BoxShadow(
+                      color: SaynColors.wineMaroon.withOpacity(0.35),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
                   ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(22),
-                boxShadow: [
-                  BoxShadow(
-                    color: SaynColors.wineMaroon.withOpacity(0.35),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Stack(
-                children: [
-                  // Audio Wave Graphic on Right Side
-                  Positioned(
-                    right: 0,
-                    top: 14,
-                    bottom: 14,
-                    child: _buildHeroWaveGraphic(),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _getTimeGreeting(),
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFFEADECF),
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const SizedBox(
-                        width: 220,
-                        child: Text(
-                          'Turn your voice into better writing.',
-                          style: TextStyle(
-                            fontFamily: 'serif',
-                            fontSize: 23,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                            height: 1.25,
+                child: Stack(
+                  children: [
+                    // Audio Wave Graphic on Right Side
+                    Positioned(
+                      right: 18,
+                      top: 14,
+                      bottom: 14,
+                      child: _buildHeroWaveGraphic(),
+                    ),
+                    // Cross Dismiss Button (Top Right)
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            setState(() {
+                              _isHeroBannerVisible = false;
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.18),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close_rounded,
+                              size: 15,
+                              color: Color(0xFFEADECF),
+                            ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 14),
-                      const Text(
-                        'Speak. Refine. Send.',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFFEADECF),
-                          letterSpacing: 0.4,
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _getTimeGreeting(),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFFEADECF),
+                            letterSpacing: 0.3,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(height: 8),
+                        const SizedBox(
+                          width: 220,
+                          child: Text(
+                            'Turn your voice into better writing.',
+                            style: TextStyle(
+                              fontFamily: 'serif',
+                              fontSize: 23,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              height: 1.25,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        const Text(
+                          'Speak. Refine. Send.',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFFEADECF),
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
+            ],
 
             // ─── 2. FOUR-STATISTICS OVERVIEW BAR ───
             Container(
@@ -202,7 +240,7 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            // ─── 3. RECENT VOICE NOTES SECTION (Dynamic Live Data) ───
+            // ─── 3. RECENT NOTES SECTION (Chronologically Grouped Full View) ───
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -215,134 +253,121 @@ class HomeScreen extends StatelessWidget {
                     color: SaynColors.wineMaroon,
                   ),
                 ),
-                InkWell(
-                  onTap: () => onSwitchTab?.call(1), // go to studio
-                  child: Row(
-                    children: const [
-                      Text(
-                        'See all',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: SaynColors.wineMaroon,
-                        ),
-                      ),
-                      Icon(Icons.chevron_right_rounded, size: 18, color: SaynColors.wineMaroon),
-                    ],
+                if (stats.allEntries.isNotEmpty)
+                  Text(
+                    '${stats.allEntries.length} ${stats.allEntries.length == 1 ? 'entry' : 'entries'}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: SaynColors.paperTextMuted,
+                    ),
                   ),
-                ),
               ],
             ),
             const SizedBox(height: 12),
 
-            if (stats.recentEntries.isEmpty)
+            if (stats.allEntries.isEmpty)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
                 decoration: BoxDecoration(
                   color: SaynColors.paperCard,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(18),
                   border: Border.all(color: SaynColors.paperBorder, width: 1),
                 ),
-                child: Row(
-                  children: const [
-                    Icon(Icons.mic_none_rounded, color: SaynColors.wineMaroon, size: 24),
-                    SizedBox(width: 14),
-                    Expanded(
-                      child: Text(
-                        'No voice notes yet. Tap Voice below to start speaking in real time.',
-                        style: TextStyle(fontSize: 13, color: SaynColors.paperTextMuted),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: SaynColors.paperSurface,
+                        borderRadius: BorderRadius.circular(14),
                       ),
+                      child: const Icon(Icons.mic_none_rounded, color: SaynColors.wineMaroon, size: 26),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'No writing history yet',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: SaynColors.wineMaroon,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Your voice dictations and notes will appear here, organized by date and time.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12.5, color: SaynColors.paperTextMuted, height: 1.4),
                     ),
                   ],
                 ),
               )
-            else
-              for (final note in stats.recentEntries.take(3)) ...[
-                _buildRecentNoteCard(context, note: note),
-                const SizedBox(height: 10),
-              ],
-            const SizedBox(height: 14),
+            else ...[
+              Builder(
+                builder: (context) {
+                  final grouped = _groupNotes(stats.allEntries);
+                  final List<Widget> sectionWidgets = [];
 
-            // ─── 4. WRITING TOOLS SECTION ───
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Writing tools',
-                  style: TextStyle(
-                    fontFamily: 'serif',
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: SaynColors.wineMaroon,
-                  ),
-                ),
-                InkWell(
-                  onTap: () => onSwitchTab?.call(1),
-                  child: Row(
-                    children: const [
-                      Text(
-                        'See all',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: SaynColors.wineMaroon,
+                  grouped.forEach((sectionTitle, notesList) {
+                    sectionWidgets.add(
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10, bottom: 8),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: SaynColors.paperSurface,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: SaynColors.paperBorder),
+                              ),
+                              child: Text(
+                                sectionTitle.toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.8,
+                                  color: SaynColors.wineMaroon,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Container(
+                                height: 1,
+                                color: SaynColors.paperBorder,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${notesList.length}',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: SaynColors.paperTextMuted,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      Icon(Icons.chevron_right_rounded, size: 18, color: SaynColors.wineMaroon),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
+                    );
 
-            Row(
-              children: [
-                Expanded(
-                  child: _buildToolCard(
-                    icon: Icons.description_outlined,
-                    label: 'Paraphrase',
-                    onTap: () {
-                      onSelectWritingTool?.call('fluent');
-                      onSwitchTab?.call(1);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildToolCard(
-                    icon: Icons.verified_user_outlined,
-                    label: 'Fix grammar',
-                    onTap: () {
-                      onSelectWritingTool?.call('standard');
-                      onSwitchTab?.call(1);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildToolCard(
-                    icon: Icons.format_list_bulleted_rounded,
-                    label: 'Summarize',
-                    onTap: () {
-                      onSelectWritingTool?.call('shorten');
-                      onSwitchTab?.call(1);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildToolCard(
-                    icon: Icons.translate_rounded,
-                    label: 'Translate',
-                    onTap: () {
-                      onSelectWritingTool?.call('natural');
-                      onSwitchTab?.call(1);
-                    },
-                  ),
-                ),
-              ],
-            ),
+                    for (final note in notesList) {
+                      sectionWidgets.add(_buildRecentNoteCard(context, note: note));
+                      sectionWidgets.add(const SizedBox(height: 10));
+                    }
+                  });
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: sectionWidgets,
+                  );
+                },
+              ),
+            ],
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -420,13 +445,7 @@ class HomeScreen extends StatelessWidget {
     required WritingNote note,
   }) {
     return InkWell(
-      onTap: () {
-        if (onOpenNote != null) {
-          onOpenNote!(note);
-        } else {
-          onSwitchTab?.call(1);
-        }
-      },
+      onTap: () => _showNoteDetailSheet(context, note),
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -479,7 +498,7 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              note.timeFormatted,
+              _formatNoteTimestamp(note.createdAt),
               style: const TextStyle(
                 fontSize: 10.5,
                 color: SaynColors.paperTextMuted,
@@ -490,22 +509,42 @@ class HomeScreen extends StatelessWidget {
               icon: const Icon(Icons.more_vert_rounded, size: 18, color: SaynColors.paperTextMuted),
               color: SaynColors.paperCard,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              onSelected: (val) {
-                if (val == 'Open' && onOpenNote != null) {
-                  onOpenNote!(note);
-                } else {
+              onSelected: (val) async {
+                if (val == 'View') {
+                  _showNoteDetailSheet(context, note);
+                } else if (val == 'Open') {
+                  if (widget.onOpenNote != null) {
+                    widget.onOpenNote!(note);
+                  } else {
+                    widget.onSwitchTab?.call(1);
+                  }
+                } else if (val == 'Copy') {
+                  Clipboard.setData(ClipboardData(text: note.resultText));
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('$val: ${note.title}'),
-                      duration: const Duration(seconds: 1),
+                    const SnackBar(
+                      content: Text('Copied to clipboard'),
+                      duration: Duration(seconds: 1),
                       backgroundColor: SaynColors.wineMaroon,
                     ),
                   );
+                } else if (val == 'Delete') {
+                  await UserStatsService.instance.deleteNote(note.id);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Deleted "${note.title}"'),
+                        duration: const Duration(seconds: 1),
+                        backgroundColor: SaynColors.wineMaroon,
+                      ),
+                    );
+                  }
                 }
               },
               itemBuilder: (_) => [
+                const PopupMenuItem(value: 'View', child: Text('View note')),
+                const PopupMenuItem(value: 'Copy', child: Text('Copy text')),
                 const PopupMenuItem(value: 'Open', child: Text('Open in Studio')),
-                const PopupMenuItem(value: 'Copy', child: Text('Copy')),
+                const PopupMenuItem(value: 'Delete', child: Text('Delete note')),
               ],
             ),
           ],
@@ -514,41 +553,221 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildToolCard({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        height: 76,
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-        decoration: BoxDecoration(
-          color: SaynColors.paperCard,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: SaynColors.paperBorder, width: 1),
+  void _showNoteDetailSheet(BuildContext context, WritingNote note) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: SaynColors.paperBg,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: SaynColors.wineMaroon, size: 21),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: SaynColors.paperText,
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: SaynColors.paperBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: SaynColors.paperSurface,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    note.isVoice ? Icons.mic_rounded : Icons.description_outlined,
+                    color: SaynColors.wineMaroon,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        note.title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: SaynColors.wineMaroon,
+                        ),
+                      ),
+                      Text(
+                        '${note.timeFormatted} • ${note.wordCount} words • ${note.mode}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: SaynColors.paperTextMuted,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  icon: const Icon(Icons.close_rounded, color: SaynColors.paperTextMuted),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              constraints: const BoxConstraints(maxHeight: 280),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: SaynColors.paperCard,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: SaynColors.paperBorder),
+              ),
+              child: SingleChildScrollView(
+                child: SelectableText(
+                  note.resultText,
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    height: 1.5,
+                    color: SaynColors.paperText,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: note.resultText));
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Copied to clipboard'),
+                          duration: Duration(seconds: 1),
+                          backgroundColor: SaynColors.wineMaroon,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.copy_rounded, size: 16),
+                    label: const Text('Copy'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: SaynColors.wineMaroon,
+                      side: const BorderSide(color: SaynColors.paperBorder),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      if (widget.onOpenNote != null) {
+                        widget.onOpenNote!(note);
+                      } else {
+                        widget.onSwitchTab?.call(1);
+                      }
+                    },
+                    icon: const Icon(Icons.edit_note_rounded, size: 18),
+                    label: const Text('Open in Studio'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: SaynColors.wineMaroon,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await UserStatsService.instance.deleteNote(note.id);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Deleted "${note.title}"'),
+                          duration: const Duration(seconds: 1),
+                          backgroundColor: SaynColors.wineMaroon,
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.delete_outline_rounded, color: SaynColors.wineMaroon),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
           ],
         ),
       ),
     );
+  }
+
+  Map<String, List<WritingNote>> _groupNotes(List<WritingNote> notes) {
+    final Map<String, List<WritingNote>> groups = {};
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final yesterdayStart = todayStart.subtract(const Duration(days: 1));
+
+    const monthNames = [
+      '', 'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    for (final note in notes) {
+      final created = note.createdAt;
+      String sectionKey;
+
+      if (created.isAfter(todayStart) || now.difference(created).inHours < 24) {
+        sectionKey = 'Today';
+      } else if (created.isAfter(yesterdayStart)) {
+        sectionKey = 'Yesterday';
+      } else {
+        final monthName = monthNames[created.month];
+        sectionKey = '$monthName ${created.year}';
+      }
+
+      groups.putIfAbsent(sectionKey, () => []).add(note);
+    }
+
+    return groups;
+  }
+
+  String _formatNoteTimestamp(DateTime dt) {
+    final now = DateTime.now();
+    final isWithin24h = now.difference(dt).inHours < 24 && dt.day == now.day;
+    final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final period = dt.hour >= 12 ? 'PM' : 'AM';
+    final timeStr = '$hour:$minute $period';
+
+    const monthNames = [
+      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    final dateStr = '${monthNames[dt.month]} ${dt.day}';
+
+    if (isWithin24h) {
+      return '$dateStr • $timeStr';
+    } else if (now.difference(dt).inDays <= 1 && dt.day == now.subtract(const Duration(days: 1)).day) {
+      return 'Yesterday • $timeStr';
+    } else {
+      return '$dateStr • $timeStr';
+    }
   }
 }
