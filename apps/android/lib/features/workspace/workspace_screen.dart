@@ -38,23 +38,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   int _wordCount = 0;
   int _readabilityScore = 83;
 
-  final List<Map<String, dynamic>> _styles = const [
-    {
-      'id': 'natural',
-      'label': 'Natural',
-      'icon': Icons.spa_outlined,
-    },
-    {
-      'id': 'fluent',
-      'label': 'Fluent',
-      'icon': Icons.bolt_rounded,
-    },
-    {
-      'id': 'professional',
-      'label': 'Professional',
-      'icon': Icons.business_center_outlined,
-    },
-  ];
 
   @override
   void initState() {
@@ -359,19 +342,22 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
           children: [
             // ─── 1. 3 MODE PILLS (Natural, Fluent, Professional) ───
             Row(
-              children: _styles.map((s) {
-                final isLast = s == _styles.last;
-                return Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(right: isLast ? 0 : 8),
-                    child: _buildModePill(
-                      s['id'] as String,
-                      s['label'] as String,
-                      s['icon'] as IconData,
-                    ),
-                  ),
-                );
-              }).toList(),
+              children: [
+                Expanded(
+                  flex: 10,
+                  child: _buildModePill('natural', 'Natural', Icons.spa_outlined),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 9,
+                  child: _buildModePill('fluent', 'Fluent', Icons.bolt_rounded),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 14,
+                  child: _buildModePill('professional', 'Professional', Icons.business_center_outlined),
+                ),
+              ],
             ),
             const SizedBox(height: 14),
 
@@ -480,69 +466,90 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                       children: [
                         // 1. TALK BUTTON
                         Expanded(
+                          flex: 2,
                           child: SizedBox(
-                            height: 48,
-                            child: ElevatedButton.icon(
+                            height: 46,
+                            child: ElevatedButton(
                               onPressed: _startTalking,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFFF5EBDD),
                                 foregroundColor: SaynColors.wineMaroon,
                                 elevation: 0,
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                   side: const BorderSide(color: SaynColors.paperBorder),
                                 ),
                               ),
-                              icon: Icon(
-                                _isDictating ? Icons.graphic_eq_rounded : Icons.mic_none_rounded,
-                                color: SaynColors.wineMaroon,
-                                size: 20,
-                              ),
-                              label: Text(
-                                _isDictating ? 'Listening...' : 'Talk',
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  color: SaynColors.wineMaroon,
-                                ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    _isDictating ? Icons.graphic_eq_rounded : Icons.mic_none_rounded,
+                                    color: SaynColors.wineMaroon,
+                                    size: 19,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _isDictating ? 'Listening...' : 'Talk',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: SaynColors.wineMaroon,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
 
                         // 2. IMPROVE TEXT BUTTON
                         Expanded(
-                          flex: 1,
+                          flex: 3,
                           child: SizedBox(
-                            height: 48,
-                            child: ElevatedButton.icon(
+                            height: 46,
+                            child: ElevatedButton(
                               onPressed: _isPolishing ? null : _runGrammarPolish,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: SaynColors.wineMaroon,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                               ),
-                              icon: _isPolishing
-                                  ? const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : const Icon(Icons.auto_awesome_rounded, size: 18),
-                              label: Text(
-                                _isPolishing ? 'Improving...' : 'Improve text',
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  _isPolishing
+                                      ? const SizedBox(
+                                          width: 15,
+                                          height: 15,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : const Icon(
+                                          Icons.auto_awesome_rounded,
+                                          size: 17,
+                                          color: Colors.white,
+                                        ),
+                                  const SizedBox(width: 7),
+                                  const Text(
+                                    'Improve text',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                    maxLines: 1,
+                                    softWrap: false,
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -702,7 +709,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
       borderRadius: BorderRadius.circular(14),
       child: Container(
         height: 44,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
         decoration: BoxDecoration(
           color: isSelected ? SaynColors.wineMaroon : SaynColors.paperCard,
           borderRadius: BorderRadius.circular(14),
@@ -722,24 +729,23 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
               size: 16,
               color: isSelected ? Colors.white : SaynColors.wineMaroon,
             ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: isSelected ? Colors.white : SaynColors.paperText,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: isSelected ? Colors.white : SaynColors.paperText,
               ),
+              maxLines: 1,
+              softWrap: false,
             ),
           ],
         ),
