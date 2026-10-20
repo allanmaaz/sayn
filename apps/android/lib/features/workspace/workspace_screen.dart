@@ -3,10 +3,8 @@ import 'package:flutter/services.dart';
 import '../../core/theme.dart';
 import '../../core/api_client.dart';
 import '../../services/platform_channels.dart';
-import '../../services/auth_service.dart';
 import '../../services/user_stats_service.dart';
 import '../navigation/sayn_drawer.dart';
-import '../account/account_screen.dart';
 
 class WorkspaceScreen extends StatefulWidget {
   final String? initialStyle;
@@ -25,7 +23,6 @@ class WorkspaceScreen extends StatefulWidget {
 class _WorkspaceScreenState extends State<WorkspaceScreen> {
   final TextEditingController _inputController = TextEditingController();
   final TextEditingController _outputController = TextEditingController();
-  final TextEditingController _customInstructionController = TextEditingController();
   final SaynApiClient _apiClient = SaynApiClient();
 
   // Primary styles requested by user
@@ -80,7 +77,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     }
     _inputController.dispose();
     _outputController.dispose();
-    _customInstructionController.dispose();
     super.dispose();
   }
 
@@ -127,11 +123,9 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     setState(() => _isPolishing = true);
 
     try {
-      final customInstruction = _customInstructionController.text.trim();
       final res = await _apiClient.refineText(
         text: rawText,
         mode: _selectedStyle,
-        customInstruction: customInstruction.isNotEmpty ? customInstruction : null,
       );
 
       final refined = res['refinedText'] ?? rawText;
@@ -329,9 +323,8 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
             ),
           ],
         ),
-        actions: [
-          _buildUserProfileBadge(context),
-          const SizedBox(width: 12),
+        actions: const [
+          SizedBox(width: 16),
         ],
       ),
       body: SingleChildScrollView(
@@ -560,63 +553,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 14),
-
-            // ─── 3. MORE OPTIONS CARD ───
-            InkWell(
-              onTap: () => _showMoreOptionsSheet(context),
-              borderRadius: BorderRadius.circular(18),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: SaynColors.paperCard,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: SaynColors.paperBorder, width: 1.2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.015),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.tune_rounded, size: 22, color: SaynColors.wineMaroon),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            'More options',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: SaynColors.paperText,
-                            ),
-                          ),
-                          SizedBox(height: 2),
-                          Text(
-                            'Custom instructions for your text',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: SaynColors.paperTextMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(
-                      Icons.chevron_right_rounded,
-                      size: 22,
-                      color: SaynColors.paperTextMuted,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
 
             // ─── 4. IMPROVED TEXT CARD ───
             Container(
@@ -746,184 +682,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
               ),
               maxLines: 1,
               softWrap: false,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showMoreOptionsSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: SaynColors.paperCard,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.fromLTRB(
-          20,
-          20,
-          20,
-          MediaQuery.of(ctx).viewInsets.bottom + 24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: SaynColors.paperBorder,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Custom Instructions',
-              style: TextStyle(
-                fontFamily: 'serif',
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: SaynColors.wineMaroon,
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Add specific tone or formatting rules for the AI polisher:',
-              style: TextStyle(fontSize: 12.5, color: SaynColors.paperTextMuted),
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: _customInstructionController,
-              maxLines: 3,
-              style: const TextStyle(fontSize: 13.5, color: SaynColors.paperText),
-              decoration: InputDecoration(
-                hintText: 'e.g. "Summarize this into 3 bullets", "Make it friendly"...',
-                hintStyle: const TextStyle(fontSize: 12.5, color: SaynColors.paperTextMuted),
-                filled: true,
-                fillColor: SaynColors.paperSurface,
-                contentPadding: const EdgeInsets.all(12),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: SaynColors.paperBorder),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: SaynColors.paperBorder),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _buildQuickChip('Summarize into 3 points'),
-                _buildQuickChip('Make it friendly & warm'),
-                _buildQuickChip('Fix tone for client email'),
-              ],
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              height: 46,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  _runGrammarPolish();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: SaynColors.wineMaroon,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Apply & Improve',
-                  style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickChip(String label) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _customInstructionController.text = label;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: SaynColors.paperSurface,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: SaynColors.paperBorder),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 11.5,
-            color: SaynColors.wineMaroon,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUserProfileBadge(BuildContext context) {
-    final username = AuthService.instance.username;
-    final initial = username.isNotEmpty ? username[0].toUpperCase() : 'A';
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const AccountScreen()),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(4, 4, 12, 4),
-        decoration: BoxDecoration(
-          color: SaynColors.paperCard,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: SaynColors.paperBorder, width: 1),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircleAvatar(
-              radius: 13,
-              backgroundColor: SaynColors.wineMaroon,
-              child: Text(
-                initial,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              username,
-              style: const TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                color: SaynColors.paperText,
-              ),
             ),
           ],
         ),
