@@ -241,28 +241,14 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 24),
 
             // ─── 3. RECENT NOTES SECTION (Chronologically Grouped Full View) ───
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Recent',
-                  style: TextStyle(
-                    fontFamily: 'serif',
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: SaynColors.wineMaroon,
-                  ),
-                ),
-                if (stats.allEntries.isNotEmpty)
-                  Text(
-                    '${stats.allEntries.length} ${stats.allEntries.length == 1 ? 'entry' : 'entries'}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: SaynColors.paperTextMuted,
-                    ),
-                  ),
-              ],
+            const Text(
+              'Recent',
+              style: TextStyle(
+                fontFamily: 'serif',
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: SaynColors.wineMaroon,
+              ),
             ),
             const SizedBox(height: 12),
 
@@ -338,15 +324,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: Container(
                                 height: 1,
                                 color: SaynColors.paperBorder,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '${notesList.length}',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: SaynColors.paperTextMuted,
                               ),
                             ),
                           ],

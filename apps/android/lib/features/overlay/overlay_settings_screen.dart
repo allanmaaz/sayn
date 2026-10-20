@@ -88,68 +88,22 @@ class _OverlaySettingsScreenState extends State<OverlaySettingsScreen> {
               child: CircularProgressIndicator(color: SaynColors.wineMaroon),
             )
           : SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(18, 10, 18, 120),
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 120),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // ─── 1. OVERVIEW CARD ───
+                  // ─── 1. SHOW MIC OVER OTHER APPS ───
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
                       color: SaynColors.paperCard,
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: SaynColors.paperBorder, width: 1.2),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Row(
-                          children: [
-                            Icon(Icons.bubble_chart_rounded, color: SaynColors.wineMaroon, size: 20),
-                            SizedBox(width: 8),
-                            Text(
-                              'System-Wide Floating Bubble',
-                              style: TextStyle(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w700,
-                                color: SaynColors.paperText,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'SAYN displays a compact floating microphone bubble that appears over WhatsApp, Gmail, Slack, and any app on your phone so you can dictate and refine messages anywhere without switching screens.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: SaynColors.paperTextMuted,
-                            height: 1.45,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // ─── 2. DISPLAY OVER OTHER APPS PERMISSION ───
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: SaynColors.paperCard,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: SaynColors.paperBorder, width: 1.2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                          color: Colors.black.withOpacity(0.015),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
                         ),
                       ],
                     ),
@@ -157,266 +111,267 @@ class _OverlaySettingsScreenState extends State<OverlaySettingsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Display Over Other Apps',
-                              style: TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                color: SaynColors.paperText,
-                              ),
-                            ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              width: 44,
+                              height: 44,
                               decoration: BoxDecoration(
-                                color: _hasPermission
-                                    ? const Color(0xFFE8F5E9)
-                                    : const Color(0xFFFDE8EC),
-                                borderRadius: BorderRadius.circular(8),
+                                color: const Color(0xFFFBF1EC),
+                                borderRadius: BorderRadius.circular(14),
                               ),
-                              child: Text(
-                                _hasPermission ? 'Granted' : 'Required',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: _hasPermission
-                                      ? const Color(0xFF2E7D32)
-                                      : SaynColors.wineMaroon,
-                                ),
+                              child: const Icon(
+                                Icons.filter_none_rounded,
+                                color: SaynColors.wineMaroon,
+                                size: 22,
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Android requires permission to draw the floating microphone above third-party applications.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: SaynColors.paperTextMuted,
-                            height: 1.4,
-                          ),
-                        ),
-                        if (!_hasPermission) ...[
-                          const SizedBox(height: 14),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              onPressed: _requestPermission,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: SaynColors.wineMaroon,
-                                foregroundColor: SaynColors.warmCream,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                elevation: 0,
-                              ),
-                              icon: const Icon(Icons.open_in_new_rounded, size: 16),
-                              label: const Text(
-                                'Open Settings →',
-                                style: TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // ─── 3. VOICE WHILE TYPING (ACCESSIBILITY SERVICE) ───
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: SaynColors.paperCard,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: SaynColors.paperBorder, width: 1.2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Row(
-                              children: [
-                                Icon(Icons.all_inclusive_rounded, color: SaynColors.wineMaroon, size: 18),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Voice While Typing',
-                                  style: TextStyle(
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: SaynColors.paperText,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: _hasAccessibilityPermission
-                                    ? const Color(0xFFE8F5E9)
-                                    : const Color(0xFFFDE8EC),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                _hasAccessibilityPermission ? 'Active' : 'Enable',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: _hasAccessibilityPermission
-                                      ? const Color(0xFF2E7D32)
-                                      : SaynColors.wineMaroon,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Automatically reveals the voice pill whenever your keyboard opens in Gboard, Samsung Keyboard, or SwiftKey, typing your speech directly into chat fields.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: SaynColors.paperTextMuted,
-                            height: 1.45,
-                          ),
-                        ),
-                        if (!_hasAccessibilityPermission) ...[
-                          const SizedBox(height: 14),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: () async {
-                                    await PlatformChannels.openAccessibilitySettings();
-                                    await Future.delayed(const Duration(milliseconds: 600));
-                                    _checkStatus();
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: SaynColors.wineMaroon,
-                                    foregroundColor: SaynColors.warmCream,
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: const [
+                                  Text(
+                                    'Show mic over other apps',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: SaynColors.paperText,
                                     ),
-                                    elevation: 0,
                                   ),
-                                  icon: const Icon(Icons.accessibility_new_rounded, size: 16),
-                                  label: const Text(
-                                    'Enable →',
+                                  SizedBox(height: 3),
+                                  Text(
+                                    'Use your mic while chatting in any app.',
                                     style: TextStyle(
                                       fontSize: 12.5,
-                                      fontWeight: FontWeight.w700,
+                                      color: SaynColors.paperTextMuted,
                                     ),
                                   ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 46,
+                          child: ElevatedButton.icon(
+                            onPressed: _requestPermission,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: SaynColors.wineMaroon,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            icon: Icon(
+                              _hasPermission
+                                  ? Icons.check_circle_outline_rounded
+                                  : Icons.open_in_new_rounded,
+                              size: 18,
+                            ),
+                            label: Text(
+                              _hasPermission
+                                  ? 'Permission allowed'
+                                  : 'Allow permission',
+                              style: const TextStyle(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // ─── 2. VOICE WHILE TYPING ───
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: SaynColors.paperCard,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: SaynColors.paperBorder, width: 1.2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.015),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFBF1EC),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: const Icon(
+                                Icons.mic_none_rounded,
+                                color: SaynColors.wineMaroon,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: const [
+                                  Text(
+                                    'Voice while typing',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: SaynColors.paperText,
+                                    ),
+                                  ),
+                                  SizedBox(height: 3),
+                                  Text(
+                                    'Show the voice button when your keyboard opens.',
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      color: SaynColors.paperTextMuted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 46,
+                          child: ElevatedButton.icon(
+                            onPressed: () async {
+                              if (!_hasAccessibilityPermission) {
+                                await PlatformChannels.openAccessibilitySettings();
+                                await Future.delayed(const Duration(milliseconds: 600));
+                                _checkStatus();
+                              } else {
+                                _toggleAssistant(!_isRunning);
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: SaynColors.wineMaroon,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            icon: const Icon(Icons.mic_rounded, size: 18),
+                            label: Text(
+                              _hasAccessibilityPermission ? 'Active' : 'Turn on',
+                              style: const TextStyle(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        GestureDetector(
+                          onTap: () => _showRestrictedSettingsDialog(context),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Text(
+                                'Button unavailable? See how to fix it',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: SaynColors.wineMaroon,
+                                  decoration: TextDecoration.underline,
                                 ),
                               ),
-                              const SizedBox(width: 10),
-                              InkWell(
-                                onTap: () => _showRestrictedSettingsDialog(context),
-                                borderRadius: BorderRadius.circular(10),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: SaynColors.paperSurface,
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: SaynColors.paperBorder),
-                                  ),
-                                  child: const Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.help_outline_rounded, size: 15, color: SaynColors.wineMaroon),
-                                      SizedBox(width: 6),
-                                      Text(
-                                        'Grayed out?',
-                                        style: TextStyle(
-                                          fontSize: 11.5,
-                                          color: SaynColors.wineMaroon,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                              SizedBox(width: 4),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                size: 16,
+                                color: SaynColors.wineMaroon,
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          GestureDetector(
-                            onTap: () => _showRestrictedSettingsDialog(context),
-                            child: const Text(
-                              'Android 13–15 says "Restricted setting"? Tap here for step-by-step unlock guide.',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: SaynColors.wineMaroon,
-                                decoration: TextDecoration.underline,
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 14),
 
-                  // ─── 4. FLOATING MICROPHONE LIVE TOGGLE ───
+                  // ─── 3. FLOATING MIC ───
                   Container(
-                    padding: const EdgeInsets.all(18),
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
                     decoration: BoxDecoration(
                       color: SaynColors.paperCard,
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: SaynColors.paperBorder, width: 1.2),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                          color: Colors.black.withOpacity(0.015),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
                         ),
                       ],
                     ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFBF1EC),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Icon(
+                            Icons.mic_none_rounded,
+                            color: SaynColors.wineMaroon,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: const [
                               Text(
-                                'Floating Microphone',
+                                'Floating mic',
                                 style: TextStyle(
-                                  fontSize: 13.5,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.w700,
                                   color: SaynColors.paperText,
                                 ),
                               ),
-                              SizedBox(height: 4),
+                              SizedBox(height: 3),
                               Text(
-                                'Displays draggable microphone bubble across apps',
+                                'Keep a small mic on your screen.',
                                 style: TextStyle(
-                                  fontSize: 11.5,
+                                  fontSize: 12.5,
                                   color: SaynColors.paperTextMuted,
                                 ),
                               ),
                             ],
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Switch(
                           value: _isRunning,
                           activeColor: SaynColors.wineMaroon,
                           activeTrackColor: SaynColors.wineMaroon.withOpacity(0.35),
-                          inactiveTrackColor: SaynColors.paperBorder,
+                          inactiveTrackColor: const Color(0xFFE5DDD0),
+                          inactiveThumbColor: const Color(0xFF8C827A),
                           onChanged: _hasPermission ? _toggleAssistant : null,
                         ),
                       ],
@@ -424,65 +379,91 @@ class _OverlaySettingsScreenState extends State<OverlaySettingsScreen> {
                   ),
                   const SizedBox(height: 14),
 
-                  // ─── 5. QUICK TUTORIAL REPLAY ───
+                  // ─── 4. NEED HELP? ───
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
                       color: SaynColors.paperCard,
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: SaynColors.paperBorder, width: 1.2),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                          color: Colors.black.withOpacity(0.015),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
                         ),
                       ],
                     ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFBF1EC),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Icon(
+                            Icons.help_outline_rounded,
+                            color: SaynColors.wineMaroon,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: const [
                               Text(
-                                'Quick Tutorial',
+                                'Need help?',
                                 style: TextStyle(
-                                  fontSize: 13.5,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.w700,
                                   color: SaynColors.paperText,
                                 ),
                               ),
                               SizedBox(height: 3),
                               Text(
-                                'Replay the step-by-step assistant guide',
+                                'Get a simple step-by-step guide.',
                                 style: TextStyle(
-                                  fontSize: 11.5,
+                                  fontSize: 12.5,
                                   color: SaynColors.paperTextMuted,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        ElevatedButton.icon(
-                          onPressed: () => OnboardingDialog.show(context),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: SaynColors.paperSurface,
-                            foregroundColor: SaynColors.wineMaroon,
-                            elevation: 0,
-                            side: const BorderSide(color: SaynColors.paperBorder),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
+                        const SizedBox(width: 10),
+                        GestureDetector(
+                          onTap: () => OnboardingDialog.show(context),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
                             ),
-                          ),
-                          icon: const Icon(Icons.refresh_rounded, size: 16),
-                          label: const Text(
-                            'Replay >',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF5EBDD),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: SaynColors.paperBorder),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                Text(
+                                  'Show me how',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: SaynColors.wineMaroon,
+                                  ),
+                                ),
+                                SizedBox(width: 4),
+                                Icon(
+                                  Icons.chevron_right_rounded,
+                                  size: 16,
+                                  color: SaynColors.wineMaroon,
+                                ),
+                              ],
                             ),
                           ),
                         ),
