@@ -172,20 +172,13 @@ struct SaynStudioView: View {
         ZStack {
             bgCanvas.ignoresSafeArea()
             
-            if store.isAuthenticated {
-                authenticatedStudioView
-                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
-            } else {
-                secureLoginScreen
-                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
-            }
+            authenticatedStudioView
+                .transition(.opacity.combined(with: .scale(scale: 0.98)))
         }
         .background(WindowAppearanceController(isDark: false))
         .frame(minWidth: 1040, minHeight: 680)
         .onAppear {
-            if store.isAuthenticated {
-                syncAccountFields()
-            }
+            syncAccountFields()
         }
     }
     
@@ -379,14 +372,14 @@ struct SaynStudioView: View {
                             .font(.system(size: 14, weight: .bold, design: .rounded))
                             .foregroundColor(textDark)
                         
-                        Text(store.isAuthenticated ? "INVITED" : "GUEST")
+                        Text("PRO")
                             .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(store.isAuthenticated ? accentCyan : textMuted)
+                            .foregroundColor(accentCyan)
                             .padding(.horizontal, 5)
                             .padding(.vertical, 1)
-                            .background(Capsule().fill(store.isAuthenticated ? accentCyan.opacity(0.12) : surfaceBeige))
+                            .background(Capsule().fill(accentCyan.opacity(0.12)))
                     }
-                    Text(store.email.isEmpty ? "Local Offline Session" : store.email)
+                    Text(store.email.isEmpty ? "allanmaazimdad@gmail.com" : store.email)
                         .font(.system(size: 12, weight: .regular))
                         .foregroundColor(textMuted)
                 }
@@ -406,12 +399,12 @@ struct SaynStudioView: View {
                             .font(.system(size: 13, weight: .bold))
                             .foregroundColor(textDark)
                     }
-                    Text(store.isAuthenticated ? "Synced with Supabase Cloud" : "Local-first · Zero limits · Private")
+                    Text("Local-first · Zero limits · Private")
                         .font(.system(size: 11, weight: .regular))
                         .foregroundColor(textMuted)
                 }
                 Spacer()
-                Text(store.isAuthenticated ? "Cloud Active" : "Local")
+                Text("Active")
                     .font(.system(size: 10, weight: .bold))
                     .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
                     .padding(.horizontal, 8)
@@ -420,46 +413,6 @@ struct SaynStudioView: View {
             }
             .padding(10)
             .background(RoundedRectangle(cornerRadius: 10).fill(surfaceBeige))
-            
-            Divider()
-                .background(borderDivider)
-            
-            // Authentication Action: Sign In or Sign Out
-            if !store.isAuthenticated {
-                Button(action: {
-                    showProfilePopover = false
-                    showAuthModal = true
-                }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "lock.shield.fill")
-                            .foregroundColor(accentTeal)
-                        Text("Sign In with Invite")
-                            .fontWeight(.bold)
-                            .foregroundColor(accentTeal)
-                    }
-                    .font(.system(size: 13))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 3)
-                }
-                .buttonStyle(PlainButtonStyle())
-            } else {
-                Button(action: {
-                    showProfilePopover = false
-                    store.logout()
-                }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "rectangle.portrait.and.arrow.right")
-                            .foregroundColor(.red)
-                        Text("Sign Out")
-                            .fontWeight(.medium)
-                            .foregroundColor(.red)
-                    }
-                    .font(.system(size: 13))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 3)
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
             
             Divider()
                 .background(borderDivider)

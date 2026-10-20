@@ -19,7 +19,7 @@ class AuthService extends ChangeNotifier {
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZXZsZ2R5cXFhdnZ0bW9rd3ZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3NDIyMDAsImV4cCI6MjEwNzMxODIwMH0.gudEGqLAnR0lT9irIqA89eVR_Iqcg1in2M7lbFcd5vI';
 
   bool _isInitialized = false;
-  bool _isAuthenticated = false;
+  bool _isAuthenticated = true;
   bool _isAuthenticating = false;
   String? _username;
   String? _email;
@@ -27,7 +27,7 @@ class AuthService extends ChangeNotifier {
   String? _accessToken;
   String? _firstName;
   String? _lastName;
-  String _supabaseSyncStatus = 'Connected';
+  String _supabaseSyncStatus = 'Ready';
 
   bool get isInitialized => _isInitialized;
   bool get isAuthenticated => _isAuthenticated;
@@ -277,6 +277,7 @@ class AuthService extends ChangeNotifier {
           'Prefer': 'return=minimal',
         },
         body: jsonEncode({
+          if (_userId != null) 'user_id': _userId,
           'source_text': text,
           'result_text': text,
           'writing_mode': mode,

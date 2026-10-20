@@ -715,11 +715,35 @@ class FloatingBubbleService : Service() {
                 if (words > 0) {
                     try {
                         val flutterPrefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-                        val currentTotal = flutterPrefs.getLong("flutter.sayn_stat_total_words", 22340L)
+                        val currentTotal = flutterPrefs.getLong("flutter.sayn_stat_total_words", 0L)
                         val currentWeekly = flutterPrefs.getLong("flutter.sayn_stat_weekly_words", 0L)
+                        val currentSpoken = flutterPrefs.getLong("flutter.sayn_stat_words_spoken", 0L)
+                        val currentNotes = flutterPrefs.getLong("flutter.sayn_stat_notes_count", 0L)
+                        val currentPolished = flutterPrefs.getLong("flutter.sayn_stat_polished_count", 0L)
+
+                        val pendingJson = flutterPrefs.getString("flutter.sayn_pending_sync_notes", "[]") ?: "[]"
+                        val array = org.json.JSONArray(pendingJson)
+                        val obj = org.json.JSONObject().apply {
+                            put("id", java.util.UUID.randomUUID().toString())
+                            put("source_text", textToInsert)
+                            put("result_text", refined)
+                            put("mode", "voice_universal")
+                            put("created_at", java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US).apply {
+                                timeZone = java.util.TimeZone.getTimeZone("UTC")
+                            }.format(java.util.Date()))
+                            put("word_count", words)
+                            put("is_voice", true)
+                            put("is_polished", true)
+                        }
+                        array.put(obj)
+
                         flutterPrefs.edit()
                             .putLong("flutter.sayn_stat_total_words", currentTotal + words)
                             .putLong("flutter.sayn_stat_weekly_words", (currentWeekly + words) % 1000)
+                            .putLong("flutter.sayn_stat_words_spoken", currentSpoken + words)
+                            .putLong("flutter.sayn_stat_notes_count", currentNotes + 1)
+                            .putLong("flutter.sayn_stat_polished_count", currentPolished + 1)
+                            .putString("flutter.sayn_pending_sync_notes", array.toString())
                             .apply()
                     } catch (e: Exception) {}
                 }

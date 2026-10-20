@@ -103,7 +103,9 @@ class _VoiceFlowScreenState extends State<VoiceFlowScreen>
         // Synchronize in real time with UserStatsService and Supabase
         UserStatsService.instance.recordSpeechSession(
           transcript: _polishedResult,
+          rawTranscript: rawText,
           durationSeconds: stopwatch.elapsedMilliseconds / 1000.0,
+          mode: _selectedTone,
         );
       }
     } catch (_) {
@@ -114,6 +116,13 @@ class _VoiceFlowScreenState extends State<VoiceFlowScreen>
           _polishedResult = _cleanLocalFallback(rawText);
           _lastLatencyMs = stopwatch.elapsedMilliseconds;
         });
+
+        UserStatsService.instance.recordSpeechSession(
+          transcript: _polishedResult,
+          rawTranscript: rawText,
+          durationSeconds: stopwatch.elapsedMilliseconds / 1000.0,
+          mode: _selectedTone,
+        );
       }
     } finally {
       if (mounted) {

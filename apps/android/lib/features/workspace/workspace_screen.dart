@@ -86,6 +86,23 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   }
 
   @override
+  void didUpdateWidget(covariant WorkspaceScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialText != null && widget.initialText != oldWidget.initialText) {
+      _inputController.value = TextEditingValue(
+        text: widget.initialText!,
+        selection: TextSelection.collapsed(offset: widget.initialText!.length),
+      );
+      _updateMetrics();
+    }
+    if (widget.initialStyle != null && widget.initialStyle != oldWidget.initialStyle) {
+      setState(() {
+        _selectedStyle = widget.initialStyle!;
+      });
+    }
+  }
+
+  @override
   void dispose() {
     if (_isDictating) {
       PlatformChannels.stopDictation();
@@ -152,9 +169,10 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
       });
 
       // Synchronize in real time with UserStatsService and Supabase
-      UserStatsService.instance.recordSpeechSession(
-        transcript: refined,
-        durationSeconds: 0,
+      UserStatsService.instance.recordPolishedText(
+        sourceText: rawText,
+        resultText: refined,
+        mode: _selectedStyle,
       );
     } catch (e) {
       setState(() {

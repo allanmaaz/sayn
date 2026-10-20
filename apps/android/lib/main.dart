@@ -6,7 +6,6 @@ import 'features/workspace/workspace_screen.dart';
 import 'features/overlay/overlay_settings_screen.dart';
 import 'features/keyboard/keyboard_settings_screen.dart';
 import 'features/onboarding/onboarding_dialog.dart';
-import 'features/auth/login_screen.dart';
 import 'services/auth_service.dart';
 import 'services/update_service.dart';
 import 'services/user_stats_service.dart';
@@ -42,40 +41,19 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
-
-  late final List<Widget> _screens;
+  String? _studioInitialText;
+  String? _studioInitialStyle;
 
   @override
   void initState() {
     super.initState();
-    _initScreens();
     AuthService.instance.addListener(_onAuthChanged);
     AuthService.instance.init();
     UserStatsService.instance.init();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAutoUpdate();
-      if (AuthService.instance.isAuthenticated) {
-        _checkOnboarding();
-      }
+      _checkOnboarding();
     });
-  }
-
-  void _initScreens() {
-    _screens = [
-      HomeScreen(
-        onSwitchTab: (tabIndex) {
-          setState(() => _currentIndex = tabIndex);
-        },
-        onSelectWritingTool: (toolMode) {
-          setState(() {
-            _currentIndex = 1; // Switch to Studio
-          });
-        },
-      ),
-      const WorkspaceScreen(),
-      const OverlaySettingsScreen(),
-      const KeyboardSettingsScreen(),
-    ];
   }
 
   void _onAuthChanged() {
@@ -110,21 +88,39 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (!AuthService.instance.isAuthenticated) {
-      return LoginScreen(
-        onAuthenticated: () {
-          setState(() {});
-          _checkOnboarding();
+    final screens = [
+      HomeScreen(
+        onSwitchTab: (tabIndex) {
+          setState(() => _currentIndex = tabIndex);
         },
-      );
-    }
+        onSelectWritingTool: (toolMode) {
+          setState(() {
+            _studioInitialStyle = toolMode;
+            _currentIndex = 1; // Switch to Studio
+          });
+        },
+        onOpenNote: (note) {
+          setState(() {
+            _studioInitialText = note.resultText;
+            _studioInitialStyle = note.mode;
+            _currentIndex = 1; // Switch to Studio
+          });
+        },
+      ),
+      WorkspaceScreen(
+        initialText: _studioInitialText,
+        initialStyle: _studioInitialStyle,
+      ),
+      const OverlaySettingsScreen(),
+      const KeyboardSettingsScreen(),
+    ];
 
     return Scaffold(
       extendBody: false,
       backgroundColor: SaynColors.paperBg,
       body: IndexedStack(
         index: _currentIndex,
-        children: _screens,
+        children: screens,
       ),
       bottomNavigationBar: _buildBottomNav(),
     );

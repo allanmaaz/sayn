@@ -170,7 +170,7 @@ class AccountScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
 
-                // ─── 3. SIGN OUT CARD ───
+                // ─── 3. RESET STATS / HISTORY CARD ───
                 Container(
                   decoration: BoxDecoration(
                     color: SaynColors.paperCard,
@@ -178,10 +178,10 @@ class AccountScreen extends StatelessWidget {
                     border: Border.all(color: SaynColors.paperBorder, width: 1.2),
                   ),
                   child: _buildActionRow(
-                    icon: Icons.logout_rounded,
-                    title: 'Sign out',
+                    icon: Icons.restart_alt_rounded,
+                    title: 'Clear history & reset stats',
                     trailing: Icons.chevron_right_rounded,
-                    onTap: () => _confirmSignOut(context),
+                    onTap: () => _confirmReset(context),
                   ),
                 ),
                 const SizedBox(height: 40),
@@ -377,18 +377,18 @@ class AccountScreen extends StatelessWidget {
     );
   }
 
-  void _confirmSignOut(BuildContext context) {
+  void _confirmReset(BuildContext context) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: SaynColors.paperCard,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
-          'Sign Out',
+          'Reset History & Stats',
           style: TextStyle(fontFamily: 'serif', color: SaynColors.wineMaroon, fontWeight: FontWeight.bold),
         ),
         content: const Text(
-          'Are you sure you want to sign out of your account on this device?',
+          'Are you sure you want to clear your local writing history and reset your statistics to start fresh?',
           style: TextStyle(fontSize: 13.5),
         ),
         actions: [
@@ -399,9 +399,14 @@ class AccountScreen extends StatelessWidget {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              await AuthService.instance.logout();
+              await UserStatsService.instance.clearHistory();
               if (context.mounted) {
-                Navigator.of(context).popUntil((route) => route.isFirst);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Writing history and statistics reset.'),
+                    backgroundColor: SaynColors.wineMaroon,
+                  ),
+                );
               }
             },
             style: ElevatedButton.styleFrom(
@@ -409,7 +414,7 @@ class AccountScreen extends StatelessWidget {
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-            child: const Text('Sign Out'),
+            child: const Text('Reset'),
           ),
         ],
       ),

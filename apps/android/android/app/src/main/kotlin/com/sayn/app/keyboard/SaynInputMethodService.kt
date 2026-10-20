@@ -1591,21 +1591,46 @@ class SaynInputMethodService : InputMethodService() {
             ic.endBatchEdit()
         }
 
-        val words = lastSuggestion.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }.size
-        if (words > 0) {
-            try {
-                val flutterPrefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-                val currentTotal = flutterPrefs.getLong("flutter.sayn_stat_total_words", 22340L)
-                val currentWeekly = flutterPrefs.getLong("flutter.sayn_stat_weekly_words", 0L)
-                flutterPrefs.edit()
-                    .putLong("flutter.sayn_stat_total_words", currentTotal + words)
-                    .putLong("flutter.sayn_stat_weekly_words", (currentWeekly + words) % 1000)
-                    .apply()
-            } catch (e: Exception) {}
-        }
+        recordAcceptedWords(lastSuggestion, isPolished = true)
 
         hideSuggestionArea()
         Toast.makeText(this, "Polished text applied", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun recordAcceptedWords(text: String, isPolished: Boolean = true) {
+        val words = text.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }.size
+        if (words <= 0) return
+        try {
+            val flutterPrefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+            val currentTotal = flutterPrefs.getLong("flutter.sayn_stat_total_words", 0L)
+            val currentWeekly = flutterPrefs.getLong("flutter.sayn_stat_weekly_words", 0L)
+            val currentNotes = flutterPrefs.getLong("flutter.sayn_stat_notes_count", 0L)
+            val currentPolished = flutterPrefs.getLong("flutter.sayn_stat_polished_count", 0L)
+
+            val pendingJson = flutterPrefs.getString("flutter.sayn_pending_sync_notes", "[]") ?: "[]"
+            val array = org.json.JSONArray(pendingJson)
+            val obj = org.json.JSONObject().apply {
+                put("id", java.util.UUID.randomUUID().toString())
+                put("source_text", text)
+                put("result_text", text)
+                put("mode", "keyboard")
+                put("created_at", java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US).apply {
+                    timeZone = java.util.TimeZone.getTimeZone("UTC")
+                }.format(java.util.Date()))
+                put("word_count", words)
+                put("is_voice", false)
+                put("is_polished", isPolished)
+            }
+            array.put(obj)
+
+            flutterPrefs.edit()
+                .putLong("flutter.sayn_stat_total_words", currentTotal + words)
+                .putLong("flutter.sayn_stat_weekly_words", (currentWeekly + words) % 1000)
+                .putLong("flutter.sayn_stat_notes_count", currentNotes + 1)
+                .putLong("flutter.sayn_stat_polished_count", currentPolished + 1)
+                .putString("flutter.sayn_pending_sync_notes", array.toString())
+                .apply()
+        } catch (e: Exception) {}
     }
 
     private fun handleAcceptGrammarSuggestion() {
@@ -1631,18 +1656,7 @@ class SaynInputMethodService : InputMethodService() {
             ic.endBatchEdit()
         }
 
-        val words = replacement.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }.size
-        if (words > 0) {
-            try {
-                val flutterPrefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-                val currentTotal = flutterPrefs.getLong("flutter.sayn_stat_total_words", 22340L)
-                val currentWeekly = flutterPrefs.getLong("flutter.sayn_stat_weekly_words", 0L)
-                flutterPrefs.edit()
-                    .putLong("flutter.sayn_stat_total_words", currentTotal + words)
-                    .putLong("flutter.sayn_stat_weekly_words", (currentWeekly + words) % 1000)
-                    .apply()
-            } catch (e: Exception) {}
-        }
+        recordAcceptedWords(replacement, isPolished = true)
 
         hideSuggestionArea()
         Toast.makeText(this, "Correction applied", Toast.LENGTH_SHORT).show()
@@ -2172,18 +2186,7 @@ class SaynInputMethodService : InputMethodService() {
                 ic.endBatchEdit()
             }
 
-            val words = lastSuggestion.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }.size
-            if (words > 0) {
-                try {
-                    val flutterPrefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-                    val currentTotal = flutterPrefs.getLong("flutter.sayn_stat_total_words", 22340L)
-                    val currentWeekly = flutterPrefs.getLong("flutter.sayn_stat_weekly_words", 0L)
-                    flutterPrefs.edit()
-                        .putLong("flutter.sayn_stat_total_words", currentTotal + words)
-                        .putLong("flutter.sayn_stat_weekly_words", (currentWeekly + words) % 1000)
-                        .apply()
-                } catch (e: Exception) {}
-            }
+            recordAcceptedWords(lastSuggestion, isPolished = true)
 
             Toast.makeText(this, "Accepted & replaced!", Toast.LENGTH_SHORT).show()
         }

@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import '../../core/theme.dart';
+import '../../services/user_stats_service.dart';
 import '../navigation/sayn_drawer.dart';
 
 class HomeScreen extends StatelessWidget {
   final Function(int tabIndex)? onSwitchTab;
   final Function(String mode)? onSelectWritingTool;
+  final Function(WritingNote note)? onOpenNote;
 
   const HomeScreen({
     super.key,
     this.onSwitchTab,
     this.onSelectWritingTool,
+    this.onOpenNote,
   });
 
   String _getTimeGreeting() {
@@ -21,7 +24,12 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final stats = UserStatsService.instance;
+
+    return AnimatedBuilder(
+      animation: stats,
+      builder: (context, _) {
+        return Scaffold(
       backgroundColor: SaynColors.paperBg,
       drawer: const SaynDrawer(),
       appBar: AppBar(
@@ -168,25 +176,25 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   _buildStatItem(
                     icon: Icons.mic_none_rounded,
-                    value: '12,491',
+                    value: stats.wordsSpokenFormatted,
                     label: 'Words spoken',
                   ),
                   _buildStatDivider(),
                   _buildStatItem(
                     icon: Icons.description_outlined,
-                    value: '18',
+                    value: stats.notesCreated.toString(),
                     label: 'Notes created',
                   ),
                   _buildStatDivider(),
                   _buildStatItem(
                     icon: Icons.auto_awesome_outlined,
-                    value: '6',
+                    value: stats.textsPolished.toString(),
                     label: 'Texts polished',
                   ),
                   _buildStatDivider(),
                   _buildStatItem(
                     icon: Icons.access_time_rounded,
-                    value: '3.2h',
+                    value: stats.timeSavedFormatted,
                     label: 'Time saved',
                   ),
                 ],
@@ -194,7 +202,7 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            // ─── 3. RECENT VOICE NOTES SECTION ───
+            // ─── 3. RECENT VOICE NOTES SECTION (Dynamic Live Data) ───
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -227,27 +235,33 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            _buildRecentNoteCard(
-              context,
-              title: 'Refund request message',
-              preview: 'The description says it has 100 papers but for me...',
-              time: '5:08 pm',
-            ),
-            const SizedBox(height: 10),
-            _buildRecentNoteCard(
-              context,
-              title: 'ML assignment notes',
-              preview: 'Feature engineering is the process of creating new...',
-              time: 'Yesterday',
-            ),
-            const SizedBox(height: 10),
-            _buildRecentNoteCard(
-              context,
-              title: 'Meeting summary',
-              preview: "Key points from today's discussion are...",
-              time: 'Oct 16',
-            ),
-            const SizedBox(height: 24),
+            if (stats.recentEntries.isEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                decoration: BoxDecoration(
+                  color: SaynColors.paperCard,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: SaynColors.paperBorder, width: 1),
+                ),
+                child: Row(
+                  children: const [
+                    Icon(Icons.mic_none_rounded, color: SaynColors.wineMaroon, size: 24),
+                    SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        'No voice notes yet. Tap Voice below to start speaking in real time.',
+                        style: TextStyle(fontSize: 13, color: SaynColors.paperTextMuted),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              for (final note in stats.recentEntries.take(3)) ...[
+                _buildRecentNoteCard(context, note: note),
+                const SizedBox(height: 10),
+              ],
+            const SizedBox(height: 14),
 
             // ─── 4. WRITING TOOLS SECTION ───
             Row(
@@ -333,7 +347,9 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
     );
-  }
+  },
+);
+}
 
   Widget _buildHeroWaveGraphic() {
     return Row(
@@ -401,12 +417,16 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildRecentNoteCard(
     BuildContext context, {
-    required String title,
-    required String preview,
-    required String time,
+    required WritingNote note,
   }) {
     return InkWell(
-      onTap: () => onSwitchTab?.call(1),
+      onTap: () {
+        if (onOpenNote != null) {
+          onOpenNote!(note);
+        } else {
+          onSwitchTab?.call(1);
+        }
+      },
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -424,7 +444,11 @@ class HomeScreen extends StatelessWidget {
                 color: SaynColors.paperSurface,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.description_outlined, color: SaynColors.wineMaroon, size: 20),
+              child: Icon(
+                note.isVoice ? Icons.mic_none_rounded : Icons.description_outlined,
+                color: SaynColors.wineMaroon,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -432,7 +456,7 @@ class HomeScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
+                    note.title,
                     style: const TextStyle(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w700,
@@ -442,7 +466,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    preview,
+                    note.preview,
                     style: const TextStyle(
                       fontSize: 11.5,
                       color: SaynColors.paperTextMuted,
@@ -455,11 +479,11 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              time,
+              note.timeFormatted,
               style: const TextStyle(
                 fontSize: 10.5,
                 color: SaynColors.paperTextMuted,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
               ),
             ),
             PopupMenuButton<String>(
@@ -467,18 +491,21 @@ class HomeScreen extends StatelessWidget {
               color: SaynColors.paperCard,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               onSelected: (val) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('$val: $title'),
-                    duration: const Duration(seconds: 1),
-                    backgroundColor: SaynColors.wineMaroon,
-                  ),
-                );
+                if (val == 'Open' && onOpenNote != null) {
+                  onOpenNote!(note);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('$val: ${note.title}'),
+                      duration: const Duration(seconds: 1),
+                      backgroundColor: SaynColors.wineMaroon,
+                    ),
+                  );
+                }
               },
               itemBuilder: (_) => [
+                const PopupMenuItem(value: 'Open', child: Text('Open in Studio')),
                 const PopupMenuItem(value: 'Copy', child: Text('Copy')),
-                const PopupMenuItem(value: 'Share', child: Text('Share')),
-                const PopupMenuItem(value: 'Delete', child: Text('Delete')),
               ],
             ),
           ],

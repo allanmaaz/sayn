@@ -184,8 +184,8 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
     @Published var lastSupabaseSyncDate: Date? = nil
     @Published var supabaseSyncStatus: String = "Connected"
     
-    // MARK: - Invite-Only Supabase Auth State
-    @Published var isAuthenticated: Bool = false
+    // MARK: - App Auth State
+    @Published var isAuthenticated: Bool = true
     @Published var currentUserEmail: String? = nil
     @Published var currentUsername: String? = nil
     @Published var currentUserId: String? = nil
