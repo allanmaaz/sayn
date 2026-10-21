@@ -37,7 +37,7 @@ build/
 **/local.properties
 android/gradlew
 android/gradlew.bat
-android/**/GeneratedPluginRegistrant.java
+**/GeneratedPluginRegistrant.java
 android/**/*.keystore
 android/**/*.jks
 

@@ -33,10 +33,37 @@ const FILLER_PATTERNS: RegExp[] = [
   /\b(?:you know|sort of|kind of|so yeah|basically|i mean|honestly|actually)\b,?\s*/gi,
 ];
 
+// Phonetic & Technical Jargon Whitelist (Wispr Flow vocabulary engine)
+const PHONETIC_JARGON_REPLACEMENTS: Array<[RegExp, string]> = [
+  [/\b(?:super\s*base|superbass)\b/gi, 'Supabase'],
+  [/\b(?:sayn|sane\s+ai)\b/gi, 'SAYN'],
+  [/\b(?:cloud\s*flare)\b/gi, 'Cloudflare'],
+  [/\b(?:post\s*gres(?:ql)?|postgress?)\b/gi, 'PostgreSQL'],
+  [/\b(?:git\s*hub)\b/gi, 'GitHub'],
+  [/\b(?:git\s*lab)\b/gi, 'GitLab'],
+  [/\b(?:type\s*script)\b/gi, 'TypeScript'],
+  [/\b(?:java\s*script)\b/gi, 'JavaScript'],
+  [/\b(?:open\s*a\s*i)\b/gi, 'OpenAI'],
+  [/\b(?:chat\s*g\s*p\s*t|chat\s*gpt)\b/gi, 'ChatGPT'],
+  [/\b(?:vs\s*code|visual\s+studio\s+code)\b/gi, 'VS Code'],
+  [/\b(?:next\s*js)\b/gi, 'Next.js'],
+  [/\b(?:node\s*js)\b/gi, 'Node.js'],
+  [/\b(?:you\s*are\s*l|you\s*are\s*ell)\b/gi, 'URL'],
+  [/\b(?:a\s+p\s+i)\b/gi, 'API'],
+  [/\b(?:p\s+r)\b/gi, 'PR'],
+  [/\b(?:u\s+i)\b/gi, 'UI'],
+  [/\b(?:u\s+x)\b/gi, 'UX'],
+  [/\b(?:q\s+a)\b/gi, 'QA'],
+  [/\b(?:s\s+d\s+k)\b/gi, 'SDK'],
+  [/\b(?:c\s+i\s*\/\s*c\s+d|c\s+i\s+c\s+d)\b/gi, 'CI/CD'],
+];
+
 export interface WisprFlowOptions {
   stripDisfluencies?: boolean;
   parseSpokenPunctuation?: boolean;
   removeTrailingPeriod?: boolean;
+  applyPhoneticJargon?: boolean;
+  customDictionary?: Record<string, string>;
 }
 
 export function cleanWisprFlowText(text: string, options: WisprFlowOptions = {}): string {
@@ -46,6 +73,8 @@ export function cleanWisprFlowText(text: string, options: WisprFlowOptions = {})
     stripDisfluencies = true,
     parseSpokenPunctuation = true,
     removeTrailingPeriod = false,
+    applyPhoneticJargon = true,
+    customDictionary,
   } = options;
 
   let result = text;
@@ -54,6 +83,23 @@ export function cleanWisprFlowText(text: string, options: WisprFlowOptions = {})
   if (parseSpokenPunctuation) {
     for (const [pattern, replacement] of SPOKEN_PUNCTUATION_PATTERNS) {
       result = result.replace(pattern, replacement);
+    }
+  }
+
+  // 1b. Phonetic & Technical Jargon Mapping
+  if (applyPhoneticJargon) {
+    for (const [pattern, replacement] of PHONETIC_JARGON_REPLACEMENTS) {
+      result = result.replace(pattern, replacement);
+    }
+  }
+
+  // 1c. Custom Dictionary Replacements
+  if (customDictionary && typeof customDictionary === 'object') {
+    for (const [rawKey, targetWord] of Object.entries(customDictionary)) {
+      if (rawKey.trim() && targetWord) {
+        const escaped = rawKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        result = result.replace(new RegExp(`\\b${escaped}\\b`, 'gi'), targetWord);
+      }
     }
   }
 

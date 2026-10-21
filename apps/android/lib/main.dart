@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'core/theme.dart';
 import 'features/home/home_screen.dart';
 import 'features/workspace/workspace_screen.dart';
@@ -78,6 +79,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   Future<void> _checkAutoUpdate() async {
+    if (kIsWeb) return;
     try {
       final info = await UpdateService.checkUpdate();
       if (info != null && info.hasUpdate && mounted) {

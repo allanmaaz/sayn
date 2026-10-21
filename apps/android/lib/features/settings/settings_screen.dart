@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme.dart';
+import 'personal_dictionary_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -126,6 +127,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: 'Keyboard Settings',
                 subtitle: 'Keypress behaviour and layout',
                 onTap: () => Navigator.pop(context),
+              ),
+              _buildDivider(),
+              _buildSettingItem(
+                icon: Icons.menu_book_rounded,
+                title: 'Personal Dictionary',
+                subtitle: 'Manage custom whitelisted words and names',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PersonalDictionaryScreen()),
+                  );
+                },
               ),
             ]),
             const SizedBox(height: 20),
@@ -327,7 +340,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: Colors.white,
+            activeThumbColor: Colors.white,
             activeTrackColor: SaynColors.wineMaroon,
             inactiveThumbColor: Colors.white,
             inactiveTrackColor: const Color(0xFFD6C8B8),

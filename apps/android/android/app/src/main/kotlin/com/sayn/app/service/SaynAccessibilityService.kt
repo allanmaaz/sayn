@@ -20,6 +20,30 @@ class SaynAccessibilityService : AccessibilityService() {
             private set
         var isConnected = false
             private set
+        var activePackageName: String? = null
+            private set
+
+        fun resolveAdaptiveModeForPackage(packageName: String?): String {
+            if (packageName == null) return "mammals"
+            val pkg = packageName.lowercase()
+            return when {
+                // Professional / Email / Docs
+                pkg.contains("gm") || pkg.contains("email") || pkg.contains("outlook") ||
+                pkg.contains("docs") || pkg.contains("word") || pkg.contains("notion") -> "professional"
+
+                // Concise / Team chat
+                pkg.contains("slack") || pkg.contains("teams") -> "concise"
+
+                // Confident / Social media
+                pkg.contains("linkedin") || pkg.contains("twitter") || pkg.contains("x.android") -> "confident"
+
+                // Casual / Messaging (natural cadence, zero trailing period)
+                pkg.contains("whatsapp") || pkg.contains("telegram") || pkg.contains("signal") ||
+                pkg.contains("messaging") || pkg.contains("mms") || pkg.contains("instagram") -> "mammals"
+
+                else -> "mammals"
+            }
+        }
     }
 
     private var lastFocusedNode: AccessibilityNodeInfo? = null
@@ -46,6 +70,11 @@ class SaynAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
+        val eventPkg = event.packageName?.toString()
+        if (!eventPkg.isNullOrEmpty() && eventPkg != packageName) {
+            activePackageName = eventPkg
+        }
+
         when (event.eventType) {
             AccessibilityEvent.TYPE_VIEW_FOCUSED -> {
                 val node = event.source ?: rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
@@ -80,6 +109,7 @@ class SaynAccessibilityService : AccessibilityService() {
     override fun onInterrupt() {
         instance = null
         isConnected = false
+        activePackageName = null
         lastFocusedNode = null
     }
 
@@ -87,6 +117,7 @@ class SaynAccessibilityService : AccessibilityService() {
         super.onDestroy()
         instance = null
         isConnected = false
+        activePackageName = null
         lastFocusedNode = null
     }
 

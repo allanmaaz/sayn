@@ -115,6 +115,16 @@ class MainActivity : FlutterActivity() {
                         startActivity(intent)
                         result.success(null)
                     }
+                    "updateBubbleAppearance" -> {
+                        val size = (call.argument<Double>("size") ?: 56.0).toFloat()
+                        val opacity = (call.argument<Double>("opacity") ?: 0.95).toFloat()
+                        prefs.edit()
+                            .putFloat("sayn_bubble_size", size)
+                            .putFloat("sayn_bubble_opacity", opacity)
+                            .apply()
+                        FloatingBubbleService.instance?.updateAppearance(size, opacity)
+                        result.success(true)
+                    }
                     else -> result.notImplemented()
                 }
             }
@@ -343,9 +353,12 @@ class MainActivity : FlutterActivity() {
 
                 inAppSpeechRecognizer?.setRecognitionListener(object : RecognitionListener {
                     override fun onReadyForSpeech(params: Bundle?) {}
-                    override fun onBeginningOfSpeech() {}
-                    override fun onRmsChanged(rmsdB: Float) {}
-                    override fun onBufferReceived(buffer: ByteArray?) {}
+                    override fun onRmsChanged(rmsdB: Float) {
+                        val normalized = ((rmsdB + 2.0f) / 14.0f).coerceIn(0.0f, 1.0f)
+                        runOnUiThread {
+                            speechChannel.invokeMethod("onAudioLevel", mapOf("level" to normalized.toDouble()))
+                        }
+                    }
 
                     override fun onEndOfSpeech() {
                         speechChannel.invokeMethod("onEndOfSpeech", null)

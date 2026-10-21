@@ -3,6 +3,8 @@ import '../../core/theme.dart';
 import '../../services/user_stats_service.dart';
 import '../account/account_screen.dart';
 import '../settings/settings_screen.dart';
+import '../tools/ai_detector_screen.dart';
+import '../tools/citation_screen.dart';
 
 class SaynDrawer extends StatelessWidget {
   const SaynDrawer({super.key});
@@ -175,6 +177,28 @@ class SaynDrawer extends StatelessWidget {
                   const SizedBox(height: 14),
 
                   // 4. Menu Actions
+                  _buildMenuItem(
+                    icon: Icons.radar_rounded,
+                    title: 'AI Content Detector',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const AiDetectorScreen()),
+                      );
+                    },
+                  ),
+                  _buildMenuItem(
+                    icon: Icons.format_quote_rounded,
+                    title: 'Citation Generator',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const CitationScreen()),
+                      );
+                    },
+                  ),
                   _buildMenuItem(
                     icon: Icons.settings_outlined,
                     title: 'Settings',

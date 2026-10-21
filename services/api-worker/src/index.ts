@@ -5,6 +5,8 @@ import { authenticateRequest } from './middleware/auth.js';
 import { ProviderRouter } from './providers/router.js';
 import { handleTranscription } from './speech/transcribe.js';
 import { cleanWisprFlowText } from './speech/wisprFlowCleaner.js';
+import { detectAiContent } from './detector/aiDetector.js';
+import { generateCitation } from './citation/citationEngine.js';
 import {
   HealthCheckResponse,
   RefineResponse,
@@ -47,6 +49,20 @@ const RefineSchema = z.object({
   targetLanguage: z.string().optional(),
   customInstruction: z.string().max(500).optional(),
   preserveFormatting: z.boolean().optional(),
+  synonymLevel: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3), z.literal(4)]).optional(),
+  freezeWords: z.array(z.string()).optional(),
+  includeGrammarIssues: z.boolean().optional(),
+  includeAlternatives: z.boolean().optional(),
+});
+
+const DetectAiSchema = z.object({
+  text: z.string().min(1, 'Text cannot be empty').max(15000, 'Text exceeds 15000 character maximum'),
+});
+
+const CitationSchema = z.object({
+  sourceTextOrUrl: z.string().min(1, 'Source cannot be empty').max(2000),
+  style: z.enum(['apa', 'mla', 'chicago', 'harvard'] as const).default('apa'),
+  sourceType: z.enum(['website', 'journal', 'book', 'article', 'auto'] as const).optional(),
 });
 
 function jsonResponse(data: unknown, status = 200, origin: string | null = '*'): Response {
@@ -213,6 +229,7 @@ export default {
             refinedText: finalRefinedText,
             mode: parsed.data.mode,
             tone: parsed.data.tone,
+            synonymLevel: parsed.data.synonymLevel,
             stats: {
               originalWords,
               originalChars: parsed.data.text.length,
@@ -222,6 +239,8 @@ export default {
             },
             provider: providerResult.provider,
             model: providerResult.model,
+            alternatives: providerResult.alternatives,
+            issues: providerResult.issues,
           };
 
           return jsonResponse(responsePayload, 200, origin);
@@ -234,6 +253,60 @@ export default {
             null,
             origin
           );
+        }
+      }
+
+      // 5. AI CONTENT DETECTION
+      if (url.pathname === '/api/v1/ai/detect' && request.method === 'POST') {
+        const { user, error: authError } = await authenticateRequest(request, env);
+        if (authError || !user) {
+          return errorResponse('UNAUTHORIZED', authError || 'Authentication required', 401, null, origin);
+        }
+
+        let rawBody: any;
+        try {
+          rawBody = await request.json();
+        } catch {
+          return errorResponse('INVALID_INPUT', 'Malformed JSON body in request', 400, null, origin);
+        }
+
+        const parsed = DetectAiSchema.safeParse(rawBody);
+        if (!parsed.success) {
+          return errorResponse('INVALID_INPUT', 'Validation failed for detect parameters', 422, parsed.error.errors, origin);
+        }
+
+        try {
+          const result = await detectAiContent(parsed.data, env);
+          return jsonResponse(result, 200, origin);
+        } catch (err: any) {
+          return errorResponse('PROVIDER_ERROR', err?.message || 'Detection failed', 500, null, origin);
+        }
+      }
+
+      // 6. SCHOLARLY CITATION GENERATION
+      if (url.pathname === '/api/v1/ai/citation' && request.method === 'POST') {
+        const { user, error: authError } = await authenticateRequest(request, env);
+        if (authError || !user) {
+          return errorResponse('UNAUTHORIZED', authError || 'Authentication required', 401, null, origin);
+        }
+
+        let rawBody: any;
+        try {
+          rawBody = await request.json();
+        } catch {
+          return errorResponse('INVALID_INPUT', 'Malformed JSON body in request', 400, null, origin);
+        }
+
+        const parsed = CitationSchema.safeParse(rawBody);
+        if (!parsed.success) {
+          return errorResponse('INVALID_INPUT', 'Validation failed for citation parameters', 422, parsed.error.errors, origin);
+        }
+
+        try {
+          const result = await generateCitation(parsed.data, env);
+          return jsonResponse(result, 200, origin);
+        } catch (err: any) {
+          return errorResponse('PROVIDER_ERROR', err?.message || 'Citation generation failed', 500, null, origin);
         }
       }
 

@@ -20,9 +20,19 @@ export class OpenAIProvider implements LLMProvider {
       params.tone,
       params.targetLanguage,
       params.customInstruction,
-      params.angle
+      params.angle,
+      params.synonymLevel,
+      params.freezeWords,
+      params.includeAlternatives,
+      params.includeGrammarIssues
     );
     const userPrompt = buildUserPrompt(params.text);
+
+    let temperature = 0.3;
+    if (params.synonymLevel !== undefined) {
+      const tempMap = [0.1, 0.15, 0.25, 0.45, 0.7];
+      temperature = tempMap[params.synonymLevel] ?? 0.3;
+    }
 
     const model = 'gpt-4o-mini';
     const url = 'https://api.openai.com/v1/chat/completions';
@@ -33,7 +43,7 @@ export class OpenAIProvider implements LLMProvider {
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      temperature: 0.3,
+      temperature,
       max_tokens: 4096,
     };
 
@@ -52,14 +62,34 @@ export class OpenAIProvider implements LLMProvider {
     }
 
     const data: any = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    let content = data.choices?.[0]?.message?.content;
 
     if (!content) {
       throw new Error('OpenAI returned an empty or invalid completion');
     }
 
+    content = content.trim();
+    if (content.startsWith('```') && content.endsWith('```')) {
+      content = content.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '').trim();
+    }
+
+    if (content.startsWith('{') && content.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(content);
+        return {
+          refinedText: parsed.refinedText || content,
+          provider: 'OpenAI',
+          model,
+          alternatives: parsed.alternatives,
+          issues: parsed.issues,
+        };
+      } catch {
+        // fallback to plain content
+      }
+    }
+
     return {
-      refinedText: content.trim(),
+      refinedText: content,
       provider: 'OpenAI',
       model,
     };

@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'speech/web_speech.dart';
 
 class PlatformChannels {
   static const MethodChannel _overlayChannel =
@@ -74,6 +76,18 @@ class PlatformChannels {
     } catch (_) {}
   }
 
+  static Future<void> updateBubbleAppearance({
+    required double size,
+    required double opacity,
+  }) async {
+    try {
+      await _overlayChannel.invokeMethod('updateBubbleAppearance', {
+        'size': size,
+        'opacity': opacity,
+      });
+    } catch (_) {}
+  }
+
   // Keyboard Methods
   static Future<void> openKeyboardSettings() async {
     try {
@@ -107,6 +121,7 @@ class PlatformChannels {
   }
 
   static Future<bool> checkAudioPermission() async {
+    if (kIsWeb) return true;
     try {
       final bool hasMic = await _keyboardChannel.invokeMethod('checkAudioPermission');
       return hasMic;
@@ -118,6 +133,7 @@ class PlatformChannels {
   static Future<bool> isMicrophonePermissionGranted() => checkAudioPermission();
 
   static Future<void> requestAudioPermission() async {
+    if (kIsWeb) return;
     try {
       await _keyboardChannel.invokeMethod('requestAudioPermission');
     } catch (_) {}
@@ -231,39 +247,69 @@ class PlatformChannels {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Real-Time Speech Recognition Channel
+  // Real-Time Speech Recognition Channel (Cross-Platform: Android + Web)
   // ─────────────────────────────────────────────────────────────────────────
   static const MethodChannel _speechChannel =
       MethodChannel('com.sayn.app/speech');
+
+  static final WebSpeechHelper _webSpeech = WebSpeechHelper();
+
+  static Function(String partialText)? _speechPartialHandler;
+  static Function(String finalText)? _speechFinalHandler;
+  static Function(String error)? _speechErrorHandler;
+  static Function()? _speechEndHandler;
+  static Function(double level)? _speechAudioLevelHandler;
 
   static void setSpeechListener({
     Function(String partialText)? onPartialResult,
     Function(String finalText)? onFinalResult,
     Function(String error)? onError,
     Function()? onEndOfSpeech,
+    Function(double level)? onAudioLevel,
   }) {
-    _speechChannel.setMethodCallHandler((call) async {
-      switch (call.method) {
-        case 'onPartialResult':
-          final text = call.arguments['text'] as String? ?? '';
-          onPartialResult?.call(text);
-          break;
-        case 'onFinalResult':
-          final text = call.arguments['text'] as String? ?? '';
-          onFinalResult?.call(text);
-          break;
-        case 'onEndOfSpeech':
-          onEndOfSpeech?.call();
-          break;
-        case 'onError':
-          final error = call.arguments['error'] as String? ?? '';
-          onError?.call(error);
-          break;
-      }
-    });
+    _speechPartialHandler = onPartialResult;
+    _speechFinalHandler = onFinalResult;
+    _speechErrorHandler = onError;
+    _speechEndHandler = onEndOfSpeech;
+    _speechAudioLevelHandler = onAudioLevel;
+
+    if (!kIsWeb) {
+      _speechChannel.setMethodCallHandler((call) async {
+        switch (call.method) {
+          case 'onPartialResult':
+            final text = call.arguments['text'] as String? ?? '';
+            _speechPartialHandler?.call(text);
+            break;
+          case 'onFinalResult':
+            final text = call.arguments['text'] as String? ?? '';
+            _speechFinalHandler?.call(text);
+            break;
+          case 'onEndOfSpeech':
+            _speechEndHandler?.call();
+            break;
+          case 'onAudioLevel':
+            final level = (call.arguments['level'] as num?)?.toDouble() ?? 0.0;
+            _speechAudioLevelHandler?.call(level);
+            break;
+          case 'onError':
+            final error = call.arguments['error'] as String? ?? '';
+            _speechErrorHandler?.call(error);
+            break;
+        }
+      });
+    }
   }
 
   static Future<bool> startDictation() async {
+    if (kIsWeb) {
+      return await _webSpeech.start(
+        onPartial: (t) => _speechPartialHandler?.call(t),
+        onFinal: (t) => _speechFinalHandler?.call(t),
+        onAudioLevel: (lvl) => _speechAudioLevelHandler?.call(lvl),
+        onError: (e) => _speechErrorHandler?.call(e),
+        onEnd: () => _speechEndHandler?.call(),
+      );
+    }
     try {
       final bool started = await _speechChannel.invokeMethod('startDictation') ?? false;
       return started;
@@ -273,6 +319,10 @@ class PlatformChannels {
   }
 
   static Future<void> stopDictation() async {
+    if (kIsWeb) {
+      _webSpeech.stop();
+      return;
+    }
     try {
       await _speechChannel.invokeMethod('stopDictation');
     } catch (_) {}

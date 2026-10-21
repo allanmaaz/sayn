@@ -305,7 +305,17 @@ class FloatingBubbleService : Service() {
                 addView(orbContainer)
             }
             addView(mainColumn)
+            val savedOpacity = prefs.getFloat("sayn_bubble_opacity", 0.95f)
+            alpha = savedOpacity.coerceIn(0.2f, 1.0f)
         }
+
+    fun updateAppearance(sizeDp: Float, opacity: Float) {
+        mainHandler.post {
+            try {
+                squircleView?.alpha = opacity.coerceIn(0.2f, 1.0f)
+            } catch (e: Exception) {}
+        }
+    }
 
         // ─────────────────────────────────────────────────────────────────────
         // 2. The Wispr 3-Piece Micro-Pill View ([ Close ] [ ılıll Capsule ] [ Confirm ])
@@ -674,6 +684,18 @@ class FloatingBubbleService : Service() {
         res = res.replace(Regex("(?i)\\bcolon\\b"), ":")
         res = res.replace(Regex("(?i)\\bsemicolon\\b"), ";")
 
+        // Wispr Flow Phonetic Tech Jargon Whitelist
+        res = res.replace(Regex("(?i)\\b(super\\s*base|superbass)\\b"), "Supabase")
+        res = res.replace(Regex("(?i)\\b(sayn|sane\\s+ai)\\b"), "SAYN")
+        res = res.replace(Regex("(?i)\\b(cloud\\s*flare)\\b"), "Cloudflare")
+        res = res.replace(Regex("(?i)\\b(post\\s*gres(ql)?|postgress?)\\b"), "PostgreSQL")
+        res = res.replace(Regex("(?i)\\b(git\\s*hub)\\b"), "GitHub")
+        res = res.replace(Regex("(?i)\\b(type\\s*script)\\b"), "TypeScript")
+        res = res.replace(Regex("(?i)\\b(chat\\s*g\\s*p\\s*t|chat\\s*gpt)\\b"), "ChatGPT")
+        res = res.replace(Regex("(?i)\\b(vs\\s*code)\\b"), "VS Code")
+        res = res.replace(Regex("(?i)\\b(you\\s*are\\s*l|you\\s*are\\s*ell)\\b"), "URL")
+        res = res.replace(Regex("(?i)\\b(a\\s+p\\s+i)\\b"), "API")
+
         // Disfluencies
         res = res.replace(Regex("(?i)\\b(um|uh|er|ah)\\b,?\\s*"), " ")
         res = res.replace(Regex("(?i)\\b(you know|sort of|kind of|basically|so yeah|i mean)\\b,?\\s*"), " ")
@@ -697,7 +719,11 @@ class FloatingBubbleService : Service() {
 
     private fun commitVoiceDictation() {
         val rawSpoken = currentSpokenText.trim()
-        val textToInsert = cleanWisprFlowLocal(rawSpoken, isMammals = true)
+        val hostPackage = SaynAccessibilityService.instance?.findEditableTargetNode()?.packageName?.toString()
+            ?: SaynAccessibilityService.activePackageName
+        val adaptiveMode = SaynAccessibilityService.resolveAdaptiveModeForPackage(hostPackage)
+        val isMammalsMode = adaptiveMode == "mammals"
+        val textToInsert = cleanWisprFlowLocal(rawSpoken, isMammals = isMammalsMode)
         currentSpokenText = ""
         stopSpeechRecognizer()
 
@@ -706,9 +732,8 @@ class FloatingBubbleService : Service() {
             transcriptText.setTextColor(Color.parseColor("#F5EBDD"))
 
             CoroutineScope(Dispatchers.Main).launch {
-                val hostPackage = SaynAccessibilityService.instance?.findEditableTargetNode()?.packageName?.toString()
-                val rawRefined = SaynCloudVoiceClient.refineText(textToInsert, hostPackage, mode = "mammals")
-                val refined = cleanWisprFlowLocal(rawRefined, isMammals = true)
+                val rawRefined = SaynCloudVoiceClient.refineText(textToInsert, hostPackage, mode = adaptiveMode)
+                val refined = cleanWisprFlowLocal(rawRefined, isMammals = isMammalsMode)
 
                 // Real-time words tracking across apps
                 val words = refined.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }.size

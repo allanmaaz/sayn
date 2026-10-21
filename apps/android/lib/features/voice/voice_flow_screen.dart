@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/theme.dart';
+import 'widgets/live_audio_waveform.dart';
 import '../../services/platform_channels.dart';
 import '../../services/user_stats_service.dart';
 import '../../core/api_client.dart';
@@ -20,6 +21,7 @@ class _VoiceFlowScreenState extends State<VoiceFlowScreen>
 
   late AnimationController _pulseController;
   bool _isDictating = false;
+  double _audioLevel = 0.0;
   bool _isPolishing = false;
   String _selectedTone = 'mammals';
   String _polishedResult = '';
@@ -205,6 +207,7 @@ class _VoiceFlowScreenState extends State<VoiceFlowScreen>
         if (mounted) {
           setState(() {
             _isDictating = false;
+            _audioLevel = 0.0;
             if (text.isNotEmpty) {
               _testInputController.value = TextEditingValue(
                 text: text,
@@ -218,14 +221,25 @@ class _VoiceFlowScreenState extends State<VoiceFlowScreen>
           }
         }
       },
+      onAudioLevel: (level) {
+        if (mounted && _isDictating) {
+          setState(() => _audioLevel = level);
+        }
+      },
       onEndOfSpeech: () {
         if (mounted) {
-          setState(() => _isDictating = false);
+          setState(() {
+            _isDictating = false;
+            _audioLevel = 0.0;
+          });
         }
       },
       onError: (err) {
         if (mounted) {
-          setState(() => _isDictating = false);
+          setState(() {
+            _isDictating = false;
+            _audioLevel = 0.0;
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(err),
@@ -492,22 +506,12 @@ class _VoiceFlowScreenState extends State<VoiceFlowScreen>
           ),
           const SizedBox(height: 14),
           // Animated Waveform Indicator
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(11, (index) {
-              final heights = [10.0, 16.0, 26.0, 18.0, 32.0, 40.0, 32.0, 20.0, 24.0, 14.0, 8.0];
-              final h = _isDictating ? heights[index] : 4.0;
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                margin: const EdgeInsets.symmetric(horizontal: 2.5),
-                width: 3.5,
-                height: h,
-                decoration: BoxDecoration(
-                  color: SaynColors.roseMaroon,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              );
-            }),
+          LiveAudioWaveform(
+            isRecording: _isDictating,
+            audioLevel: _audioLevel,
+            activeColor: SaynColors.roseMaroon,
+            height: 38,
+            barCount: 15,
           ),
         ],
       ),
@@ -787,84 +791,90 @@ class _VoiceFlowScreenState extends State<VoiceFlowScreen>
           ),
           const SizedBox(height: 12),
           // Floating Bubble Status
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: _overlayActive
-                    ? SaynColors.darkAccent.withOpacity(0.15)
-                    : SaynColors.darkSurface2,
-                borderRadius: BorderRadius.circular(10),
+          Material(
+            color: Colors.transparent,
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: _overlayActive
+                      ? SaynColors.darkAccent.withOpacity(0.15)
+                      : SaynColors.darkSurface2,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.layers_rounded,
+                  color: _overlayActive
+                      ? SaynColors.darkAccent
+                      : SaynColors.darkSecondary,
+                  size: 20,
+                ),
               ),
-              child: Icon(
-                Icons.layers_rounded,
-                color: _overlayActive
-                    ? SaynColors.darkAccent
-                    : SaynColors.darkSecondary,
-                size: 20,
+              title: const Text(
+                'Floating Capsule Overlay',
+                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
               ),
-            ),
-            title: const Text(
-              'Floating Capsule Overlay',
-              style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(
-              _overlayActive ? 'Active over WhatsApp, Slack, Gmail' : 'Stopped',
-              style: const TextStyle(fontSize: 11, color: SaynColors.darkSecondary),
-            ),
-            trailing: Switch.adaptive(
-              value: _overlayActive,
-              activeColor: SaynColors.darkAccent,
-              onChanged: (val) async {
-                if (val) {
-                  final ok = await PlatformChannels.startFloatingAssistant();
-                  setState(() => _overlayActive = ok);
-                } else {
-                  final stopped = await PlatformChannels.stopFloatingAssistant();
-                  setState(() => _overlayActive = !stopped);
-                }
-              },
+              subtitle: Text(
+                _overlayActive ? 'Active over WhatsApp, Slack, Gmail' : 'Stopped',
+                style: const TextStyle(fontSize: 11, color: SaynColors.darkSecondary),
+              ),
+              trailing: Switch.adaptive(
+                value: _overlayActive,
+                activeColor: SaynColors.darkAccent,
+                onChanged: (val) async {
+                  if (val) {
+                    final ok = await PlatformChannels.startFloatingAssistant();
+                    setState(() => _overlayActive = ok);
+                  } else {
+                    final stopped = await PlatformChannels.stopFloatingAssistant();
+                    setState(() => _overlayActive = !stopped);
+                  }
+                },
+              ),
             ),
           ),
           const Divider(color: SaynColors.darkDivider, height: 16),
           // Smart Keyboard Status
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: _keyboardActive
-                    ? SaynColors.darkAccent.withOpacity(0.15)
-                    : SaynColors.darkSurface2,
-                borderRadius: BorderRadius.circular(10),
+          Material(
+            color: Colors.transparent,
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: _keyboardActive
+                      ? SaynColors.darkAccent.withOpacity(0.15)
+                      : SaynColors.darkSurface2,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.keyboard_rounded,
+                  color: _keyboardActive
+                      ? SaynColors.darkAccent
+                      : SaynColors.darkSecondary,
+                  size: 20,
+                ),
               ),
-              child: Icon(
-                Icons.keyboard_rounded,
-                color: _keyboardActive
-                    ? SaynColors.darkAccent
-                    : SaynColors.darkSecondary,
-                size: 20,
+              title: const Text(
+                'Smart Keyboard (IME)',
+                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
               ),
+              subtitle: Text(
+                _keyboardActive ? 'Enabled in system settings' : 'Tap to enable',
+                style: const TextStyle(fontSize: 11, color: SaynColors.darkSecondary),
+              ),
+              trailing: const Icon(
+                Icons.chevron_right_rounded,
+                color: SaynColors.darkSecondary,
+              ),
+              onTap: () async {
+                await PlatformChannels.openKeyboardSettings();
+                _checkSystemStatus();
+              },
             ),
-            title: const Text(
-              'Smart Keyboard (IME)',
-              style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(
-              _keyboardActive ? 'Enabled in system settings' : 'Tap to enable',
-              style: const TextStyle(fontSize: 11, color: SaynColors.darkSecondary),
-            ),
-            trailing: const Icon(
-              Icons.chevron_right_rounded,
-              color: SaynColors.darkSecondary,
-            ),
-            onTap: () async {
-              await PlatformChannels.openKeyboardSettings();
-              _checkSystemStatus();
-            },
           ),
         ],
       ),

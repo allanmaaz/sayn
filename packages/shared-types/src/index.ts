@@ -183,6 +183,8 @@ export interface WordAlternative {
   wordIndex: number;
   originalWord: string;
   paraphrasedWord: string;
+  partOfSpeech?: string;
+  definition?: string;
   synonyms: string[];
 }
 
@@ -260,6 +262,62 @@ export interface TranscribeResponse {
   durationSeconds?: number;
   language?: string;
   provider: string;
+}
+
+// AI Detector Structured Data Definitions
+export type AiDetectionVerdict = 'likely_human' | 'mixed_or_uncertain' | 'likely_ai';
+
+export interface SentenceAiClassification {
+  sentence: string;
+  startOffset: number;
+  endOffset: number;
+  aiProbability: number; // 0.0 - 1.0
+  verdict: 'human' | 'uncertain' | 'ai';
+  reason?: string;
+}
+
+export interface DetectAiRequest {
+  text: string;
+}
+
+export interface DetectAiResponse {
+  success: boolean;
+  overallAiPercentage: number; // 0 - 100
+  verdict: AiDetectionVerdict;
+  humanPercentage: number; // 0 - 100
+  perplexityScore: number;
+  burstinessScore: number;
+  wordCount: number;
+  sentenceCount: number;
+  sentences: SentenceAiClassification[];
+  analysisSummary: string;
+  latencyMs: number;
+}
+
+// Citation Generator Structured Data Definitions
+export type CitationStyle = 'apa' | 'mla' | 'chicago' | 'harvard';
+export type CitationSourceType = 'website' | 'journal' | 'book' | 'article' | 'auto';
+
+export interface CitationRequest {
+  sourceTextOrUrl: string;
+  style: CitationStyle;
+  sourceType?: CitationSourceType;
+}
+
+export interface CitationResponse {
+  success: boolean;
+  style: CitationStyle;
+  fullCitation: string;
+  inTextCitation: string;
+  metadata: {
+    title?: string;
+    authors?: string[];
+    year?: string;
+    publisherOrSite?: string;
+    url?: string;
+    accessDate?: string;
+  };
+  latencyMs: number;
 }
 
 export interface UsageStatusResponse {

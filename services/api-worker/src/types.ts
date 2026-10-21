@@ -1,4 +1,11 @@
-import { WritingMode, WritingTone, WritingAngle } from '@sayn/shared-types';
+import {
+  WritingMode,
+  WritingTone,
+  WritingAngle,
+  SynonymIntensity,
+  WordAlternative,
+  GrammarIssue,
+} from '@sayn/shared-types';
 
 export interface Env {
   ENVIRONMENT?: string;
@@ -27,10 +34,16 @@ export interface InternalRefineParams {
   tone?: WritingTone;
   targetLanguage?: string;
   customInstruction?: string;
+  synonymLevel?: SynonymIntensity;
+  freezeWords?: string[];
+  includeGrammarIssues?: boolean;
+  includeAlternatives?: boolean;
 }
 
 export interface ProviderResult {
   refinedText: string;
   provider: string;
   model: string;
+  alternatives?: WordAlternative[];
+  issues?: GrammarIssue[];
 }

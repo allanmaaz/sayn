@@ -20,9 +20,19 @@ export class GeminiProvider implements LLMProvider {
       params.tone,
       params.targetLanguage,
       params.customInstruction,
-      params.angle
+      params.angle,
+      params.synonymLevel,
+      params.freezeWords,
+      params.includeAlternatives,
+      params.includeGrammarIssues
     );
     const userPrompt = buildUserPrompt(params.text);
+
+    let temperature = 0.2;
+    if (params.synonymLevel !== undefined) {
+      const tempMap = [0.1, 0.15, 0.25, 0.45, 0.7];
+      temperature = tempMap[params.synonymLevel] ?? 0.2;
+    }
 
     const candidateModels = ['gemini-3.5-flash-lite', 'gemini-3.8-flash'];
     let lastError = '';
@@ -41,7 +51,7 @@ export class GeminiProvider implements LLMProvider {
           },
         ],
         generationConfig: {
-          temperature: 0.2,
+          temperature,
           maxOutputTokens: 4096,
         },
       };
@@ -73,6 +83,23 @@ export class GeminiProvider implements LLMProvider {
           if (cleaned.startsWith('```') && cleaned.endsWith('```')) {
             cleaned = cleaned.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '').trim();
           }
+
+          // If structured JSON was requested, parse it
+          if (cleaned.startsWith('{') && cleaned.endsWith('}')) {
+            try {
+              const parsed = JSON.parse(cleaned);
+              return {
+                refinedText: parsed.refinedText || cleaned,
+                provider: 'Google Gemini',
+                model,
+                alternatives: parsed.alternatives,
+                issues: parsed.issues,
+              };
+            } catch {
+              // fallback to plain cleaned text if JSON parsing fails
+            }
+          }
+
           return {
             refinedText: cleaned,
             provider: 'Google Gemini',
