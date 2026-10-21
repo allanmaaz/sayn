@@ -320,6 +320,32 @@ export interface CitationResponse {
   latencyMs: number;
 }
 
+// Dictionary Definition Structured Data Definitions
+export interface DictionaryDefineRequest {
+  word: string;
+  contextSentence?: string;
+}
+
+export interface WordSense {
+  partOfSpeech: string;
+  definition: string;
+  example?: string;
+  synonyms?: string[];
+  antonyms?: string[];
+}
+
+export interface DictionaryDefineResponse {
+  success: boolean;
+  word: string;
+  phonetic?: string;
+  audioUrl?: string;
+  senses: WordSense[];
+  etymology?: string;
+  contextualNuance?: string;
+  source: 'cache' | 'dictionary_api' | 'gemini_fallback';
+  latencyMs: number;
+}
+
 export interface UsageStatusResponse {
   userId: string;
   tier: 'free' | 'pro' | 'unlimited';

@@ -327,4 +327,20 @@ class PlatformChannels {
       await _speechChannel.invokeMethod('stopDictation');
     } catch (_) {}
   }
+
+  // Audio & Pronunciation Methods
+  static const MethodChannel _audioChannel = MethodChannel('com.sayn.app/audio');
+
+  static Future<void> playAudioUrl(String url) async {
+    try {
+      await _audioChannel.invokeMethod('playAudioUrl', {'url': url});
+    } catch (_) {}
+  }
+
+  static Future<void> speakWord(String word) async {
+    try {
+      await _audioChannel.invokeMethod('speakWord', {'word': word});
+    } catch (_) {}
+  }
 }
+

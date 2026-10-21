@@ -58,13 +58,33 @@ class DocumentReaderService {
       int pageCount = 1;
 
       if (ext == 'pdf') {
-        // Parse PDF using Syncfusion pure Dart engine
+        // Parse PDF using Syncfusion pure Dart engine with precise word boundaries
         PdfDocument? document;
         try {
           document = PdfDocument(inputBytes: fileBytes);
           pageCount = document.pages.count;
           final extractor = PdfTextExtractor(document);
-          extractedText = extractor.extractText();
+
+          final buffer = StringBuffer();
+          for (int p = 0; p < pageCount; p++) {
+            final lines = extractor.extractTextLines(startPageIndex: p, endPageIndex: p);
+            for (int i = 0; i < lines.length; i++) {
+              final lineWords = lines[i].wordCollection.map((w) => w.text).join(' ');
+              if (lineWords.trim().isNotEmpty) {
+                buffer.writeln(lineWords.trim());
+              }
+            }
+            if (p < pageCount - 1) {
+              buffer.writeln();
+            }
+          }
+          extractedText = buffer.toString();
+
+          // Reconstitute hyphenated words across linebreaks (e.g., "predic-\ntive" -> "predictive")
+          extractedText = extractedText.replaceAllMapped(
+            RegExp(r'(\b\w+)-\s*\n\s*(\w+\b)'),
+            (m) => '${m[1]}${m[2]}',
+          );
         } catch (e) {
           throw Exception('Unable to open PDF: $e. The file may be password-protected or corrupted.');
         } finally {

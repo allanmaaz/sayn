@@ -133,8 +133,8 @@ class SaynInputMethodService : InputMethodService() {
         "H" to "*", "J" to "-", "K" to "+", "L" to "(",
         "Z" to "!", "X" to "\"", "C" to "'", "V" to ":", "B" to ";",
         "N" to "/", "M" to "?",
-        "." to "...",
-        "@" to ","
+        "," to "@",
+        "." to "..."
     )
 
     // 4 Core AI Writing Styles + Utilities
@@ -191,6 +191,10 @@ class SaynInputMethodService : InputMethodService() {
     private var isVibrationEnabled = true
     private var vibrationIntensity = "medium"
 
+    private var cachedVibeSubtle: VibrationEffect? = null
+    private var cachedVibeMedium: VibrationEffect? = null
+    private var cachedVibeStrong: VibrationEffect? = null
+
     private val audioManager by lazy { getSystemService(Context.AUDIO_SERVICE) as? AudioManager }
     private val vibrator by lazy {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -207,6 +211,14 @@ class SaynInputMethodService : InputMethodService() {
         instance = this
         reloadFeedbackSettings()
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                cachedVibeSubtle = VibrationEffect.createOneShot(10L, 45)
+                cachedVibeMedium = VibrationEffect.createOneShot(15L, 100)
+                cachedVibeStrong = VibrationEffect.createOneShot(28L, 200)
+            } catch (_: Exception) {}
+        }
+
         val cm = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
         cm?.addPrimaryClipChangedListener {
             val clip = cm.primaryClip?.getItemAt(0)?.text?.toString()?.trim()
@@ -216,6 +228,10 @@ class SaynInputMethodService : InputMethodService() {
             }
         }
     }
+
+    // Precompiled regular expressions for zero-latency keystroke parsing
+    private val trailingWordRegex = Regex("""([a-zA-Z']+)\z""")
+    private val prevWordRegex = Regex("""([a-zA-Z']+)\s+\z""")
 
     // Auto-Correct settings & dictionary (Enabled strictly inside the keyboard)
     private var isAutoCorrectEnabled = true
@@ -433,6 +449,8 @@ class SaynInputMethodService : InputMethodService() {
             setBackgroundColor(COLOR_BG) // SAYN Royal Near-Black Background
             // Elevated keyboard: 24dp bottom padding elevates keyboard away from the phone's bottom bezel & gesture bar
             setPadding(dpToPx(4), dpToPx(4), dpToPx(4), dpToPx(24))
+            // GPU hardware acceleration for butter-smooth 120Hz display refresh without frame drops
+            setLayerType(View.LAYER_TYPE_HARDWARE, null)
         }
 
         buildVoiceLiveBar()
@@ -563,6 +581,17 @@ class SaynInputMethodService : InputMethodService() {
             )
         }
 
+        val btnAi = createAiToolbarButton {
+            triggerKeyFeedback("ENTER")
+            val ic = currentInputConnection
+            val before = ic?.getTextBeforeCursor(40, 0)?.toString() ?: ""
+            val selected = ic?.getSelectedText(0)?.toString() ?: ""
+            if (before.isNotBlank() || selected.isNotBlank()) {
+                openFullAiPanel(activeMode)
+            } else {
+                toggleInKeyboardVoice()
+            }
+        }
         val btnEmoji = createToolbarIconButton(R.drawable.ic_sayn_emoji) {
             triggerKeyFeedback("ENTER")
             symbolLayoutMode = if (symbolLayoutMode == 3) 0 else 3
@@ -576,17 +605,6 @@ class SaynInputMethodService : InputMethodService() {
             triggerKeyFeedback("SPACE")
             toggleInKeyboardVoice()
         }
-        val btnAi = createToolbarIconButton(R.drawable.ic_sayn_sparkles) {
-            triggerKeyFeedback("ENTER")
-            val ic = currentInputConnection
-            val before = ic?.getTextBeforeCursor(40, 0)?.toString() ?: ""
-            val selected = ic?.getSelectedText(0)?.toString() ?: ""
-            if (before.isNotBlank() || selected.isNotBlank()) {
-                openFullAiPanel(activeMode)
-            } else {
-                toggleInKeyboardVoice()
-            }
-        }
         val btnSettings = createToolbarIconButton(R.drawable.ic_sayn_settings) {
             triggerKeyFeedback("ENTER")
             openKeyboardSettings()
@@ -597,13 +615,13 @@ class SaynInputMethodService : InputMethodService() {
             showCandidatesView()
         }
 
+        stripToolbarContainer.addView(btnAi)
+        stripToolbarContainer.addView(createToolbarSpacer())
         stripToolbarContainer.addView(btnEmoji)
         stripToolbarContainer.addView(createToolbarSpacer())
         stripToolbarContainer.addView(btnClipboard)
         stripToolbarContainer.addView(createToolbarSpacer())
         stripToolbarContainer.addView(btnMic)
-        stripToolbarContainer.addView(createToolbarSpacer())
-        stripToolbarContainer.addView(btnAi)
         stripToolbarContainer.addView(createToolbarSpacer())
         stripToolbarContainer.addView(btnSettings)
         stripToolbarContainer.addView(createToolbarSpacer())
@@ -740,6 +758,39 @@ class SaynInputMethodService : InputMethodService() {
             isFocusable = false
             setOnClickListener { onClick() }
             layoutParams = LinearLayout.LayoutParams(dpToPx(34), dpToPx(34))
+        }
+    }
+
+    private fun createAiToolbarButton(onClick: () -> Unit): View {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            setPadding(dpToPx(7), dpToPx(3), dpToPx(7), dpToPx(3))
+            val bg = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = dpToPx(8.5f).toFloat()
+                setColor(COLOR_KEY_PRESSED)
+                setStroke(dpToPx(1f), COLOR_ROSE_MAROON)
+            }
+            background = bg
+            val icon = ImageView(this@SaynInputMethodService).apply {
+                setImageResource(R.drawable.ic_sayn_sparkles)
+                setColorFilter(COLOR_WARM_CREAM, PorterDuff.Mode.SRC_IN)
+                layoutParams = LinearLayout.LayoutParams(dpToPx(14), dpToPx(14))
+            }
+            val text = TextView(this@SaynInputMethodService).apply {
+                this.text = "✦ AI"
+                textSize = 11f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(COLOR_WARM_CREAM)
+                setPadding(dpToPx(4), 0, 0, 0)
+            }
+            addView(icon)
+            addView(text)
+            isClickable = true
+            isFocusable = false
+            setOnClickListener { onClick() }
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dpToPx(32))
         }
     }
 
@@ -935,7 +986,7 @@ class SaynInputMethodService : InputMethodService() {
         val ic = currentInputConnection ?: return
         val before = ic.getTextBeforeCursor(40, 0)?.toString() ?: ""
 
-        val match = Regex("""([a-zA-Z']+)\z""").find(before)
+        val match = trailingWordRegex.find(before)
         ic.beginBatchEdit()
         try {
             if (match != null) {
@@ -981,8 +1032,8 @@ class SaynInputMethodService : InputMethodService() {
             return
         }
 
-        // Case 2: Currently typing a word
-        val wordMatch = Regex("""([a-zA-Z']+)\z""").find(before)
+        // Case 2: Currently typing a word (Zero-allocation prefix matching)
+        val wordMatch = trailingWordRegex.find(before)
         if (wordMatch != null) {
             isPredictionActive = true
             val typed = wordMatch.value
@@ -996,12 +1047,23 @@ class SaynInputMethodService : InputMethodService() {
                 return
             }
 
-            val matches = commonWords.filter { it.startsWith(lower) && it != lower }
+            var firstMatch: String? = null
+            var secondMatch: String? = null
+            for (w in commonWords) {
+                if (w.startsWith(lower) && !w.equals(lower, ignoreCase = true)) {
+                    if (firstMatch == null) {
+                        firstMatch = w
+                    } else {
+                        secondMatch = w
+                        break
+                    }
+                }
+            }
             val emojiMatch = emojiSuggestions[lower]
 
-            val center = if (matches.isNotEmpty()) matches[0] else typed
-            val left = if (matches.isNotEmpty()) typed else ""
-            val right = emojiMatch ?: if (matches.size > 1) matches[1] else ""
+            val center = firstMatch ?: typed
+            val left = if (firstMatch != null) typed else ""
+            val right = emojiMatch ?: secondMatch ?: ""
 
             val isCapitalized = typed.isNotEmpty() && typed[0].isUpperCase()
             val finalCenter = if (isCapitalized && center.isNotEmpty()) center.replaceFirstChar { it.uppercase() } else center
@@ -1013,7 +1075,7 @@ class SaynInputMethodService : InputMethodService() {
         }
 
         // Case 3: After word and space (Next-word prediction)
-        val prevWordMatch = Regex("""([a-zA-Z']+)\s+\z""").find(before)
+        val prevWordMatch = prevWordRegex.find(before)
         if (prevWordMatch != null) {
             val prevWord = prevWordMatch.groupValues[1].lowercase()
             val predictions = nextWordMap[prevWord]
@@ -2511,8 +2573,8 @@ class SaynInputMethodService : InputMethodService() {
         val row3 = listOf("SHIFT", "Z", "X", "C", "V", "B", "N", "M", "DEL")
         keysContainer.addView(createRowView(row3, hasSpacer = false))
 
-        // Row 4: Exactly matches screenshot: [123] [😊] [@] [  SAYN  ] [.] [↓]
-        val row4 = listOf("123", "EMOJI", "@", "SPACE", ".", "ENTER")
+        // Row 4: Samsung One UI 8.5 Layout: [!#1] [😊] [,] [ English (US) ] [.] [↵]
+        val row4 = listOf("!#1", "EMOJI", ",", "SPACE", ".", "ENTER")
         keysContainer.addView(createRowView(row4, hasSpacer = false))
     }
 
@@ -2526,7 +2588,7 @@ class SaynInputMethodService : InputMethodService() {
         val row3 = listOf("#+=", ".", ",", "?", "!", "'", "DEL")
         keysContainer.addView(createRowView(row3, hasSpacer = false))
 
-        val row4 = listOf("ABC", "EMOJI", "@", "SPACE", ".", "ENTER")
+        val row4 = listOf("ABC", "EMOJI", ",", "SPACE", ".", "ENTER")
         keysContainer.addView(createRowView(row4, hasSpacer = false))
     }
 
@@ -2540,7 +2602,7 @@ class SaynInputMethodService : InputMethodService() {
         val row3 = listOf("123", ".", ",", "?", "!", "'", "DEL")
         keysContainer.addView(createRowView(row3, hasSpacer = false))
 
-        val row4 = listOf("ABC", "EMOJI", "@", "SPACE", ".", "ENTER")
+        val row4 = listOf("ABC", "EMOJI", ",", "SPACE", ".", "ENTER")
         keysContainer.addView(createRowView(row4, hasSpacer = false))
     }
 
@@ -2594,8 +2656,8 @@ class SaynInputMethodService : InputMethodService() {
         emojiScroll.addView(emojiGrid)
         keysContainer.addView(emojiScroll)
 
-        // Bottom control row in emoji layout: [ ABC ] [ 123 ] [ @ ] [ SPACE ] [ DEL ] [ ENTER ]
-        val bottomRow = listOf("ABC", "123", "@", "SPACE", "DEL", "ENTER")
+        // Bottom control row in emoji layout: [ ABC ] [ !#1 ] [ , ] [ SPACE ] [ DEL ] [ ENTER ]
+        val bottomRow = listOf("ABC", "!#1", ",", "SPACE", "DEL", "ENTER")
         keysContainer.addView(createRowView(bottomRow, hasSpacer = false))
     }
 
@@ -2619,12 +2681,13 @@ class SaynInputMethodService : InputMethodService() {
         for (key in keys) {
             val weight = when (key) {
                 "SPACE" -> 4.4f
-                "ENTER" -> 1.3f
+                "ENTER" -> 1.35f
                 "SHIFT" -> 1.45f
                 "DEL" -> 1.55f
-                "123" -> 1.15f
-                "ABC", "#+=" -> 1.2f
+                "!#1", "123" -> 1.15f
+                "ABC", "#+=", "1/2" -> 1.2f
                 "EMOJI" -> 1.05f
+                "," -> 1.05f
                 "@" -> 1.05f
                 "." -> 1.05f
                 "MIC" -> 1.1f
@@ -2655,7 +2718,7 @@ class SaynInputMethodService : InputMethodService() {
             isFocusable = false
         }
 
-        val isSpecial = key in listOf("ENTER", "123", "ABC", "#+=", "DEL", "SHIFT", "GLOBE", "MIC", "EMOJI", "@", ".")
+        val isSpecial = key in listOf("ENTER", "123", "!#1", "ABC", "#+=", "1/2", "DEL", "SHIFT", "GLOBE", "MIC", "EMOJI", "@", ".", ",")
         container.background = createObsidianKeyDrawable(key, isSpecial)
 
         // 1. Center Content: Text or Vector Icon
@@ -2694,11 +2757,11 @@ class SaynInputMethodService : InputMethodService() {
                     typeface = Typeface.DEFAULT
                     setTextColor(COLOR_FAINT_CREAM)
                     spacebarTextView = this
-                } else if (key in listOf("123", "ABC", "#+=")) {
+                } else if (key in listOf("123", "!#1", "ABC", "#+=", "1/2")) {
                     textSize = 13.5f
-                    typeface = Typeface.DEFAULT
+                    typeface = Typeface.DEFAULT_BOLD
                     setTextColor(COLOR_WARM_CREAM)
-                } else if (key in listOf("@", ".")) {
+                } else if (key in listOf("@", ".", ",")) {
                     textSize = 18f
                     typeface = Typeface.DEFAULT
                     setTextColor(COLOR_WARM_CREAM)
@@ -2762,6 +2825,7 @@ class SaynInputMethodService : InputMethodService() {
                     startY = event.y
                     lastReportedStep = 0
                     isSwiping = false
+                    triggerKeyFeedback("SPACE")
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
@@ -2771,7 +2835,7 @@ class SaynInputMethodService : InputMethodService() {
 
                     if (!isSwiping && Math.abs(totalDx) > dpToPx(10) && Math.abs(totalDx) > Math.abs(totalDy) * 1.3f) {
                         isSwiping = true
-                        spacebarTextView?.text = "◄  Cursor Trackpad  ►"
+                        spacebarTextView?.text = "◄   Cursor control   ►"
                         spacebarTextView?.setTextColor(COLOR_ROSE_MAROON)
                         vibrateTap()
                     }
@@ -2793,10 +2857,9 @@ class SaynInputMethodService : InputMethodService() {
                     v.isPressed = false
                     if (isSwiping) {
                         isSwiping = false
-                        spacebarTextView?.text = "SAYN"
+                        spacebarTextView?.text = "English (US)"
                         spacebarTextView?.setTextColor(COLOR_FAINT_CREAM)
                     } else if (event.action == MotionEvent.ACTION_UP) {
-                        triggerKeyFeedback("SPACE")
                         handleKeyAction("SPACE")
                     }
                     true
@@ -2807,6 +2870,17 @@ class SaynInputMethodService : InputMethodService() {
     }
 
     private fun moveCursor(direction: Int) {
+        val ic = currentInputConnection ?: return
+        try {
+            val textBefore = ic.getTextBeforeCursor(1000, 0)
+            val textAfter = ic.getTextAfterCursor(1000, 0)
+            if (textBefore != null && textAfter != null) {
+                val curPos = textBefore.length
+                val newPos = (curPos + direction).coerceIn(0, textBefore.length + textAfter.length)
+                ic.setSelection(newPos, newPos)
+                return
+            }
+        } catch (_: Exception) {}
         val keycode = if (direction < 0) KeyEvent.KEYCODE_DPAD_LEFT else KeyEvent.KEYCODE_DPAD_RIGHT
         sendDownUpKeyEvents(keycode)
     }
@@ -2835,6 +2909,7 @@ class SaynInputMethodService : InputMethodService() {
                     isLongPressed = false
                     downX = event.x
                     downY = event.y
+                    triggerKeyFeedback(key)
                     if (hintChar != null) {
                         longPressHandler.postDelayed(longPressRunnable, 220)
                     }
@@ -2853,7 +2928,6 @@ class SaynInputMethodService : InputMethodService() {
                     v.isPressed = false
                     longPressHandler.removeCallbacks(longPressRunnable)
                     if (!isLongPressed) {
-                        triggerKeyFeedback(key)
                         handleKeyAction(key)
                     }
                     true
@@ -2871,7 +2945,7 @@ class SaynInputMethodService : InputMethodService() {
 
     private fun createObsidianKeyDrawable(key: String, isSpecial: Boolean): StateListDrawable {
         val states = StateListDrawable()
-        val corner = dpToPx(6.5f).toFloat() // Samsung One UI key curvature
+        val corner = dpToPx(8.5f).toFloat() // Samsung One UI 8.5 continuous squircle curvature
         val strokeW = dpToPx(1f)
 
         // Active Shift / CapsLock State
@@ -2925,7 +2999,7 @@ class SaynInputMethodService : InputMethodService() {
             "MIC" -> ""
             "EMOJI" -> ""
             "ENTER" -> ""
-            "SPACE" -> "SAYN"
+            "SPACE" -> "English (US)"
             else -> if (key.length == 1 && symbolLayoutMode == 0) {
                 if (isShifted || isCapsLock) key.uppercase() else key.lowercase()
             } else {
@@ -2951,7 +3025,7 @@ class SaynInputMethodService : InputMethodService() {
             return
         }
 
-        val match = Regex("""([a-zA-Z']+)\z""").find(before)
+        val match = trailingWordRegex.find(before)
         if (match != null) {
             val rawWord = match.value
             val lower = rawWord.lowercase()
@@ -3028,12 +3102,12 @@ class SaynInputMethodService : InputMethodService() {
                 symbolLayoutMode = if (symbolLayoutMode == 3) 0 else 3
                 renderKeys()
             }
-            "123" -> {
+            "!#1", "123" -> {
                 symbolLayoutMode = 1
                 renderKeys()
             }
-            "#+=" -> {
-                symbolLayoutMode = 2
+            "#+=", "1/2" -> {
+                symbolLayoutMode = if (key == "1/2") 1 else 2
                 renderKeys()
             }
             "ABC" -> {
@@ -3170,23 +3244,29 @@ class SaynInputMethodService : InputMethodService() {
             } catch (e: Exception) {}
         }
 
-        // 2. Physical Vibration Pulse
+        // 2. Physical Vibration Pulse (Pre-cached zero-allocation effects)
         if (isVibrationEnabled) {
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    val (duration, amplitude) = when (vibrationIntensity) {
-                        "subtle" -> Pair(12L, 50)
-                        "strong" -> Pair(35L, 210)
-                        else -> Pair(20L, 120) // medium
+                    val effect = when (vibrationIntensity) {
+                        "subtle" -> cachedVibeSubtle
+                        "strong" -> cachedVibeStrong
+                        else -> cachedVibeMedium
                     }
-                    vibrator?.vibrate(VibrationEffect.createOneShot(duration, amplitude))
+                    if (effect != null) {
+                        vibrator?.vibrate(effect)
+                    } else if (::rootLayout.isInitialized) {
+                        rootLayout.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                    }
                 } else {
                     @Suppress("DEPRECATION")
-                    vibrator?.vibrate(20L)
+                    vibrator?.vibrate(15L)
                 }
             } catch (e: Exception) {
                 try {
-                    rootLayout.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                    if (::rootLayout.isInitialized) {
+                        rootLayout.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                    }
                 } catch (ex: Exception) {}
             }
         }

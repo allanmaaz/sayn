@@ -25,6 +25,10 @@ body {
   font-family: 'Instrument Serif', Georgia, serif;
 }
 
+.font-serif-editorial {
+  font-family: 'Playfair Display', 'Instrument Serif', Georgia, serif;
+}
+
 .font-jakarta {
   font-family: 'Plus Jakarta Sans', sans-serif;
 }

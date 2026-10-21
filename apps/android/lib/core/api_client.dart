@@ -107,4 +107,35 @@ class SaynApiClient {
       throw Exception(msg);
     }
   }
+
+  Future<Map<String, dynamic>> defineWord({
+    required String word,
+    String? contextSentence,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/ai/dictionary/define');
+    final headers = {
+      'Content-Type': 'application/json',
+      if (authToken != null) 'Authorization': 'Bearer $authToken',
+    };
+
+    final body = jsonEncode({
+      'word': word,
+      if (contextSentence != null) 'contextSentence': contextSentence,
+    });
+    final response = await http.post(uri, headers: headers, body: body);
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return jsonDecode(response.body);
+    } else {
+      String msg = 'Dictionary lookup failed (${response.statusCode})';
+      try {
+        final errJson = jsonDecode(response.body);
+        if (errJson['error']?['message'] != null) {
+          msg = errJson['error']['message'];
+        }
+      } catch (_) {}
+      throw Exception(msg);
+    }
+  }
 }
+

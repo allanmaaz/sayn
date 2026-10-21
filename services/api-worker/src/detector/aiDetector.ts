@@ -165,9 +165,10 @@ Return ONLY a valid, raw JSON object (no markdown, no backticks, no commentary) 
   ]
 }`;
 
+      const sampleText = text.length > 25000 ? text.slice(0, 25000) : text;
       const payload = {
         systemInstruction: { parts: [{ text: systemInstruction }] },
-        contents: [{ role: 'user', parts: [{ text: `TEXT TO DETECT:\n"""\n${text}\n"""` }] }],
+        contents: [{ role: 'user', parts: [{ text: `TEXT TO DETECT:\n"""\n${sampleText}\n"""` }] }],
         generationConfig: { temperature: 0.1, maxOutputTokens: 2048 },
       };
 

@@ -7,6 +7,7 @@ import { handleTranscription } from './speech/transcribe.js';
 import { cleanWisprFlowText } from './speech/wisprFlowCleaner.js';
 import { detectAiContent } from './detector/aiDetector.js';
 import { generateCitation } from './citation/citationEngine.js';
+import { lookupWordDefinition } from './dictionary/dictionaryService.js';
 import {
   HealthCheckResponse,
   RefineResponse,
@@ -56,13 +57,18 @@ const RefineSchema = z.object({
 });
 
 const DetectAiSchema = z.object({
-  text: z.string().min(1, 'Text cannot be empty').max(15000, 'Text exceeds 15000 character maximum'),
+  text: z.string().min(1, 'Text cannot be empty').max(100000, 'Text exceeds 100,000 character maximum'),
 });
 
 const CitationSchema = z.object({
   sourceTextOrUrl: z.string().min(1, 'Source cannot be empty').max(2000),
   style: z.enum(['apa', 'mla', 'chicago', 'harvard'] as const).default('apa'),
   sourceType: z.enum(['website', 'journal', 'book', 'article', 'auto'] as const).optional(),
+});
+
+const DictionarySchema = z.object({
+  word: z.string().min(1, 'Word cannot be empty').max(100, 'Word exceeds 100 character maximum'),
+  contextSentence: z.string().max(1000).optional(),
 });
 
 function jsonResponse(data: unknown, status = 200, origin: string | null = '*'): Response {
@@ -122,11 +128,11 @@ export default {
       // 1b. PUBLIC APP VERSION CHECK & UPDATE SERVER
       if (url.pathname === '/api/v1/version' && request.method === 'GET') {
         const updatePayload = {
-          version: '1.1.5',
-          versionCode: 16,
-          name: 'SAYN v1.1.5',
-          releaseNotes: 'Exact 1:1 match across all screens with real-time Supabase stats sync and instant APK auto-update.',
-          downloadUrl: 'https://github.com/allanmaaz/sayn/releases/download/v1.1.5/sayn-release.apk',
+          version: '1.1.6',
+          versionCode: 17,
+          name: 'SAYN v1.1.6',
+          releaseNotes: 'Samsung One UI 8.5 zero-lag touch engine, interactive word definitions & pronunciations, freeze word toggle, and polished landing page.',
+          downloadUrl: 'https://github.com/allanmaaz/sayn/releases/download/v1.1.6/sayn-release.apk',
           publishedAt: new Date().toISOString(),
         };
         return jsonResponse(updatePayload, 200, origin);
@@ -307,6 +313,33 @@ export default {
           return jsonResponse(result, 200, origin);
         } catch (err: any) {
           return errorResponse('PROVIDER_ERROR', err?.message || 'Citation generation failed', 500, null, origin);
+        }
+      }
+
+      // 7. DICTIONARY DEFINITION & MEANING ENGINE
+      if (url.pathname === '/api/v1/ai/dictionary/define' && request.method === 'POST') {
+        const { user, error: authError } = await authenticateRequest(request, env);
+        if (authError || !user) {
+          return errorResponse('UNAUTHORIZED', authError || 'Authentication required', 401, null, origin);
+        }
+
+        let rawBody: any;
+        try {
+          rawBody = await request.json();
+        } catch {
+          return errorResponse('INVALID_INPUT', 'Malformed JSON body in request', 400, null, origin);
+        }
+
+        const parsed = DictionarySchema.safeParse(rawBody);
+        if (!parsed.success) {
+          return errorResponse('INVALID_INPUT', 'Validation failed for dictionary parameters', 422, parsed.error.errors, origin);
+        }
+
+        try {
+          const result = await lookupWordDefinition(parsed.data, env);
+          return jsonResponse(result, 200, origin);
+        } catch (err: any) {
+          return errorResponse('PROVIDER_ERROR', err?.message || 'Dictionary lookup failed', 500, null, origin);
         }
       }
 

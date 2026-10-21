@@ -271,29 +271,157 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   }
 
   void _openThesaurusForWord(Map<String, dynamic> alt) {
+    final word = alt['paraphrasedWord'] ?? alt['originalWord'] ?? '';
+    _lookupWordDefinition(word, contextSentence: _outputController.text, existingAlt: alt);
+  }
+
+  Future<void> _lookupWordDefinition(
+    String rawWord, {
+    String? contextSentence,
+    Map<String, dynamic>? existingAlt,
+  }) async {
+    final cleanWord = rawWord.replaceAll(RegExp(r'[^\w]'), '').trim();
+    if (cleanWord.isEmpty) return;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => ThesaurusSheet(
-        originalWord: alt['originalWord'] ?? '',
-        currentWord: alt['paraphrasedWord'] ?? '',
-        partOfSpeech: alt['partOfSpeech'],
-        definition: alt['definition'],
-        synonyms: (alt['synonyms'] as List?)?.map((e) => e.toString()).toList() ?? [],
-        onSelectSynonym: (chosen) {
-          final currentText = _outputController.text;
-          final oldWord = alt['paraphrasedWord'] ?? '';
-          if (oldWord.isNotEmpty) {
-            final newText = currentText.replaceFirst(oldWord, chosen);
-            setState(() {
-              _outputController.text = newText;
-              _inputController.text = newText;
-              alt['paraphrasedWord'] = chosen;
-            });
-          }
-        },
-      ),
+      builder: (ctx) {
+        return FutureBuilder<Map<String, dynamic>>(
+          future: SaynApiClient().defineWord(
+            word: cleanWord,
+            contextSentence: contextSentence ?? _outputController.text,
+          ),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                decoration: const BoxDecoration(
+                  color: SaynColors.paperBg,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: SaynColors.wineMaroon),
+                    ),
+                    const SizedBox(width: 14),
+                    Text(
+                      'Looking up "$cleanWord"...',
+                      style: const TextStyle(
+                        fontFamily: 'serif',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: SaynColors.wineMaroon,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            if (snapshot.hasError || !snapshot.hasData || snapshot.data?['success'] != true) {
+              final fallbackAlt = existingAlt ?? {
+                'originalWord': cleanWord,
+                'paraphrasedWord': cleanWord,
+                'definition': 'No extended definition found in dictionary.',
+                'synonyms': <String>[],
+              };
+              return ThesaurusSheet(
+                originalWord: fallbackAlt['originalWord'] ?? cleanWord,
+                currentWord: fallbackAlt['paraphrasedWord'] ?? cleanWord,
+                partOfSpeech: fallbackAlt['partOfSpeech'],
+                definition: fallbackAlt['definition'],
+                synonyms: (fallbackAlt['synonyms'] as List?)?.map((e) => e.toString()).toList() ?? [],
+                isFrozen: _freezeWords.any((w) => w.toLowerCase() == cleanWord.toLowerCase()),
+                onToggleFreeze: () {
+                  setState(() {
+                    if (_freezeWords.any((fw) => fw.toLowerCase() == cleanWord.toLowerCase())) {
+                      _freezeWords.removeWhere((fw) => fw.toLowerCase() == cleanWord.toLowerCase());
+                    } else {
+                      _freezeWords.add(cleanWord);
+                    }
+                  });
+                },
+                onSelectSynonym: (chosen) {
+                  final currentText = _outputController.text;
+                  final newText = currentText.replaceFirst(cleanWord, chosen);
+                  setState(() {
+                    _outputController.text = newText;
+                    _inputController.text = newText;
+                  });
+                },
+              );
+            }
+
+            final data = snapshot.data!;
+            final senses = (data['senses'] as List?) ?? [];
+            final primarySense = senses.isNotEmpty ? (senses.first as Map<String, dynamic>) : <String, dynamic>{};
+
+            final extractedSynonyms = <String>{};
+            if (existingAlt?['synonyms'] is List) {
+              for (final s in existingAlt!['synonyms']) {
+                extractedSynonyms.add(s.toString());
+              }
+            }
+            for (final s in senses) {
+              if (s is Map && s['synonyms'] is List) {
+                for (final syn in s['synonyms']) {
+                  extractedSynonyms.add(syn.toString());
+                }
+              }
+            }
+
+            final extractedAntonyms = <String>{};
+            for (final s in senses) {
+              if (s is Map && s['antonyms'] is List) {
+                for (final ant in s['antonyms']) {
+                  extractedAntonyms.add(ant.toString());
+                }
+              }
+            }
+
+            return ThesaurusSheet(
+              originalWord: existingAlt?['originalWord'] ?? data['word'] ?? cleanWord,
+              currentWord: data['word'] ?? cleanWord,
+              partOfSpeech: primarySense['partOfSpeech'] ?? existingAlt?['partOfSpeech'],
+              definition: primarySense['definition'] ?? existingAlt?['definition'],
+              phonetic: data['phonetic'],
+              audioUrl: data['audioUrl'],
+              example: primarySense['example'],
+              contextualNuance: data['contextualNuance'],
+              synonyms: extractedSynonyms.toList(),
+              antonyms: extractedAntonyms.toList(),
+              isFrozen: _freezeWords.any((w) => w.toLowerCase() == cleanWord.toLowerCase()),
+              onToggleFreeze: () {
+                setState(() {
+                  if (_freezeWords.any((fw) => fw.toLowerCase() == cleanWord.toLowerCase())) {
+                    _freezeWords.removeWhere((fw) => fw.toLowerCase() == cleanWord.toLowerCase());
+                  } else {
+                    _freezeWords.add(cleanWord);
+                  }
+                });
+              },
+              onSelectSynonym: (chosen) {
+                final currentText = _outputController.text;
+                final oldWord = existingAlt?['paraphrasedWord'] ?? cleanWord;
+                final newText = currentText.replaceFirst(oldWord, chosen);
+                setState(() {
+                  _outputController.text = newText;
+                  _inputController.text = newText;
+                  if (existingAlt != null) {
+                    existingAlt['paraphrasedWord'] = chosen;
+                  }
+                });
+              },
+            );
+          },
+        );
+      },
     );
   }
 
@@ -1207,10 +1335,28 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
               );
             }
 
+            if (cleanToken.isNotEmpty) {
+              return InkWell(
+                onTap: () => _lookupWordDefinition(cleanToken, contextSentence: _outputController.text),
+                borderRadius: BorderRadius.circular(4),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 3),
+                  child: Text(
+                    token,
+                    style: const TextStyle(
+                      fontSize: 14.5,
+                      color: SaynColors.paperText,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+              );
+            }
+
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 3),
               child: Text(
-                '$token ',
+                token,
                 style: const TextStyle(
                   fontSize: 14.5,
                   color: SaynColors.paperText,

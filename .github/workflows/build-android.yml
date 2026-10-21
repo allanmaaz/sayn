@@ -92,26 +92,27 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: v1.1.5
-          name: "SAYN Android Release v1.1.5 (Universal Floating Overlay & Dual AI Cards)"
+          tag_name: v1.1.6
+          name: "SAYN Android Release v1.1.6 (Samsung One UI 8.5 Keyboard Engine & Word Meaning Engine)"
           body: |
-            ### SAYN v1.1.5 — Universal Floating Overlay & Dual AI Suggestion Cards
-            Official signed release for Android.
+            ### SAYN v1.1.6 — Samsung One UI 8.5 Keyboard Engine & Interactive Dictionary
+            Official release for Android with zero-lag tactile typing and contextual word lookup.
             
-            **What's New in v1.1.5:**
+            **What's New in v1.1.6:**
+            * **Samsung One UI 8.5 Zero-Lag Keyboard Engine:**
+              - Zero-latency tactile sound & haptics triggered instantly on `ACTION_DOWN` (pre-allocated vibration effects).
+              - Ultra-fluid spacebar trackpad cursor glide (`◄ Cursor control ►`).
+              - Authentic One UI 8.5 bottom row layout: `[!#1] [😊] [,] [English (US)] [.] [↵]`.
+              - Integrated `✦ AI` Writing Assist pill toolbar with Grammar, Rewrite, and Tone adjustments.
+            * **Interactive Word Meaning & Dictionary:**
+              - Tap-to-define on any word token in the workspace and editor.
+              - Direct phonetic IPA transcription with native audio pronunciation (`🔊`).
+              - Real-world example cards and contextual nuance explanations powered by Gemini 2.5 Flash.
+              - `❄️ Freeze Word` toggle to lock brand names, acronyms, and proper nouns from AI alterations.
             * **Universal Floating Mic Overlay:**
-              - Glowing circular burgundy orb (`#6F1025`) with concentric halo rings and official SAYN wave ribbon logo.
-              - 6-dot vertical tactile gripper handle (`:::`) for smooth fluid dragging anywhere on screen.
-              - Auto-wakes across any keyboard (Samsung, Gboard, SwiftKey) whenever an editable text field is tapped.
-            * **Dual AI Suggestion Cards Above Keyboard:**
-              - Left card: `✨ Grammar correction` with diff badges (`there → THERE`), `✓ Accept`, and `✕ Dismiss`.
-              - Right card: `🔄 Rewrite suggestion` with `📋 Replace` and `⏱ Retry`.
-            * **Top Quick-Action Toolbar:**
-              - SAYN brand squircle logo button on left.
-              - Style pills: `✨ Grammar`, `🔄 Rewrite`, `📄 Humanize`, `💼 Formal`.
-              - Down chevron toggle to collapse and expand cards.
-            * **In-App Auto-Update System:**
-              - Seamless detection and 1-tap in-app download and installation.
+              - Fast mic overlay with auto-activation across any Android keyboard.
+            * **Refined Web Landing Page:**
+              - High-contrast warm editorial aesthetic with seamless setup flow and interactive speed benchmarks.
             
             **Installation:**
             Download `sayn-release.apk` below and install directly on your Android device.

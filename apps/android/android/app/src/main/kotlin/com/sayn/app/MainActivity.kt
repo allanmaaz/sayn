@@ -37,8 +37,11 @@ class MainActivity : FlutterActivity() {
     private val KEYBOARD_CHANNEL = "com.sayn.app/keyboard"
     private val UPDATER_CHANNEL = "com.sayn.app/updater"
     private val SPEECH_CHANNEL = "com.sayn.app/speech"
+    private val AUDIO_CHANNEL = "com.sayn.app/audio"
 
     private var inAppSpeechRecognizer: SpeechRecognizer? = null
+    private var pronunciationPlayer: android.media.MediaPlayer? = null
+    private var textToSpeech: android.speech.tts.TextToSpeech? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -411,6 +414,59 @@ class MainActivity : FlutterActivity() {
                 result.error("SPEECH_ERROR", e.message, null)
             }
         }
+
+        // 5. Audio Pronunciation Platform Channel
+        val audioChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, AUDIO_CHANNEL)
+        audioChannel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "playAudioUrl" -> {
+                    val url = call.argument<String>("url")
+                    if (url.isNullOrBlank()) {
+                        result.error("INVALID_URL", "Audio URL is empty", null)
+                        return@setMethodCallHandler
+                    }
+                    try {
+                        pronunciationPlayer?.release()
+                        pronunciationPlayer = android.media.MediaPlayer().apply {
+                            setDataSource(url)
+                            setOnPreparedListener { start() }
+                            setOnCompletionListener {
+                                release()
+                                pronunciationPlayer = null
+                            }
+                            setOnErrorListener { _, _, _ ->
+                                release()
+                                pronunciationPlayer = null
+                                true
+                            }
+                            prepareAsync()
+                        }
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("PLAYBACK_ERROR", e.message, null)
+                    }
+                }
+                "speakWord" -> {
+                    val word = call.argument<String>("word") ?: ""
+                    if (word.isBlank()) {
+                        result.error("INVALID_WORD", "Word is empty", null)
+                        return@setMethodCallHandler
+                    }
+                    if (textToSpeech == null) {
+                        textToSpeech = android.speech.tts.TextToSpeech(applicationContext) { status ->
+                            if (status == android.speech.tts.TextToSpeech.SUCCESS) {
+                                textToSpeech?.language = Locale.US
+                                textToSpeech?.speak(word, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "sayn_word_tts")
+                            }
+                        }
+                    } else {
+                        textToSpeech?.speak(word, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "sayn_word_tts")
+                    }
+                    result.success(true)
+                }
+                else -> result.notImplemented()
+            }
+        }
     }
 
     private fun stopInAppSpeech() {
@@ -425,6 +481,13 @@ class MainActivity : FlutterActivity() {
 
     override fun onDestroy() {
         stopInAppSpeech()
+        try {
+            pronunciationPlayer?.release()
+            pronunciationPlayer = null
+            textToSpeech?.stop()
+            textToSpeech?.shutdown()
+            textToSpeech = null
+        } catch (e: Exception) {}
         super.onDestroy()
     }
 
