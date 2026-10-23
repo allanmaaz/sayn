@@ -334,86 +334,6 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
-    }
-
-    private fun startInAppSpeech(speechChannel: MethodChannel, result: MethodChannel.Result) {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            checkAndRequestAudioPermission()
-            result.success(false)
-            return
-        }
-
-        runOnUiThread {
-            try {
-                inAppSpeechRecognizer?.destroy()
-                inAppSpeechRecognizer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                    SpeechRecognizer.isOnDeviceRecognitionAvailable(applicationContext)
-                ) {
-                    SpeechRecognizer.createOnDeviceSpeechRecognizer(applicationContext)
-                } else {
-                    SpeechRecognizer.createSpeechRecognizer(applicationContext)
-                }
-
-                inAppSpeechRecognizer?.setRecognitionListener(object : RecognitionListener {
-                    override fun onReadyForSpeech(params: Bundle?) {}
-                    override fun onRmsChanged(rmsdB: Float) {
-                        val normalized = ((rmsdB + 2.0f) / 14.0f).coerceIn(0.0f, 1.0f)
-                        runOnUiThread {
-                            speechChannel.invokeMethod("onAudioLevel", mapOf("level" to normalized.toDouble()))
-                        }
-                    }
-
-                    override fun onEndOfSpeech() {
-                        speechChannel.invokeMethod("onEndOfSpeech", null)
-                    }
-
-                    override fun onError(error: Int) {
-                        val errorMsg = when (error) {
-                            SpeechRecognizer.ERROR_AUDIO -> "Audio recording error"
-                            SpeechRecognizer.ERROR_CLIENT -> "Client error"
-                            SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Mic permission missing"
-                            SpeechRecognizer.ERROR_NETWORK -> "Network error"
-                            SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Network timeout"
-                            SpeechRecognizer.ERROR_NO_MATCH -> "No speech recognized"
-                            SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Mic is busy"
-                            SpeechRecognizer.ERROR_SERVER -> "Server error"
-                            SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "No speech detected"
-                            else -> "Recognition error ($error)"
-                        }
-                        speechChannel.invokeMethod("onError", mapOf("error" to errorMsg))
-                    }
-
-                    override fun onResults(results: Bundle?) {
-                        val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                        val text = matches?.firstOrNull() ?: ""
-                        speechChannel.invokeMethod("onFinalResult", mapOf("text" to text))
-                    }
-
-                    override fun onPartialResults(partialResults: Bundle?) {
-                        val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                        val text = matches?.firstOrNull() ?: ""
-                        if (text.isNotEmpty()) {
-                            speechChannel.invokeMethod("onPartialResult", mapOf("text" to text))
-                        }
-                    }
-
-                    override fun onEvent(eventType: Int, params: Bundle?) {}
-                })
-
-                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-                    putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
-                    putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-                    putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
-                }
-
-                inAppSpeechRecognizer?.startListening(intent)
-                result.success(true)
-            } catch (e: Exception) {
-                result.error("SPEECH_ERROR", e.message, null)
-            }
-        }
 
         // 5. Audio Pronunciation Platform Channel
         val audioChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, AUDIO_CHANNEL)
@@ -465,6 +385,87 @@ class MainActivity : FlutterActivity() {
                     result.success(true)
                 }
                 else -> result.notImplemented()
+            }
+        }
+    }
+
+    private fun startInAppSpeech(speechChannel: MethodChannel, result: MethodChannel.Result) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            checkAndRequestAudioPermission()
+            result.success(false)
+            return
+        }
+
+        runOnUiThread {
+            try {
+                inAppSpeechRecognizer?.destroy()
+                inAppSpeechRecognizer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                    SpeechRecognizer.isOnDeviceRecognitionAvailable(applicationContext)
+                ) {
+                    SpeechRecognizer.createOnDeviceSpeechRecognizer(applicationContext)
+                } else {
+                    SpeechRecognizer.createSpeechRecognizer(applicationContext)
+                }
+
+                inAppSpeechRecognizer?.setRecognitionListener(object : RecognitionListener {
+                    override fun onReadyForSpeech(params: Bundle?) {}
+                    override fun onBeginningOfSpeech() {}
+                    override fun onRmsChanged(rmsdB: Float) {
+                        val normalized = ((rmsdB + 2.0f) / 14.0f).coerceIn(0.0f, 1.0f)
+                        runOnUiThread {
+                            speechChannel.invokeMethod("onAudioLevel", mapOf("level" to normalized.toDouble()))
+                        }
+                    }
+                    override fun onBufferReceived(buffer: ByteArray?) {}
+                    override fun onEndOfSpeech() {
+                        speechChannel.invokeMethod("onEndOfSpeech", null)
+                    }
+
+                    override fun onError(error: Int) {
+                        val errorMsg = when (error) {
+                            SpeechRecognizer.ERROR_AUDIO -> "Audio recording error"
+                            SpeechRecognizer.ERROR_CLIENT -> "Client error"
+                            SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Mic permission missing"
+                            SpeechRecognizer.ERROR_NETWORK -> "Network error"
+                            SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Network timeout"
+                            SpeechRecognizer.ERROR_NO_MATCH -> "No speech recognized"
+                            SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Mic is busy"
+                            SpeechRecognizer.ERROR_SERVER -> "Server error"
+                            SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "No speech detected"
+                            else -> "Recognition error ($error)"
+                        }
+                        speechChannel.invokeMethod("onError", mapOf("error" to errorMsg))
+                    }
+
+                    override fun onResults(results: Bundle?) {
+                        val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                        val text = matches?.firstOrNull() ?: ""
+                        speechChannel.invokeMethod("onFinalResult", mapOf("text" to text))
+                    }
+
+                    override fun onPartialResults(partialResults: Bundle?) {
+                        val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                        val text = matches?.firstOrNull() ?: ""
+                        if (text.isNotEmpty()) {
+                            speechChannel.invokeMethod("onPartialResult", mapOf("text" to text))
+                        }
+                    }
+
+                    override fun onEvent(eventType: Int, params: Bundle?) {}
+                })
+
+                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                    putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
+                    putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                    putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+                }
+
+                inAppSpeechRecognizer?.startListening(intent)
+                result.success(true)
+            } catch (e: Exception) {
+                result.error("SPEECH_ERROR", e.message, null)
             }
         }
     }

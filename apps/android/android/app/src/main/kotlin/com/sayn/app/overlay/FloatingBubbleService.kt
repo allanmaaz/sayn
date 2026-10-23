@@ -309,14 +309,6 @@ class FloatingBubbleService : Service() {
             alpha = savedOpacity.coerceIn(0.2f, 1.0f)
         }
 
-    fun updateAppearance(sizeDp: Float, opacity: Float) {
-        mainHandler.post {
-            try {
-                squircleView?.alpha = opacity.coerceIn(0.2f, 1.0f)
-            } catch (e: Exception) {}
-        }
-    }
-
         // ─────────────────────────────────────────────────────────────────────
         // 2. The Wispr 3-Piece Micro-Pill View ([ Close ] [ ılıll Capsule ] [ Confirm ])
         // ─────────────────────────────────────────────────────────────────────
@@ -549,6 +541,14 @@ class FloatingBubbleService : Service() {
                 return false
             }
         })
+    }
+
+    fun updateAppearance(sizeDp: Float, opacity: Float) {
+        mainHandler.post {
+            try {
+                squircleView?.alpha = opacity.coerceIn(0.2f, 1.0f)
+            } catch (e: Exception) {}
+        }
     }
 
     private fun expandToWisprPill() {
