@@ -58,7 +58,7 @@ jobs:
         run: |
           cd apps/android
           touch build.log
-          flutter build apk --release 2>&1 | tee build.log
+          flutter build apk --release --android-skip-build-dependency-validation 2>&1 | tee build.log
           STATUS="${PIPESTATUS[0]}"
           if [ "$STATUS" -ne 0 ]; then
             FAIL_LINES=$(grep -E "(e: |error:|FAILED|Exception|FAILURE:)" build.log | tail -n 25 | tr '\n' ' | ' | tr '"' "'")

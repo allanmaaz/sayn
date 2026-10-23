@@ -29,10 +29,17 @@ const WindowsIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }
   </svg>
 );
 
+const AndroidIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993.0001.5511-.4483.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997m11.4045-6.02l1.997-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0223 3.503C15.5902 8.4128 13.8533 8.082 12 8.082s-3.5902.3308-5.1365.8677L4.8412 5.4467a.4161.4161 0 00-.5677-.1521.4157.4157 0 00-.1521.5676l1.997 3.4592C2.6889 11.1867.3432 14.6589 0 18.761h24c-.3432-4.1021-2.6889-7.5743-6.1185-9.4396" />
+  </svg>
+);
+
 export const LandingPage: React.FC = () => {
   // Navigation & Modal state
   const [isDownloadOpen, setIsDownloadOpen] = useState(false);
   const [activeNav, setActiveNav] = useState<string>('how-it-works');
+  const [copiedMobileLink, setCopiedMobileLink] = useState(false);
 
   // Hero Studio Mockup State
   const [activeStudioTab, setActiveStudioTab] = useState<'write' | 'improve' | 'shorten' | 'detail'>('write');
@@ -78,6 +85,12 @@ export const LandingPage: React.FC = () => {
     navigator.clipboard.writeText(cmd);
     setCopiedInstallCmd(true);
     setTimeout(() => setCopiedInstallCmd(false), 2000);
+  };
+
+  const handleCopyMobileLink = () => {
+    navigator.clipboard.writeText('https://sayn.ai#download');
+    setCopiedMobileLink(true);
+    setTimeout(() => setCopiedMobileLink(false), 2000);
   };
 
   const openDownload = () => {
@@ -185,23 +198,34 @@ export const LandingPage: React.FC = () => {
         </div>
 
         <div className="max-w-6xl mx-auto px-5 sm:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+          <div className="flex flex-col lg:grid lg:grid-cols-12 gap-8 lg:gap-8 items-center">
             {/* Left Headline & Action */}
-            <div className="lg:col-span-6 flex flex-col items-start pr-0 lg:pr-4">
-              <h1 className="font-serif-editorial text-[48px] sm:text-[62px] md:text-[74px] leading-[1.05] tracking-tight font-extrabold text-[#581121] mb-6">
+            <div className="w-full lg:col-span-6 flex flex-col items-start pr-0 lg:pr-4">
+              <h1 className="font-serif-editorial text-[38px] sm:text-[56px] md:text-[68px] lg:text-[74px] leading-[1.08] tracking-tight font-extrabold text-[#581121] mb-5 sm:mb-6">
                 Say what you <br />
                 mean. <br />
                 <span className="italic font-normal">Write it better.</span>
               </h1>
 
-              <p className="text-[17px] sm:text-[19px] text-[#581121]/90 leading-relaxed max-w-md mb-8 font-normal">
+              <p className="text-[16px] sm:text-[19px] text-[#581121]/90 leading-relaxed max-w-md mb-6 sm:mb-8 font-normal">
                 Talk naturally. SAYN turns your words into clear, polished messages.
               </p>
 
-              <div className="flex flex-wrap items-center gap-3.5 sm:gap-4">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full">
+                {/* On mobile, direct Get Started / Download button */}
                 <button
                   onClick={openDownload}
-                  className="bg-[#3D0A16] hover:bg-[#2B060F] text-[#FAF4EB] font-medium text-[15px] px-6 py-3.5 rounded-full flex items-center space-x-2.5 transition-all shadow-md active:scale-95"
+                  className="sm:hidden w-full bg-[#3D0A16] hover:bg-[#2B060F] text-[#FAF4EB] font-bold text-[15px] px-6 py-3.5 rounded-full flex items-center justify-center space-x-2.5 transition-all shadow-md active:scale-95"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download SAYN</span>
+                  <ArrowRight className="w-4 h-4 ml-0.5" />
+                </button>
+
+                {/* On desktop, direct Mac download */}
+                <button
+                  onClick={openDownload}
+                  className="hidden sm:flex w-full sm:w-auto bg-[#3D0A16] hover:bg-[#2B060F] text-[#FAF4EB] font-medium text-[15px] px-6 py-3.5 rounded-full items-center justify-center space-x-2.5 transition-all shadow-md active:scale-95"
                 >
                   <Apple className="w-4 h-4 fill-current" />
                   <span>Download for Mac</span>
@@ -209,35 +233,35 @@ export const LandingPage: React.FC = () => {
 
                 <a
                   href="#how-it-works"
-                  className="border-[1.5px] border-[#581121] hover:bg-[#581121]/5 text-[#581121] font-semibold text-[15px] px-6 py-3.5 rounded-full flex items-center space-x-2 transition-all active:scale-95"
+                  className="w-full sm:w-auto border-[1.5px] border-[#581121] hover:bg-[#581121]/5 text-[#581121] font-semibold text-[15px] px-6 py-3.5 rounded-full flex items-center justify-center space-x-2 transition-all active:scale-95 text-center"
                 >
                   <span>See how it works</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowDown className="w-4 h-4" />
                 </a>
               </div>
             </div>
 
-            {/* Right Desktop Studio App Mockup */}
-            <div className="lg:col-span-6 flex justify-center">
-              <div className="w-full max-w-[540px] bg-[#3A0A16] border border-[#521323] rounded-2xl p-4 sm:p-5 shadow-[0_25px_60px_rgba(40,6,15,0.45)] text-[#FAF4EB]">
+            {/* Right Desktop Studio App Mockup (Desktop / Tablet) */}
+            <div className="hidden sm:flex lg:col-span-6 justify-center w-full">
+              <div className="w-full max-w-[540px] bg-[#3A0A16] border border-[#521323] rounded-2xl p-3.5 sm:p-5 shadow-[0_20px_50px_rgba(40,6,15,0.4)] text-[#FAF4EB]">
                 {/* macOS Window Title Bar */}
-                <div className="flex items-center justify-between pb-3.5 mb-3.5 border-b border-[#521323]/60">
+                <div className="flex items-center justify-between pb-3 mb-3 sm:pb-3.5 sm:mb-3.5 border-b border-[#521323]/60">
                   <div className="flex items-center space-x-2">
                     <div className="w-2.5 h-2.5 rounded-full bg-[#FF5F56]" />
                     <div className="w-2.5 h-2.5 rounded-full bg-[#FFBD2E]" />
                     <div className="w-2.5 h-2.5 rounded-full bg-[#27C93F]" />
                   </div>
                   <div className="flex items-center space-x-1.5 opacity-90">
-                    <img src={saynLogo} alt="SAYN" className="w-5 h-5 rounded object-contain" />
-                    <span className="text-xs font-bold tracking-widest text-[#FAF4EB]">SAYN</span>
+                    <img src={saynLogo} alt="SAYN" className="w-4 h-4 sm:w-5 sm:h-5 rounded object-contain" />
+                    <span className="text-[11px] sm:text-xs font-bold tracking-widest text-[#FAF4EB]">SAYN STUDIO</span>
                   </div>
-                  <div className="w-12" />
+                  <div className="w-8 sm:w-12" />
                 </div>
 
-                {/* 3-Pane Horizontal Studio Layout */}
+                {/* Studio Layout */}
                 <div className="grid grid-cols-12 gap-3 items-stretch">
                   {/* Pane 1: Sidebar Modes */}
-                  <div className="col-span-12 sm:col-span-3 flex sm:flex-col gap-1.5 justify-between sm:justify-start">
+                  <div className="col-span-3 flex flex-col gap-1.5">
                     <button
                       onClick={() => setActiveStudioTab('write')}
                       className={`flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-bold transition-all text-left ${
@@ -285,7 +309,7 @@ export const LandingPage: React.FC = () => {
                   </div>
 
                   {/* Pane 2: Middle Voice Recorder Card */}
-                  <div className="col-span-12 sm:col-span-4 bg-[#28060F] border border-[#521323] rounded-xl p-3.5 flex flex-col items-center justify-between min-h-[170px]">
+                  <div className="col-span-4 bg-[#28060F] border border-[#521323] rounded-xl p-3.5 flex flex-col items-center justify-between min-h-[170px]">
                     <span className="text-[11px] font-mono opacity-60">
                       00:{audioSeconds < 10 ? `0${audioSeconds}` : audioSeconds}
                     </span>
@@ -297,7 +321,7 @@ export const LandingPage: React.FC = () => {
                           key={i}
                           className="w-1 bg-[#FAF4EB] rounded-full transition-all duration-200"
                           style={{
-                            height: isListening ? `${Math.max(10, (h * (0.6 + 0.4 * Math.sin(audioSeconds * 2 + i))))}px` : '6px',
+                            height: isListening ? `${Math.max(8, (h * (0.6 + 0.4 * Math.sin(audioSeconds * 2 + i))))}px` : '5px',
                             opacity: isListening ? 0.95 : 0.35,
                           }}
                         />
@@ -322,7 +346,7 @@ export const LandingPage: React.FC = () => {
                   </div>
 
                   {/* Pane 3: Right Message Card */}
-                  <div className="col-span-12 sm:col-span-5 bg-[#28060F] border border-[#521323] rounded-xl p-3 flex flex-col justify-between min-h-[170px]">
+                  <div className="col-span-5 bg-[#28060F] border border-[#521323] rounded-xl p-3.5 flex flex-col justify-between min-h-[170px]">
                     <div>
                       <span className="text-[11px] font-semibold text-[#FAF4EB]/70 block mb-2">Your message</span>
                       <p className="text-[12.5px] leading-relaxed text-[#FAF4EB] font-normal">
@@ -348,6 +372,87 @@ export const LandingPage: React.FC = () => {
                     </button>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Mobile Studio Card (Sleek, Compact, No Clutter) */}
+            <div className="sm:hidden w-full mt-2">
+              <div className="bg-[#3A0A16] border border-[#521323] rounded-2xl p-4 shadow-[0_16px_40px_rgba(40,6,15,0.35)] text-[#FAF4EB]">
+                {/* Header */}
+                <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-[#521323]/60">
+                  <div className="flex items-center space-x-1.5">
+                    <div className="w-2 h-2 rounded-full bg-[#FF5F56]" />
+                    <div className="w-2 h-2 rounded-full bg-[#FFBD2E]" />
+                    <div className="w-2 h-2 rounded-full bg-[#27C93F]" />
+                  </div>
+                  <div className="flex items-center space-x-1.5 opacity-90">
+                    <img src={saynLogo} alt="SAYN" className="w-4 h-4 rounded object-contain" />
+                    <span className="text-[10px] font-bold tracking-widest text-[#FAF4EB]">SAYN STUDIO</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-[#FAF4EB]/60">
+                    00:{audioSeconds < 10 ? `0${audioSeconds}` : audioSeconds}
+                  </span>
+                </div>
+
+                {/* Mode Selector Chips */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none mb-2.5">
+                  {(['write', 'improve', 'shorten', 'detail'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => setActiveStudioTab(mode)}
+                      className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all capitalize ${
+                        activeStudioTab === mode
+                          ? 'bg-[#FAF4EB] text-[#581121] shadow-sm'
+                          : 'bg-[#28060F] text-[#FAF4EB]/70 border border-[#521323]'
+                      }`}
+                    >
+                      {mode === 'write' ? '🎙️ Write' : mode === 'improve' ? '✨ Improve' : mode === 'shorten' ? '☰ Shorten' : '⊕ Detail'}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Compact Live Waveform + Result */}
+                <div className="bg-[#28060F] border border-[#521323] rounded-xl p-3 mb-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center space-x-1.5">
+                      <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="text-[11px] font-medium text-[#FAF4EB]/80">
+                        {isListening ? 'Listening & refining...' : 'Ready'}
+                      </span>
+                    </div>
+                    {/* Tiny animated soundbars */}
+                    <div className="flex items-center space-x-0.5">
+                      {[10, 18, 12, 22, 14, 20].map((h, i) => (
+                        <div
+                          key={i}
+                          className="w-0.5 bg-[#FAF4EB]/80 rounded-full animate-pulse"
+                          style={{ height: `${h * 0.65}px` }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-xs text-[#FAF4EB] leading-relaxed">
+                    "{studioTabMessages[activeStudioTab]}"
+                  </p>
+                </div>
+
+                {/* Copy button */}
+                <button
+                  onClick={() => handleCopyMessage(studioTabMessages[activeStudioTab])}
+                  className="w-full bg-[#FAF4EB] hover:bg-white text-[#581121] text-xs font-bold py-2.5 px-3 rounded-xl flex items-center justify-center space-x-1.5 transition-all active:scale-95 shadow-sm"
+                >
+                  {copiedMessage ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-700" />
+                      <span>Copied to clipboard!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copy formatted message</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
@@ -431,14 +536,14 @@ export const LandingPage: React.FC = () => {
           </div>
 
           {/* 3 Outlined Feature Cards Below */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-5">
             {/* Card 1 */}
-            <div className="border-[1.5px] border-[#581121] rounded-2xl p-5 sm:p-6 bg-[#FAF4EB] flex items-start space-x-4">
-              <div className="w-12 h-12 rounded-full border-[1.5px] border-[#581121] flex items-center justify-center flex-shrink-0 text-[#581121]">
-                <span className="text-lg font-bold">〰</span>
+            <div className="border-[1.5px] border-[#581121] rounded-2xl p-4 sm:p-6 bg-[#FAF4EB] flex items-start space-x-3.5 sm:space-x-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-[1.5px] border-[#581121] flex items-center justify-center flex-shrink-0 text-[#581121]">
+                <span className="text-base sm:text-lg font-bold">〰</span>
               </div>
               <div>
-                <h4 className="font-bold text-[15px] text-[#581121] mb-1">Remove filler words</h4>
+                <h4 className="font-bold text-sm sm:text-[15px] text-[#581121] mb-0.5 sm:mb-1">Remove filler words</h4>
                 <p className="text-xs sm:text-[13px] text-[#581121]/80 leading-relaxed">
                   Take out 'um', 'like', and repeated words.
                 </p>
@@ -446,12 +551,12 @@ export const LandingPage: React.FC = () => {
             </div>
 
             {/* Card 2 */}
-            <div className="border-[1.5px] border-[#581121] rounded-2xl p-5 sm:p-6 bg-[#FAF4EB] flex items-start space-x-4">
-              <div className="w-12 h-12 rounded-full border-[1.5px] border-[#581121] flex items-center justify-center flex-shrink-0 text-[#581121]">
-                <span className="text-lg font-bold">☰</span>
+            <div className="border-[1.5px] border-[#581121] rounded-2xl p-4 sm:p-6 bg-[#FAF4EB] flex items-start space-x-3.5 sm:space-x-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-[1.5px] border-[#581121] flex items-center justify-center flex-shrink-0 text-[#581121]">
+                <span className="text-base sm:text-lg font-bold">☰</span>
               </div>
               <div>
-                <h4 className="font-bold text-[15px] text-[#581121] mb-1">Make it shorter</h4>
+                <h4 className="font-bold text-sm sm:text-[15px] text-[#581121] mb-0.5 sm:mb-1">Make it shorter</h4>
                 <p className="text-xs sm:text-[13px] text-[#581121]/80 leading-relaxed">
                   Keep the message clear and to the point.
                 </p>
@@ -459,12 +564,12 @@ export const LandingPage: React.FC = () => {
             </div>
 
             {/* Card 3 */}
-            <div className="border-[1.5px] border-[#581121] rounded-2xl p-5 sm:p-6 bg-[#FAF4EB] flex items-start space-x-4">
-              <div className="w-12 h-12 rounded-full border-[1.5px] border-[#581121] flex items-center justify-center flex-shrink-0 text-[#581121]">
-                <FileText className="w-5 h-5" />
+            <div className="border-[1.5px] border-[#581121] rounded-2xl p-4 sm:p-6 bg-[#FAF4EB] flex items-start space-x-3.5 sm:space-x-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-[1.5px] border-[#581121] flex items-center justify-center flex-shrink-0 text-[#581121]">
+                <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div>
-                <h4 className="font-bold text-[15px] text-[#581121] mb-1">Paste anywhere</h4>
+                <h4 className="font-bold text-sm sm:text-[15px] text-[#581121] mb-0.5 sm:mb-1">Paste anywhere</h4>
                 <p className="text-xs sm:text-[13px] text-[#581121]/80 leading-relaxed">
                   Put the finished text straight into your app.
                 </p>
@@ -477,75 +582,75 @@ export const LandingPage: React.FC = () => {
       {/* ─────────────────────────────────────────────────────────────
           SCREEN 3: DEEP WINE MAROON SECTION (Speed & Typing Comparison)
       ─────────────────────────────────────────────────────────────── */}
-      <section className="bg-[#581121] text-[#FAF4EB] py-20 sm:py-28 px-5 sm:px-8 selection:bg-[#FAF4EB] selection:text-[#581121]">
+      <section className="bg-[#581121] text-[#FAF4EB] py-16 sm:py-28 px-5 sm:px-8 selection:bg-[#FAF4EB] selection:text-[#581121]">
         <div className="max-w-5xl mx-auto">
           {/* Section Heading */}
-          <div className="text-center mb-12 sm:mb-16">
-            <h2 className="font-serif-editorial text-[38px] sm:text-[54px] md:text-[62px] font-bold text-[#FAF4EB] leading-tight mb-4">
+          <div className="text-center mb-10 sm:mb-16">
+            <h2 className="font-serif-editorial text-[36px] sm:text-[54px] md:text-[62px] font-bold text-[#FAF4EB] leading-tight mb-3 sm:mb-4">
               Speak naturally. <span className="italic font-normal">Type faster.</span>
             </h2>
-            <p className="text-[16px] sm:text-[18px] text-[#FAF4EB]/80 max-w-xl mx-auto font-normal">
+            <p className="text-[15px] sm:text-[18px] text-[#FAF4EB]/80 max-w-xl mx-auto font-normal">
               Turn your speech into clear text in the app you're using.
             </p>
           </div>
 
           {/* Interactive Speed Comparison Block */}
-          <div className="grid grid-cols-1 lg:grid-cols-11 gap-6 items-center mb-16">
+          <div className="grid grid-cols-1 lg:grid-cols-11 gap-4 sm:gap-6 items-center mb-8 sm:mb-16">
             {/* Left Card: Normal Typing */}
-            <div className="lg:col-span-5 bg-[#420C18] border border-[#6B172A] rounded-2xl p-6 sm:p-7 flex flex-col justify-between min-h-[260px]">
+            <div className="lg:col-span-5 bg-[#420C18] border border-[#6B172A] rounded-2xl p-4 sm:p-7 flex flex-col justify-between min-h-[170px] sm:min-h-[260px]">
               <div>
                 <span className="text-xs font-bold text-[#FAF4EB]/70 block mb-1">Normal typing</span>
-                <div className="flex items-baseline space-x-2 mb-4">
-                  <span className="font-serif-editorial text-4xl sm:text-5xl font-bold text-[#FAF4EB]">45</span>
+                <div className="flex items-baseline space-x-2 mb-3 sm:mb-4">
+                  <span className="font-serif-editorial text-3xl sm:text-5xl font-bold text-[#FAF4EB]">45</span>
                   <span className="text-xs text-[#FAF4EB]/70">words/min</span>
                 </div>
-                <div className="border border-[#6B172A] rounded-xl p-4 bg-[#320812]/50 min-h-[110px]">
-                  <p className="text-sm text-[#FAF4EB]/90 leading-relaxed font-mono">
+                <div className="border border-[#6B172A] rounded-xl p-3 sm:p-4 bg-[#320812]/50 min-h-[75px] sm:min-h-[110px]">
+                  <p className="text-xs sm:text-sm text-[#FAF4EB]/90 leading-relaxed font-mono">
                     {fullTypingText.slice(0, typedChars)}
-                    <span className="animate-pulse inline-block w-1.5 h-4 bg-[#FAF4EB] ml-0.5 align-middle" />
+                    <span className="animate-pulse inline-block w-1.5 h-3.5 sm:h-4 bg-[#FAF4EB] ml-0.5 align-middle" />
                   </p>
                 </div>
               </div>
             </div>
 
             {/* Center: Connector with Sound Waveform & Mic */}
-            <div className="lg:col-span-1 flex flex-col items-center justify-center py-2">
-              <div className="flex items-center space-x-0.5 mb-2">
-                {[14, 26, 18, 32, 20, 28].map((h, idx) => (
+            <div className="lg:col-span-1 flex flex-col items-center justify-center my-2 lg:my-0 py-1">
+              <div className="flex items-center space-x-0.5 mb-1.5">
+                {[12, 22, 16, 28, 18, 24].map((h, idx) => (
                   <div
                     key={idx}
                     className="w-0.5 bg-[#FAF4EB]/80 rounded-full animate-pulse"
-                    style={{ height: `${h}px`, animationDelay: `${idx * 150}ms` }}
+                    style={{ height: `${h * 0.8}px`, animationDelay: `${idx * 150}ms` }}
                   />
                 ))}
               </div>
-              <div className="w-12 h-12 rounded-full bg-[#FAF4EB] text-[#581121] flex items-center justify-center shadow-lg my-1">
-                <Mic className="w-6 h-6" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#FAF4EB] text-[#581121] flex items-center justify-center shadow-lg my-1">
+                <Mic className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <span className="text-[11px] font-medium text-[#FAF4EB]/80 mt-1 whitespace-nowrap">Speak naturally</span>
-              <ArrowRight className="w-3.5 h-3.5 text-[#FAF4EB]/60 mt-0.5" />
+              <span className="text-[10px] sm:text-[11px] font-medium text-[#FAF4EB]/80 mt-1 whitespace-nowrap">Speak naturally</span>
+              <ArrowRight className="w-3.5 h-3.5 text-[#FAF4EB]/60 mt-0.5 rotate-90 lg:rotate-0" />
             </div>
 
             {/* Right Card: With SAYN (High-Contrast Warm Cream Card) */}
-            <div className="lg:col-span-5 bg-[#FAF4EB] text-[#581121] rounded-2xl p-6 sm:p-7 flex flex-col justify-between min-h-[260px] shadow-xl">
+            <div className="lg:col-span-5 bg-[#FAF4EB] text-[#581121] rounded-2xl p-4 sm:p-7 flex flex-col justify-between min-h-[170px] sm:min-h-[260px] shadow-xl">
               <div>
                 <span className="text-xs font-bold text-[#581121]/70 block mb-1">With SAYN</span>
-                <div className="flex items-baseline space-x-2 mb-4">
-                  <span className="font-serif-editorial text-4xl sm:text-5xl font-bold text-[#581121]">220</span>
-                  <span className="text-xs text-[#581121]/70">words/min</span>
+                <div className="flex items-baseline space-x-2 mb-3 sm:mb-4">
+                  <span className="font-serif-editorial text-3xl sm:text-5xl font-bold text-[#581121]">220</span>
+                  <span className="text-xs text-[#581121]/70">words/min • 5x faster</span>
                 </div>
-                <div className="border border-[#581121] rounded-xl p-4 bg-white/50 min-h-[110px]">
-                  <p className="text-sm text-[#581121] leading-relaxed">
+                <div className="border border-[#581121] rounded-xl p-3 sm:p-4 bg-white/50 min-h-[75px] sm:min-h-[110px]">
+                  <p className="text-xs sm:text-sm text-[#581121] leading-relaxed">
                     Hey team, I reviewed the latest updates. The design migration is on track for Thursday.
-                    <span className="inline-block w-1.5 h-4 bg-[#581121] ml-1 align-middle" />
+                    <span className="inline-block w-1.5 h-3.5 sm:h-4 bg-[#581121] ml-1 align-middle" />
                   </p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* 3 Bottom Feature Circles in Wine Section */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8 border-t border-[#FAF4EB]/15">
+          {/* 3 Bottom Feature Circles (Hidden on mobile to eliminate redundant bloat) */}
+          <div className="hidden md:grid grid-cols-1 md:grid-cols-3 gap-6 pt-8 border-t border-[#FAF4EB]/15">
             {/* Circle 1 */}
             <div className="flex items-start space-x-4">
               <div className="w-11 h-11 rounded-full border border-[#FAF4EB]/50 flex items-center justify-center flex-shrink-0 text-[#FAF4EB]">
@@ -604,72 +709,84 @@ export const LandingPage: React.FC = () => {
             </p>
           </div>
 
-          {/* 6 Clean Outlined Squircle Cards in a 2x3 Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* 6 Clean Outlined Squircle Cards in a 2x3 Grid (Responsive 2-cols on mobile) */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
             {/* Card 1 */}
-            <div className="border-[1.5px] border-[#581121] rounded-2xl p-6 sm:p-7 bg-[#FAF4EB] hover:bg-[#FAF4EB]/70 transition-all">
-              <div className="w-12 h-12 rounded-full border-[1.5px] border-[#581121] flex items-center justify-center mb-5 text-[#581121]">
-                <Mic className="w-5 h-5" />
+            <div className="border-[1.5px] border-[#581121] rounded-2xl p-4 sm:p-7 bg-[#FAF4EB] hover:bg-[#FAF4EB]/70 transition-all flex flex-col justify-between">
+              <div>
+                <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full border-[1.5px] border-[#581121] flex items-center justify-center mb-3 sm:mb-5 text-[#581121]">
+                  <Mic className="w-4 h-4 sm:w-5 sm:h-5" />
+                </div>
+                <h3 className="font-bold text-[14px] sm:text-[17px] text-[#581121] mb-1 sm:mb-2">Speak instead of typing</h3>
+                <p className="text-xs sm:text-sm text-[#581121]/80 leading-relaxed">
+                  Turn your voice into text in seconds.
+                </p>
               </div>
-              <h3 className="font-bold text-[17px] text-[#581121] mb-2">Speak instead of typing</h3>
-              <p className="text-sm text-[#581121]/80 leading-relaxed">
-                Turn your voice into text in seconds.
-              </p>
             </div>
 
             {/* Card 2 */}
-            <div className="border-[1.5px] border-[#581121] rounded-2xl p-6 sm:p-7 bg-[#FAF4EB] hover:bg-[#FAF4EB]/70 transition-all">
-              <div className="w-12 h-12 rounded-full border-[1.5px] border-[#581121] flex items-center justify-center mb-5 text-[#581121]">
-                <FileText className="w-5 h-5" />
+            <div className="border-[1.5px] border-[#581121] rounded-2xl p-4 sm:p-7 bg-[#FAF4EB] hover:bg-[#FAF4EB]/70 transition-all flex flex-col justify-between">
+              <div>
+                <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full border-[1.5px] border-[#581121] flex items-center justify-center mb-3 sm:mb-5 text-[#581121]">
+                  <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
+                </div>
+                <h3 className="font-bold text-[14px] sm:text-[17px] text-[#581121] mb-1 sm:mb-2">Fix your message</h3>
+                <p className="text-xs sm:text-sm text-[#581121]/80 leading-relaxed">
+                  Clean up grammar and make words clearer.
+                </p>
               </div>
-              <h3 className="font-bold text-[17px] text-[#581121] mb-2">Fix your message</h3>
-              <p className="text-sm text-[#581121]/80 leading-relaxed">
-                Clean up grammar and make your words clearer.
-              </p>
             </div>
 
             {/* Card 3 */}
-            <div className="border-[1.5px] border-[#581121] rounded-2xl p-6 sm:p-7 bg-[#FAF4EB] hover:bg-[#FAF4EB]/70 transition-all">
-              <div className="w-12 h-12 rounded-full border-[1.5px] border-[#581121] flex items-center justify-center mb-5 text-[#581121]">
-                <Send className="w-5 h-5" />
+            <div className="border-[1.5px] border-[#581121] rounded-2xl p-4 sm:p-7 bg-[#FAF4EB] hover:bg-[#FAF4EB]/70 transition-all flex flex-col justify-between">
+              <div>
+                <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full border-[1.5px] border-[#581121] flex items-center justify-center mb-3 sm:mb-5 text-[#581121]">
+                  <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                </div>
+                <h3 className="font-bold text-[14px] sm:text-[17px] text-[#581121] mb-1 sm:mb-2">Use it in your apps</h3>
+                <p className="text-xs sm:text-sm text-[#581121]/80 leading-relaxed">
+                  Put your words into the app you're already using.
+                </p>
               </div>
-              <h3 className="font-bold text-[17px] text-[#581121] mb-2">Use it in your apps</h3>
-              <p className="text-sm text-[#581121]/80 leading-relaxed">
-                Put your words into the app you're already using.
-              </p>
             </div>
 
             {/* Card 4 */}
-            <div className="border-[1.5px] border-[#581121] rounded-2xl p-6 sm:p-7 bg-[#FAF4EB] hover:bg-[#FAF4EB]/70 transition-all">
-              <div className="w-12 h-12 rounded-full border-[1.5px] border-[#581121] flex items-center justify-center mb-5 text-[#581121]">
-                <Smartphone className="w-5 h-5" />
+            <div className="border-[1.5px] border-[#581121] rounded-2xl p-4 sm:p-7 bg-[#FAF4EB] hover:bg-[#FAF4EB]/70 transition-all flex flex-col justify-between">
+              <div>
+                <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full border-[1.5px] border-[#581121] flex items-center justify-center mb-3 sm:mb-5 text-[#581121]">
+                  <Smartphone className="w-4 h-4 sm:w-5 sm:h-5" />
+                </div>
+                <h3 className="font-bold text-[14px] sm:text-[17px] text-[#581121] mb-1 sm:mb-2">Works on your phone</h3>
+                <p className="text-xs sm:text-sm text-[#581121]/80 leading-relaxed">
+                  Use voice typing on Android.
+                </p>
               </div>
-              <h3 className="font-bold text-[17px] text-[#581121] mb-2">Works on your phone</h3>
-              <p className="text-sm text-[#581121]/80 leading-relaxed">
-                Use voice typing on Android.
-              </p>
             </div>
 
             {/* Card 5 */}
-            <div className="border-[1.5px] border-[#581121] rounded-2xl p-6 sm:p-7 bg-[#FAF4EB] hover:bg-[#FAF4EB]/70 transition-all">
-              <div className="w-12 h-12 rounded-full border-[1.5px] border-[#581121] flex items-center justify-center mb-5 text-[#581121]">
-                <Laptop className="w-5 h-5" />
+            <div className="border-[1.5px] border-[#581121] rounded-2xl p-4 sm:p-7 bg-[#FAF4EB] hover:bg-[#FAF4EB]/70 transition-all flex flex-col justify-between">
+              <div>
+                <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full border-[1.5px] border-[#581121] flex items-center justify-center mb-3 sm:mb-5 text-[#581121]">
+                  <Laptop className="w-4 h-4 sm:w-5 sm:h-5" />
+                </div>
+                <h3 className="font-bold text-[14px] sm:text-[17px] text-[#581121] mb-1 sm:mb-2">Works on your computer</h3>
+                <p className="text-xs sm:text-sm text-[#581121]/80 leading-relaxed">
+                  Use SAYN on Mac and Windows.
+                </p>
               </div>
-              <h3 className="font-bold text-[17px] text-[#581121] mb-2">Works on your computer</h3>
-              <p className="text-sm text-[#581121]/80 leading-relaxed">
-                Use SAYN on Mac and Windows.
-              </p>
             </div>
 
             {/* Card 6 */}
-            <div className="border-[1.5px] border-[#581121] rounded-2xl p-6 sm:p-7 bg-[#FAF4EB] hover:bg-[#FAF4EB]/70 transition-all">
-              <div className="w-12 h-12 rounded-full border-[1.5px] border-[#581121] flex items-center justify-center mb-5 text-[#581121]">
-                <InfinityIcon className="w-5 h-5" />
+            <div className="border-[1.5px] border-[#581121] rounded-2xl p-4 sm:p-7 bg-[#FAF4EB] hover:bg-[#FAF4EB]/70 transition-all flex flex-col justify-between">
+              <div>
+                <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full border-[1.5px] border-[#581121] flex items-center justify-center mb-3 sm:mb-5 text-[#581121]">
+                  <InfinityIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                </div>
+                <h3 className="font-bold text-[14px] sm:text-[17px] text-[#581121] mb-1 sm:mb-2">Free to use</h3>
+                <p className="text-xs sm:text-sm text-[#581121]/80 leading-relaxed">
+                  No subscription or word limits.
+                </p>
               </div>
-              <h3 className="font-bold text-[17px] text-[#581121] mb-2">Free to use</h3>
-              <p className="text-sm text-[#581121]/80 leading-relaxed">
-                No subscription or word limits.
-              </p>
             </div>
           </div>
         </div>
@@ -758,154 +875,226 @@ export const LandingPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Segmented Platform Pill Switcher */}
-          <div className="flex justify-center mb-10">
-            <div className="inline-flex items-center p-1 border-[1.5px] border-[#581121] rounded-full bg-transparent">
-              <button
-                onClick={() => setInstallPlatform('mac')}
-                className={`flex items-center space-x-2 px-6 py-2.5 rounded-full text-sm font-semibold transition-all ${
-                  installPlatform === 'mac'
-                    ? 'bg-[#581121] text-[#FAF4EB] shadow-sm'
-                    : 'text-[#581121] hover:bg-[#581121]/5'
-                }`}
+          {/* ─── DESKTOP SETUP VIEW (Laptops & Desktops) ─── */}
+          <div className="hidden md:block">
+            {/* Segmented Platform Pill Switcher */}
+            <div className="flex justify-center mb-10">
+              <div className="inline-flex items-center p-1 border-[1.5px] border-[#581121] rounded-full bg-transparent">
+                <button
+                  onClick={() => setInstallPlatform('mac')}
+                  className={`flex items-center space-x-2 px-6 py-2.5 rounded-full text-sm font-semibold transition-all ${
+                    installPlatform === 'mac'
+                      ? 'bg-[#581121] text-[#FAF4EB] shadow-sm'
+                      : 'text-[#581121] hover:bg-[#581121]/5'
+                  }`}
+                >
+                  <Apple className="w-4 h-4 fill-current" />
+                  <span>Mac</span>
+                </button>
+                <button
+                  onClick={() => setInstallPlatform('windows')}
+                  className={`flex items-center space-x-2 px-6 py-2.5 rounded-full text-sm font-semibold transition-all ${
+                    installPlatform === 'windows'
+                      ? 'bg-[#581121] text-[#FAF4EB] shadow-sm'
+                      : 'text-[#581121] hover:bg-[#581121]/5'
+                  }`}
+                >
+                  <WindowsIcon className="w-4 h-4" />
+                  <span>Windows</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Step-by-Step Card */}
+            <div className="border-[1.5px] border-[#581121] rounded-3xl p-10 bg-[#FAF4EB] shadow-sm mb-10">
+              <div className="grid grid-cols-11 gap-4 items-center mb-8">
+                {/* Step 1 */}
+                <div className="col-span-3 flex items-start space-x-3.5">
+                  <div className="w-11 h-11 rounded-full border-[1.5px] border-[#581121] flex items-center justify-center font-bold text-base text-[#581121] flex-shrink-0 mt-0.5">
+                    1
+                  </div>
+                  <div>
+                    <h4 className="font-serif-editorial text-[18px] font-bold text-[#581121] mb-1">
+                      {installPlatform === 'mac' ? 'Open Terminal' : 'Open PowerShell'}
+                    </h4>
+                    <p className="text-[13px] text-[#581121]/80 leading-relaxed">
+                      {installPlatform === 'mac'
+                        ? 'Press ⌘ + Space, search for Terminal, and open it.'
+                        : 'Press ⊞ + X, select PowerShell or Terminal.'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Arrow 1 */}
+                <div className="flex col-span-1 justify-center text-[#581121]/60">
+                  <ChevronRight className="w-5 h-5 stroke-[1.5]" />
+                </div>
+
+                {/* Step 2 */}
+                <div className="col-span-3 flex items-start space-x-3.5">
+                  <div className="w-11 h-11 rounded-full border-[1.5px] border-[#581121] flex items-center justify-center font-bold text-base text-[#581121] flex-shrink-0 mt-0.5">
+                    2
+                  </div>
+                  <div>
+                    <h4 className="font-serif-editorial text-[18px] font-bold text-[#581121] mb-1">
+                      Paste the command
+                    </h4>
+                    <p className="text-[13px] text-[#581121]/80 leading-relaxed">
+                      Copy the command below and paste it into {installPlatform === 'mac' ? 'Terminal' : 'PowerShell'}.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Arrow 2 */}
+                <div className="flex col-span-1 justify-center text-[#581121]/60">
+                  <ChevronRight className="w-5 h-5 stroke-[1.5]" />
+                </div>
+
+                {/* Step 3 */}
+                <div className="col-span-3 flex items-start space-x-3.5">
+                  <div className="w-11 h-11 rounded-full border-[1.5px] border-[#581121] flex items-center justify-center font-bold text-base text-[#581121] flex-shrink-0 mt-0.5">
+                    3
+                  </div>
+                  <div>
+                    <h4 className="font-serif-editorial text-[18px] font-bold text-[#581121] mb-1">
+                      Press Enter
+                    </h4>
+                    <p className="text-[13px] text-[#581121]/80 leading-relaxed">
+                      SAYN will download and install automatically.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Terminal Command Box */}
+              <div className="border border-[#581121] rounded-2xl p-5 bg-white/40 flex items-center justify-between gap-4">
+                <div className="flex items-center space-x-3 w-full overflow-x-auto font-mono text-sm text-[#581121] py-1">
+                  <span className="text-[#581121]/60 font-bold">$</span>
+                  <span className="select-all font-semibold whitespace-nowrap">
+                    {installPlatform === 'mac' ? macCommand : windowsCommand}
+                  </span>
+                </div>
+
+                <button
+                  onClick={() =>
+                    handleCopyInstallCommand(
+                      installPlatform === 'mac' ? macCommand : windowsCommand
+                    )
+                  }
+                  className="bg-[#581121] hover:bg-[#450B18] text-[#FAF4EB] text-sm font-semibold px-6 py-3 rounded-xl flex items-center justify-center space-x-2 transition-all active:scale-95 shadow-sm whitespace-nowrap"
+                >
+                  {copiedInstallCmd ? (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      <span>Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4" />
+                      <span>Copy command</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* OR Divider */}
+            <div className="relative flex items-center justify-center my-8 max-w-xl mx-auto">
+              <div className="w-full border-t border-[#581121]/30" />
+              <span className="absolute bg-[#FAF4EB] px-4 text-xs font-bold text-[#581121]/70 tracking-widest">
+                OR DIRECT DOWNLOAD
+              </span>
+            </div>
+
+            {/* Desktop Direct Download Buttons */}
+            <div className="flex items-center justify-center gap-5 w-full max-w-lg mx-auto">
+              <a
+                href="https://github.com/allanmaaz/sayn/releases/download/v1.1.6/sayn-macos.dmg"
+                className="border-[1.5px] border-[#581121] hover:bg-[#581121]/5 text-[#581121] text-sm font-bold px-7 py-3.5 rounded-full flex items-center justify-center space-x-2.5 transition-all active:scale-95 shadow-sm text-center"
               >
                 <Apple className="w-4 h-4 fill-current" />
-                <span>Mac</span>
-              </button>
-              <button
-                onClick={() => setInstallPlatform('windows')}
-                className={`flex items-center space-x-2 px-6 py-2.5 rounded-full text-sm font-semibold transition-all ${
-                  installPlatform === 'windows'
-                    ? 'bg-[#581121] text-[#FAF4EB] shadow-sm'
-                    : 'text-[#581121] hover:bg-[#581121]/5'
-                }`}
+                <span>Download for Mac</span>
+                <ArrowDown className="w-4 h-4 ml-1 stroke-[2]" />
+              </a>
+
+              <a
+                href="https://github.com/allanmaaz/sayn/releases/download/v1.1.6/sayn-windows-setup.exe"
+                className="border-[1.5px] border-[#581121] hover:bg-[#581121]/5 text-[#581121] text-sm font-bold px-7 py-3.5 rounded-full flex items-center justify-center space-x-2.5 transition-all active:scale-95 shadow-sm text-center"
               >
                 <WindowsIcon className="w-4 h-4" />
-                <span>Windows</span>
-              </button>
+                <span>Download for Windows</span>
+                <ArrowDown className="w-4 h-4 ml-1 stroke-[2]" />
+              </a>
             </div>
           </div>
 
-          {/* Step-by-Step Card */}
-          <div className="border-[1.5px] border-[#581121] rounded-3xl p-6 sm:p-10 bg-[#FAF4EB] shadow-sm mb-10">
-            <div className="grid grid-cols-1 md:grid-cols-11 gap-4 items-center mb-8">
-              {/* Step 1 */}
-              <div className="md:col-span-3 flex items-start space-x-3.5">
-                <div className="w-11 h-11 rounded-full border-[1.5px] border-[#581121] flex items-center justify-center font-bold text-base text-[#581121] flex-shrink-0 mt-0.5">
-                  1
-                </div>
-                <div>
-                  <h4 className="font-serif-editorial text-[18px] font-bold text-[#581121] mb-1">
-                    {installPlatform === 'mac' ? 'Open Terminal' : 'Open PowerShell'}
-                  </h4>
-                  <p className="text-xs sm:text-[13px] text-[#581121]/80 leading-relaxed">
-                    {installPlatform === 'mac'
-                      ? 'Press ⌘ + Space, search for Terminal, and open it.'
-                      : 'Press ⊞ + X, select PowerShell or Terminal.'}
-                  </p>
-                </div>
+          {/* ─── MOBILE DOWNLOAD VIEW (Phones & Small Tablets) ─── */}
+          <div className="block md:hidden">
+            {/* Android Highlight Card */}
+            <div className="border-[1.5px] border-[#581121] rounded-3xl p-5 bg-[#FAF4EB] shadow-sm mb-6 text-center">
+              <div className="inline-flex items-center space-x-2 bg-[#581121]/10 text-[#581121] text-xs font-bold px-3 py-1.5 rounded-full mb-3">
+                <AndroidIcon className="w-3.5 h-3.5 fill-[#581121]" />
+                <span>SAYN FOR ANDROID</span>
               </div>
+              <h3 className="font-serif-editorial text-2xl font-bold text-[#581121] mb-2">
+                Type with your voice everywhere.
+              </h3>
+              <p className="text-xs text-[#581121]/80 leading-relaxed mb-5 max-w-xs mx-auto">
+                Smart voice keyboard, AI word meaning, and one-tap polishing directly in any Android app.
+              </p>
 
-              {/* Arrow 1 */}
-              <div className="hidden md:flex md:col-span-1 justify-center text-[#581121]/60">
-                <ChevronRight className="w-5 h-5 stroke-[1.5]" />
-              </div>
-
-              {/* Step 2 */}
-              <div className="md:col-span-3 flex items-start space-x-3.5">
-                <div className="w-11 h-11 rounded-full border-[1.5px] border-[#581121] flex items-center justify-center font-bold text-base text-[#581121] flex-shrink-0 mt-0.5">
-                  2
-                </div>
-                <div>
-                  <h4 className="font-serif-editorial text-[18px] font-bold text-[#581121] mb-1">
-                    Paste the command
-                  </h4>
-                  <p className="text-xs sm:text-[13px] text-[#581121]/80 leading-relaxed">
-                    Copy the command below and paste it into {installPlatform === 'mac' ? 'Terminal' : 'PowerShell'}.
-                  </p>
-                </div>
-              </div>
-
-              {/* Arrow 2 */}
-              <div className="hidden md:flex md:col-span-1 justify-center text-[#581121]/60">
-                <ChevronRight className="w-5 h-5 stroke-[1.5]" />
-              </div>
-
-              {/* Step 3 */}
-              <div className="md:col-span-3 flex items-start space-x-3.5">
-                <div className="w-11 h-11 rounded-full border-[1.5px] border-[#581121] flex items-center justify-center font-bold text-base text-[#581121] flex-shrink-0 mt-0.5">
-                  3
-                </div>
-                <div>
-                  <h4 className="font-serif-editorial text-[18px] font-bold text-[#581121] mb-1">
-                    Press Enter
-                  </h4>
-                  <p className="text-xs sm:text-[13px] text-[#581121]/80 leading-relaxed">
-                    SAYN will download and install automatically.
-                  </p>
-                </div>
-              </div>
+              {/* Primary APK Download CTA */}
+              <a
+                href="https://github.com/allanmaaz/sayn/releases/download/v1.1.6/sayn-release.apk"
+                className="w-full bg-[#581121] hover:bg-[#450B18] text-[#FAF4EB] text-[15px] font-bold py-3.5 px-5 rounded-2xl flex items-center justify-center space-x-2.5 shadow-md active:scale-95 transition-all"
+              >
+                <AndroidIcon className="w-5 h-5 fill-current" />
+                <span>Download Android APK (v1.1.6)</span>
+                <ArrowDown className="w-4 h-4 ml-0.5" />
+              </a>
+              <span className="block text-[11px] text-[#581121]/60 mt-2 font-medium">
+                Direct release • Zero setup required
+              </span>
             </div>
 
-            {/* Terminal Command Box */}
-            <div className="border border-[#581121] rounded-2xl p-4 sm:p-5 bg-white/40 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center space-x-3 w-full overflow-x-auto font-mono text-xs sm:text-sm text-[#581121] py-1">
-                <span className="text-[#581121]/60 font-bold">$</span>
-                <span className="select-all font-semibold">
-                  {installPlatform === 'mac' ? macCommand : windowsCommand}
-                </span>
+            {/* Desktop Downloads for Phone Visitors */}
+            <div className="border border-[#581121]/30 rounded-2xl p-4 bg-white/40 text-center">
+              <span className="text-xs font-bold text-[#581121] block mb-2">
+                Need SAYN on your Mac or Windows PC?
+              </span>
+              <div className="grid grid-cols-2 gap-2.5 mb-3">
+                <a
+                  href="https://github.com/allanmaaz/sayn/releases/download/v1.1.6/sayn-macos.dmg"
+                  className="border-[1.5px] border-[#581121] hover:bg-[#581121]/5 text-[#581121] text-xs font-bold py-2.5 px-3 rounded-xl flex items-center justify-center space-x-1.5 active:scale-95 transition-all"
+                >
+                  <Apple className="w-3.5 h-3.5 fill-current" />
+                  <span>Mac DMG</span>
+                </a>
+                <a
+                  href="https://github.com/allanmaaz/sayn/releases/download/v1.1.6/sayn-windows-setup.exe"
+                  className="border-[1.5px] border-[#581121] hover:bg-[#581121]/5 text-[#581121] text-xs font-bold py-2.5 px-3 rounded-xl flex items-center justify-center space-x-1.5 active:scale-95 transition-all"
+                >
+                  <WindowsIcon className="w-3.5 h-3.5" />
+                  <span>Windows EXE</span>
+                </a>
               </div>
-
               <button
-                onClick={() =>
-                  handleCopyInstallCommand(
-                    installPlatform === 'mac' ? macCommand : windowsCommand
-                  )
-                }
-                className="w-full sm:w-auto bg-[#581121] hover:bg-[#450B18] text-[#FAF4EB] text-xs sm:text-sm font-semibold px-6 py-3 rounded-xl flex items-center justify-center space-x-2 transition-all active:scale-95 shadow-sm whitespace-nowrap"
+                onClick={handleCopyMobileLink}
+                className="w-full bg-transparent hover:bg-[#581121]/5 text-[#581121] text-xs font-semibold py-2 px-3 rounded-lg flex items-center justify-center space-x-1.5 transition-all"
               >
-                {copiedInstallCmd ? (
+                {copiedMobileLink ? (
                   <>
-                    <Check className="w-4 h-4 text-emerald-400" />
-                    <span>Copied</span>
+                    <Check className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>Download link copied to clipboard!</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="w-4 h-4" />
-                    <span>Copy command</span>
+                    <Copy className="w-3.5 h-3.5 text-[#581121]/70" />
+                    <span>Copy download link to send to computer</span>
                   </>
                 )}
               </button>
             </div>
-          </div>
-
-          {/* OR Divider */}
-          <div className="relative flex items-center justify-center my-8 max-w-xl mx-auto">
-            <div className="w-full border-t border-[#581121]/30" />
-            <span className="absolute bg-[#FAF4EB] px-4 text-xs font-bold text-[#581121]/70 tracking-widest">
-              OR
-            </span>
-          </div>
-
-          {/* Direct Download Buttons */}
-          <div className="flex flex-wrap items-center justify-center gap-5">
-            <a
-              href="https://github.com/allanmaaz/sayn/releases/download/v1.1.5/sayn-macos.dmg"
-              className="border-[1.5px] border-[#581121] hover:bg-[#581121]/5 text-[#581121] text-sm font-bold px-7 py-3.5 rounded-full flex items-center space-x-2.5 transition-all active:scale-95 shadow-sm"
-            >
-              <Apple className="w-4 h-4 fill-current" />
-              <span>Download for Mac</span>
-              <ArrowDown className="w-4 h-4 ml-1 stroke-[2]" />
-            </a>
-
-            <a
-              href="https://github.com/allanmaaz/sayn/releases/download/v1.1.5/sayn-windows-setup.exe"
-              className="border-[1.5px] border-[#581121] hover:bg-[#581121]/5 text-[#581121] text-sm font-bold px-7 py-3.5 rounded-full flex items-center space-x-2.5 transition-all active:scale-95 shadow-sm"
-            >
-              <WindowsIcon className="w-4 h-4" />
-              <span>Download for Windows</span>
-              <ArrowDown className="w-4 h-4 ml-1 stroke-[2]" />
-            </a>
           </div>
         </div>
       </section>
@@ -913,33 +1102,33 @@ export const LandingPage: React.FC = () => {
       {/* ─────────────────────────────────────────────────────────────
           SCREEN 7: GRAND WINE MAROON FOOTER (Screenshot 2)
       ─────────────────────────────────────────────────────────────── */}
-      <footer className="bg-[#480A17] text-[#FAF4EB] pt-16 pb-12 px-5 sm:px-8 selection:bg-[#FAF4EB] selection:text-[#480A17] overflow-hidden relative">
+      <footer className="bg-[#480A17] text-[#FAF4EB] pt-14 pb-10 px-5 sm:px-8 selection:bg-[#FAF4EB] selection:text-[#480A17] overflow-hidden relative">
         <div className="max-w-6xl mx-auto">
           {/* Brand & Links Grid with Vertical Separators */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12 pb-10 relative z-10 items-start">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12 pb-8 relative z-10 items-start">
             {/* Column 1: Brand & Tagline */}
             <div className="md:col-span-5 flex flex-col pr-0 sm:pr-6">
-              <div className="flex items-center space-x-3 mb-5">
-                <img src={saynLogo} alt="SAYN" className="w-8 h-8 rounded-lg shadow-sm object-contain" />
-                <span className="font-extrabold text-xl text-[#FAF4EB] tracking-wider">SAYN</span>
+              <div className="flex items-center space-x-3 mb-4">
+                <img src={saynLogo} alt="SAYN" className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg shadow-sm object-contain" />
+                <span className="font-extrabold text-lg sm:text-xl text-[#FAF4EB] tracking-wider">SAYN</span>
               </div>
-              <h3 className="font-serif-editorial text-[28px] sm:text-[32px] font-bold text-[#FAF4EB] mb-3 leading-snug">
+              <h3 className="font-serif-editorial text-[24px] sm:text-[32px] font-bold text-[#FAF4EB] mb-2 leading-snug">
                 Say it. Refine it. Send it.
               </h3>
-              <p className="text-sm text-[#FAF4EB]/75 leading-relaxed font-normal max-w-sm">
+              <p className="text-xs sm:text-sm text-[#FAF4EB]/75 leading-relaxed font-normal max-w-sm">
                 Speak naturally. Write clearly. <br />
                 Send with confidence.
               </p>
             </div>
 
-            {/* Right 3 Columns with Vertical Hairline Dividers */}
-            <div className="md:col-span-7 flex flex-col sm:flex-row items-start justify-between gap-6 sm:gap-0">
+            {/* Right 3 Columns with Vertical Hairline Dividers (Responsive on mobile) */}
+            <div className="md:col-span-7 grid grid-cols-3 gap-3 w-full sm:flex sm:flex-row sm:items-start sm:justify-between sm:gap-0">
               {/* EXPLORE */}
               <div className="flex-1 sm:pr-6">
-                <span className="text-xs font-bold uppercase tracking-widest text-[#FAF4EB]/60 mb-4 block">
+                <span className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-[#FAF4EB]/60 mb-3 sm:mb-4 block">
                   EXPLORE
                 </span>
-                <ul className="space-y-3 text-sm font-medium text-[#FAF4EB]/85">
+                <ul className="space-y-2 sm:space-y-3 text-xs sm:text-sm font-medium text-[#FAF4EB]/85">
                   <li>
                     <a href="#how-it-works" className="hover:text-white transition-colors">How it works</a>
                   </li>
@@ -954,18 +1143,18 @@ export const LandingPage: React.FC = () => {
 
               {/* FEATURES */}
               <div className="flex-1 sm:px-6">
-                <span className="text-xs font-bold uppercase tracking-widest text-[#FAF4EB]/60 mb-4 block">
+                <span className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-[#FAF4EB]/60 mb-3 sm:mb-4 block">
                   FEATURES
                 </span>
-                <ul className="space-y-3 text-sm font-medium text-[#FAF4EB]/85">
+                <ul className="space-y-2 sm:space-y-3 text-xs sm:text-sm font-medium text-[#FAF4EB]/85">
                   <li>
                     <a href="#features" className="hover:text-white transition-colors">Voice typing</a>
                   </li>
                   <li>
-                    <a href="#features" className="hover:text-white transition-colors">Writing improvement</a>
+                    <a href="#features" className="hover:text-white transition-colors">Improvement</a>
                   </li>
                   <li>
-                    <a href="#features" className="hover:text-white transition-colors">Grammar correction</a>
+                    <a href="#features" className="hover:text-white transition-colors">Grammar</a>
                   </li>
                 </ul>
               </div>
@@ -975,15 +1164,15 @@ export const LandingPage: React.FC = () => {
 
               {/* PRIVACY */}
               <div className="flex-1 sm:pl-6">
-                <span className="text-xs font-bold uppercase tracking-widest text-[#FAF4EB]/60 mb-4 block">
+                <span className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-[#FAF4EB]/60 mb-3 sm:mb-4 block">
                   PRIVACY
                 </span>
-                <ul className="space-y-3 text-sm font-medium text-[#FAF4EB]/85">
+                <ul className="space-y-2 sm:space-y-3 text-xs sm:text-sm font-medium text-[#FAF4EB]/85">
                   <li>
-                    <a href="#privacy" className="hover:text-white transition-colors">Privacy policy</a>
+                    <a href="#privacy" className="hover:text-white transition-colors">Privacy</a>
                   </li>
                   <li>
-                    <a href="#privacy" className="hover:text-white transition-colors">Data handling</a>
+                    <a href="#privacy" className="hover:text-white transition-colors">Data</a>
                   </li>
                   <li>
                     <a href="mailto:contact@sayn.ai" className="hover:text-white transition-colors">Contact</a>
@@ -994,22 +1183,22 @@ export const LandingPage: React.FC = () => {
           </div>
 
           {/* GIGANTIC HOLLOW OUTLINE WIREFRAME "SAYN" WORDMARK */}
-          <div className="pt-6 pb-6 select-none pointer-events-none text-center overflow-hidden">
+          <div className="pt-4 pb-4 select-none pointer-events-none text-center overflow-hidden">
             <svg
-              className="w-full h-auto max-h-[180px] sm:max-h-[240px] md:max-h-[300px]"
-              viewBox="0 0 1100 240"
+              className="w-full h-auto max-h-[110px] xs:max-h-[150px] sm:max-h-[220px] md:max-h-[300px]"
+              viewBox="0 0 1000 220"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
               <text
                 x="50%"
-                y="65%"
+                y="62%"
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fontSize="240"
+                fontSize="210"
                 fontFamily="'Plus Jakarta Sans', system-ui, -apple-system, sans-serif"
                 fontWeight="800"
-                letterSpacing="45"
+                letterSpacing="28"
                 stroke="#FAF4EB"
                 strokeWidth="1.8"
                 strokeOpacity="0.45"
@@ -1021,9 +1210,9 @@ export const LandingPage: React.FC = () => {
           </div>
 
           {/* Bottom Hairline Bar */}
-          <div className="pt-6 border-t border-[#FAF4EB]/20 flex flex-col sm:flex-row items-center justify-between text-xs text-[#FAF4EB]/60 gap-4">
+          <div className="pt-5 border-t border-[#FAF4EB]/20 flex flex-col sm:flex-row items-center justify-between text-xs text-[#FAF4EB]/60 gap-3">
             <span>© 2026 SAYN. All rights reserved.</span>
-            <span className="font-serif-editorial text-sm italic text-[#FAF4EB]/80">
+            <span className="font-serif-editorial text-xs sm:text-sm italic text-[#FAF4EB]/80">
               Say it. Refine it. Send it.
             </span>
           </div>
