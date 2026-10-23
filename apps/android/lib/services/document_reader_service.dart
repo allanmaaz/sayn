@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io' as io;
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
@@ -36,23 +37,30 @@ class DocumentReaderService {
   /// Prompts system file picker for PDF, TXT, or Markdown documents and extracts plain text.
   Future<ExtractedDocumentResult?> pickAndExtractDocument() async {
     try {
-      final List<PlatformFile> pickedFiles = await FilePicker.pickFiles(
+      final FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'txt', 'md', 'text'],
+        withData: true,
       );
 
-      if (pickedFiles.isEmpty) {
+      if (result == null || result.files.isEmpty) {
         return null;
       }
 
-      final PlatformFile file = pickedFiles.first;
-      final Uint8List fileBytes = await file.xFile.readAsBytes();
+      final PlatformFile file = result.files.first;
+      Uint8List? fileBytes = file.bytes;
+      if (fileBytes == null && file.path != null) {
+        final f = io.File(file.path!);
+        if (await f.exists()) {
+          fileBytes = await f.readAsBytes();
+        }
+      }
 
-      if (fileBytes.isEmpty) {
+      if (fileBytes == null || fileBytes.isEmpty) {
         throw Exception('Could not read file data. Please try another document.');
       }
 
-      final int fileLength = await file.xFile.length();
+      final int fileLength = file.size > 0 ? file.size : fileBytes.length;
       final ext = (file.extension ?? '').toLowerCase();
       String extractedText = '';
       int pageCount = 1;

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../core/theme.dart';
-import '../../services/auth_service.dart';
 import '../../services/user_stats_service.dart';
 
 class AccountScreen extends StatelessWidget {
