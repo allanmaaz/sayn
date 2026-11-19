@@ -63,7 +63,7 @@ struct AppTextInsertionTarget {
         let setResult = AXUIElementSetAttributeValue(element, kAXSelectedTextAttribute as CFString, text as CFTypeRef)
         guard setResult == .success else { return false }
         
-        // Readback verification: verify that the element accepted the write
+        // Readback verification: strictly verify that the element accepted the write
         if let currentValue = Self.accessibilityString(from: element, attribute: kAXValueAttribute as CFString) {
             if currentValue.contains(text) || (valueAtCapture != nil && currentValue != valueAtCapture) {
                 print("[AppTextInsertionTarget] Direct AX insertion verified in buffer.")
@@ -71,7 +71,8 @@ struct AppTextInsertionTarget {
             }
         }
         
-        return true
+        // If the write could not be confirmed in the buffer, return false so Cmd-V paste handles it
+        return false
     }
 
     // MARK: - Accessibility Helpers

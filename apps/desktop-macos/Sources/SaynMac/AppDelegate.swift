@@ -16,6 +16,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     private var fnPressTimestamp: Date?
     private var fnWasAlreadyOpen: Bool = false
+    private var isHandsFreeLocked: Bool = false
+    private var lastFnReleaseTimestamp: Date?
+    private var lastF1PressTimestamp: Date?
     private var targetApp: NSRunningApplication?
     private var activeTarget: AppTextInsertionTarget?
     private var isCommitting: Bool = false
@@ -349,6 +352,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 default:
                     break
                 }
+            } else if event.keyCode == 122 { // F1 Key - double tap to hold speaking
+                let now = Date()
+                if let lastTime = self.lastF1PressTimestamp, now.timeIntervalSince(lastTime) < 0.45 {
+                    self.lastF1PressTimestamp = nil
+                    DispatchQueue.main.async {
+                        self.handleF1DoubleTap()
+                    }
+                } else {
+                    self.lastF1PressTimestamp = now
+                    if self.isHandsFreeLocked {
+                        DispatchQueue.main.async {
+                            self.unlockAndCommit()
+                        }
+                    }
+                }
             } else if event.keyCode == 48 && (self.pillWindow?.isVisible == true) { // Tab key while recording
                 DispatchQueue.main.async {
                     self.waveformEngine.cycleNextAngle()
@@ -356,7 +374,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         
-        // 3. Local Monitor for Escape to dismiss, Option+Space, Option+M, Option+1–4, Tab
+        // 3. Local Monitor for Escape to dismiss, Option+Space, Option+M, Option+1–4, Tab, F1
         localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self = self else { return event }
             if event.modifierFlags.contains(.option) {
@@ -403,6 +421,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 default:
                     break
                 }
+            } else if event.keyCode == 122 { // F1 Key
+                let now = Date()
+                if let lastTime = self.lastF1PressTimestamp, now.timeIntervalSince(lastTime) < 0.45 {
+                    self.lastF1PressTimestamp = nil
+                    DispatchQueue.main.async {
+                        self.handleF1DoubleTap()
+                    }
+                    return nil
+                } else {
+                    self.lastF1PressTimestamp = now
+                    if self.isHandsFreeLocked {
+                        DispatchQueue.main.async {
+                            self.unlockAndCommit()
+                        }
+                        return nil
+                    }
+                }
             } else if event.keyCode == 48 && (self.pillWindow?.isVisible == true) {
                 DispatchQueue.main.async {
                     self.waveformEngine.cycleNextAngle()
@@ -418,6 +453,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     
+    private func handleF1DoubleTap() {
+        if isHandsFreeLocked {
+            unlockAndCommit()
+        } else {
+            isHandsFreeLocked = true
+            waveformEngine.isHandsFreeLocked = true
+            if !(pillWindow?.isVisible == true) {
+                showPill()
+            }
+        }
+    }
+    
+    private func unlockAndCommit() {
+        isHandsFreeLocked = false
+        waveformEngine.isHandsFreeLocked = false
+        waveformEngine.isProcessing = true
+        commitPill(text: currentTranscript)
+    }
+    
     private func handleFlagsChanged(event: NSEvent) {
         let isFnKey = (event.keyCode == 63) || event.modifierFlags.contains(.function)
         guard isFnKey else { return }
@@ -428,7 +482,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self = self else { return }
             
             if isPressed {
-                self.fnPressTimestamp = Date()
+                let now = Date()
+                if let lastRelease = self.lastFnReleaseTimestamp, now.timeIntervalSince(lastRelease) < 0.38 {
+                    // Double-tap Fn detected: toggle hands-free locked speaking
+                    self.lastFnReleaseTimestamp = nil
+                    self.handleF1DoubleTap()
+                    return
+                }
+                
+                self.fnPressTimestamp = now
+                if self.isHandsFreeLocked {
+                    // Tap while locked completes dictation
+                    self.unlockAndCommit()
+                    return
+                }
+                
                 if self.pillWindow?.isVisible == true && (self.pillWindow?.alphaValue ?? 0) > 0.5 {
                     self.fnWasAlreadyOpen = true
                 } else {
@@ -436,11 +504,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     self.showPill()
                 }
             } else {
+                self.lastFnReleaseTimestamp = Date()
+                
+                // If hands-free locked, releasing Fn does NOT stop recording!
+                if self.isHandsFreeLocked {
+                    return
+                }
+                
                 guard let pressTime = self.fnPressTimestamp else { return }
                 let duration = Date().timeIntervalSince(pressTime)
                 self.fnPressTimestamp = nil
                 
-                if self.fnWasAlreadyOpen || duration > 0.35 {
+                if self.fnWasAlreadyOpen || duration > 0.30 {
                     self.waveformEngine.isProcessing = true
                     self.commitPill(text: self.currentTranscript)
                     self.fnWasAlreadyOpen = false
@@ -482,6 +557,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     private func hidePill() {
+        isHandsFreeLocked = false
+        waveformEngine.isHandsFreeLocked = false
         isCommitting = false
         activeTarget = nil
         waveformEngine.isProcessing = false
@@ -495,6 +572,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func commitPill(text: String) {
         guard !isCommitting else { return }
         guard pillWindow?.isVisible == true else { return }
+        isHandsFreeLocked = false
+        waveformEngine.isHandsFreeLocked = false
         isCommitting = true
         waveformEngine.isProcessing = true
         

@@ -17,6 +17,7 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
     @Published var audioLevels: [Float] = Array(repeating: 0.12, count: 13)
     @Published var isRecording: Bool = false
     @Published var isProcessing: Bool = false
+    @Published var isHandsFreeLocked: Bool = false
     @Published var currentMode: SanExecutionMode = .dictate
     
     var selectedContextText: String? = nil
@@ -137,44 +138,37 @@ final class AudioWaveformEngine: NSObject, ObservableObject, AVAudioRecorderDele
             print("Audio recorder failed to start: \(error)")
         }
         
-        // 2. Start live audio visualizer meter timer (runs every 35ms for buttery 30+ fps fluidity)
+        // 2. Start live audio visualizer meter timer (runs every 30ms for 30+ fps fluidity)
         meterTimer?.invalidate()
-        meterTimer = Timer.scheduledTimer(withTimeInterval: 0.035, repeats: true) { [weak self] _ in
+        meterTimer = Timer.scheduledTimer(withTimeInterval: 0.030, repeats: true) { [weak self] _ in
             guard let self = self, self.isRecording, let recorder = self.audioRecorder else { return }
             recorder.updateMeters()
-            let power = recorder.averagePower(forChannel: 0) // range: -160 dB to 0 dB
-            let linear = max(0.0, (power + 50.0) / 50.0)
-            let normalized = min(max(Float(linear), 0.08), 1.0)
+            let avgPower = recorder.averagePower(forChannel: 0) // range: -160 dB to 0 dB
+            let peakPower = recorder.peakPower(forChannel: 0)
             
-            // Voice Activity Detection: user speaking power above -45 dB
-            if power > -45.0 {
+            // Speech levels sit comfortably between -45 dB and -6 dB
+            let combined = max(Double(avgPower), Double(peakPower) * 0.65 + Double(avgPower) * 0.35)
+            let linear = max(0.0, min(1.0, (combined + 45.0) / 40.0))
+            let normalized = Float(linear)
+            
+            // Voice Activity Tracking
+            if avgPower > -45.0 {
                 self.hasSpokenVoice = true
                 self.lastSpokenTimestamp = Date()
             }
             
-            // Auto-Commit on Silence: if user spoke and then stops speaking for >= 0.9 seconds
-            if self.hasSpokenVoice && !self.hasTriggeredSilenceCommit, let lastSpoken = self.lastSpokenTimestamp {
-                let silenceDuration = Date().timeIntervalSince(lastSpoken)
-                if silenceDuration >= 0.9 {
-                    self.hasTriggeredSilenceCommit = true
-                    DispatchQueue.main.async {
-                        self.onSilenceDetected?()
-                    }
-                }
-            }
-            
-            // Fluffy, ultra-smooth harmonic low-pass audio wave
-            self.smoothedLevel = self.smoothedLevel * 0.65 + normalized * 0.35
+            // Fluffy, ultra-smooth responsive audio wave level
+            self.smoothedLevel = self.smoothedLevel * 0.45 + normalized * 0.55
             self.wavePhase += 0.22
             let currentPhase = self.wavePhase
-            let lvl = self.smoothedLevel
+            let lvl = max(self.smoothedLevel, 0.08)
             
             DispatchQueue.main.async {
                 self.audioLevels = (0..<13).map { i in
                     let dist = abs(Float(i) - 6.0) / 6.0
                     let bell = cos(dist * Float.pi * 0.48)
-                    let harmonic = sin(currentPhase + Float(i) * 0.42) * 0.20 + 0.80
-                    return min(max(lvl * Float(bell) * Float(harmonic), 0.12), 1.0)
+                    let harmonic = sin(currentPhase + Float(i) * 0.42) * 0.25 + 0.75
+                    return min(max(lvl * Float(bell) * Float(harmonic), 0.10), 1.0)
                 }
             }
         }

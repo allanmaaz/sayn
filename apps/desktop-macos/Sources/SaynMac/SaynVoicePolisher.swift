@@ -208,16 +208,29 @@ final class SaynVoicePolisher {
             }
         }
         
-        // 3. Resolve spoken self-corrections ("at 2 no wait 3" -> "at 3")
-        let selfCorrectionPatterns: [(String, String)] = [
-            ("\\b(\\w+)\\s+(?:no wait|wait no|actually|sorry)\\s+(\\w+)\\b", "$2"),
-            ("\\b(?:or rather|make that)\\s+(\\w+)\\b", "$1")
+        // 3. Resolve spoken self-corrections naturally ("Wednesday, no actually Thursday" -> "Thursday")
+        let correctionTriggers = [
+            "no actually",
+            "actually no",
+            "wait actually",
+            "wait no",
+            "no wait",
+            "wait sorry",
+            "sorry wait",
+            "or rather",
+            "make that",
+            "scratch that make it",
+            "i mean",
+            "sorry i mean",
+            "actually"
         ]
         
-        for (pattern, template) in selfCorrectionPatterns {
-            if let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) {
+        for trigger in correctionTriggers {
+            let escaped = NSRegularExpression.escapedPattern(for: trigger)
+            let pattern = "(?i)(?:[\\w'-]+)[,\\s]*\\b" + escaped + "\\b[,\\s]*"
+            if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
                 let range = NSRange(location: 0, length: result.utf16.count)
-                result = regex.stringByReplacingMatches(in: result, options: [], range: range, withTemplate: template)
+                result = regex.stringByReplacingMatches(in: result, options: [], range: range, withTemplate: "")
             }
         }
         

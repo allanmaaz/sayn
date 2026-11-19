@@ -159,7 +159,7 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
     @Published var groqApiKey: String = ""
     @Published var apiBaseURL: String = "https://api.groq.com/openai/v1"
     @Published var transcriptionModel: String = "whisper-large-v3-turbo"
-    @Published var postProcessingModel: String = "llama-3.3-70b-versatile"
+    @Published var postProcessingModel: String = "qwen/qwen3.8-27b"
     @Published var useDirectProvider: Bool = true
     
     // Extended Functional Domains
@@ -831,7 +831,8 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
             self.groqApiKey = json["groqApiKey"] as? String ?? json["groq_api_key"] as? String ?? ""
             self.apiBaseURL = json["apiBaseURL"] as? String ?? "https://api.groq.com/openai/v1"
             self.transcriptionModel = json["transcriptionModel"] as? String ?? "whisper-large-v3-turbo"
-            self.postProcessingModel = json["postProcessingModel"] as? String ?? "llama-3.3-70b-versatile"
+            let storedModel = json["postProcessingModel"] as? String ?? ""
+            self.postProcessingModel = (storedModel.isEmpty || storedModel == "llama-3.3-70b-versatile") ? "qwen/qwen3.8-27b" : storedModel
             self.useDirectProvider = json["useDirectProvider"] as? Bool ?? true
         }
     }

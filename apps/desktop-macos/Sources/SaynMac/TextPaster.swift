@@ -95,11 +95,16 @@ final class TextPaster {
         return nil
     }
     
-    /// Checks whether user is still physically holding modifier keys (Fn, Option, Command, Control)
+    /// Checks whether user is still physically holding modifier or shortcut keys via low-level hardware inspection
     static var hasPressedModifierKeys: Bool {
-        let flags = NSEvent.modifierFlags
-        // Check for Option, Control, or Function (Fn/Globe)
-        return flags.contains(.option) || flags.contains(.control) || flags.contains(.function)
+        // Direct HID hardware state inspection - immune to cached flags or TouchBar/navigation key flags
+        let fnDown = CGEventSource.keyState(.hidSystemState, key: 63)
+        let optDown = CGEventSource.keyState(.hidSystemState, key: 58) || CGEventSource.keyState(.hidSystemState, key: 61)
+        let cmdDown = CGEventSource.keyState(.hidSystemState, key: 55) || CGEventSource.keyState(.hidSystemState, key: 54)
+        let ctrlDown = CGEventSource.keyState(.hidSystemState, key: 59) || CGEventSource.keyState(.hidSystemState, key: 62)
+        let spaceDown = CGEventSource.keyState(.hidSystemState, key: 49)
+        
+        return fnDown || optDown || cmdDown || ctrlDown || spaceDown
     }
 
     /// Appends trailing space after sentence punctuation to prevent jamming against subsequent speech
@@ -156,7 +161,7 @@ final class TextPaster {
         }
     }
 
-    /// Waits for all modifier keys to be physically released before posting paste
+    /// Waits for all modifier and shortcut keys to be physically released before posting paste
     private static func performAfterShortcutReleased(attempt: Int = 0, action: @escaping () -> Void) {
         let maxAttempts = 24
         if hasPressedModifierKeys && attempt < maxAttempts {
@@ -172,10 +177,40 @@ final class TextPaster {
         }
     }
 
-    /// FreeFlow hardware-level Cmd-V paste synthesis via .hidSystemState
-    private static func pasteAtCursor(processIdentifier: pid_t? = nil) {
+    /// Dynamically resolves the virtual key code for a character on the user's active keyboard layout
+    private static func keyCodeForCharacter(_ character: String) -> CGKeyCode {
+        guard let char = character.lowercased().utf16.first else { return 9 }
+        let source = TISCopyCurrentKeyboardInputSource().takeRetainedValue()
+        guard let layoutDataRef = TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData) else {
+            return 9
+        }
+        let layoutData = unsafeBitCast(layoutDataRef, to: CFData.self) as Data
+        let resolved = layoutData.withUnsafeBytes { (ptr: UnsafeRawBufferPointer) -> CGKeyCode? in
+            guard let layout = ptr.baseAddress?.assumingMemoryBound(to: UCKeyboardLayout.self) else {
+                return nil
+            }
+            for keyCode in UInt16(0)..<UInt16(128) {
+                var chars = [UniChar](repeating: 0, count: 4)
+                var charCount = 0
+                var deadKeyState: UInt32 = 0
+                let status = UCKeyTranslate(
+                    layout, keyCode, UInt16(kUCKeyActionDisplay), 0,
+                    UInt32(LMGetKbdType()), OptionBits(kUCKeyTranslateNoDeadKeysBit),
+                    &deadKeyState, 4, &charCount, &chars
+                )
+                if status == noErr, charCount > 0, chars[0] == char {
+                    return CGKeyCode(keyCode)
+                }
+            }
+            return nil
+        }
+        return resolved ?? 9
+    }
+
+    /// FreeFlow hardware-level Cmd-V paste synthesis via .hidSystemState posted to session event tap
+    private static func pasteAtCursor() {
         guard let source = CGEventSource(stateID: .hidSystemState) else { return }
-        let vKeyCode: CGKeyCode = 9 // 'v'
+        let vKeyCode = keyCodeForCharacter("v")
 
         guard let keyDown = CGEvent(keyboardEventSource: source, virtualKey: vKeyCode, keyDown: true),
               let keyUp = CGEvent(keyboardEventSource: source, virtualKey: vKeyCode, keyDown: false) else { return }
@@ -183,13 +218,8 @@ final class TextPaster {
         keyDown.flags = .maskCommand
         keyUp.flags = .maskCommand
 
-        if let processIdentifier {
-            keyDown.postToPid(processIdentifier)
-            keyUp.postToPid(processIdentifier)
-        } else {
-            keyDown.post(tap: .cgSessionEventTap)
-            keyUp.post(tap: .cgSessionEventTap)
-        }
+        keyDown.post(tap: .cgSessionEventTap)
+        keyUp.post(tap: .cgSessionEventTap)
     }
 
     /// Automatic injection of polished speech directly into the user's active text field
@@ -210,24 +240,18 @@ final class TextPaster {
             return
         }
 
-        // ─────────────────────────────────────────────────────────────────────────────
-        // Tier 1: Direct in-memory Accessibility text injection (0ms, no clipboard touch)
-        // ─────────────────────────────────────────────────────────────────────────────
-        if let target = target {
-            if target.tryDirectAXInsert(text: cleanText) {
-                print("[TextPaster] Direct AX insertion succeeded into target field.")
-                return
-            }
+        // Ensure the target application is frontmost before synthesizing keystrokes
+        if let app = targetApp,
+           app.bundleIdentifier != Bundle.main.bundleIdentifier,
+           NSWorkspace.shared.frontmostApplication?.processIdentifier != app.processIdentifier {
+            app.activate(options: [.activateIgnoringOtherApps])
         }
 
-        // ─────────────────────────────────────────────────────────────────────────────
-        // Tier 2: FreeFlow Release-Gated Hardware Keystroke with 1.0s Clipboard Restore
-        // ─────────────────────────────────────────────────────────────────────────────
+        // FreeFlow release-gated hardware Cmd-V paste with transient pasteboard & 1.0s clipboard restoration
         let pendingRestore = writeTranscriptToPasteboard(cleanText)
-        let targetPid = target?.processIdentifier ?? targetApp?.processIdentifier
 
         performAfterShortcutReleased {
-            pasteAtCursor(processIdentifier: targetPid)
+            pasteAtCursor()
             restoreClipboardIfNeeded(pendingRestore)
         }
     }

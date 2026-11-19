@@ -56,11 +56,14 @@ cat << 'EOF' > /Applications/SAYN.app/Contents/Info.plist
 </plist>
 EOF
 
-echo "🔒 Code-signing /Applications/SAYN.app..."
-codesign --force --deep --sign - --identifier "com.sayn.desktop" /Applications/SAYN.app
+echo "🔒 Code-signing /Applications/SAYN.app with stable designated requirement..."
+codesign --force --deep -s - -r='designated => identifier "com.sayn.desktop"' /Applications/SAYN.app
 
 touch /Applications/SAYN.app
 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister -f /Applications/SAYN.app 2>/dev/null || true
+
+# Reset any stale TCC cached status for com.sayn.desktop so permission binds cleanly
+tccutil reset Accessibility com.sayn.desktop 2>/dev/null || true
 
 # Kill any existing running instance
 pkill -f "/Applications/San.app/Contents/MacOS/San" 2>/dev/null || true

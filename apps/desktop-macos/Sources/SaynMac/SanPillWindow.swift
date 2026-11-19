@@ -139,6 +139,55 @@ struct PulsingDotsView: View {
     }
 }
 
+/// Dynamic, 60 FPS flowing wave animation with fluid traveling sine ripples
+struct FlowingWaveformView: View {
+    @ObservedObject var waveformEngine: AudioWaveformEngine
+    
+    private static let barCount = 13
+    private static let multipliers: [CGFloat] = [0.30, 0.50, 0.72, 0.88, 0.98, 1.0, 1.0, 0.98, 0.88, 0.72, 0.50, 0.30, 0.22]
+    
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: !waveformEngine.isRecording)) { context in
+            let time = context.date.timeIntervalSinceReferenceDate
+            let rawPower = CGFloat(waveformEngine.audioLevels.first ?? 0.12)
+            
+            HStack(spacing: 2.8) {
+                ForEach(0..<Self.barCount, id: \.self) { index in
+                    let baseAmp = min(rawPower * Self.multipliers[index], 1.0)
+                    
+                    // Traveling harmonic wave formula: continuous fluid rippling across the bars
+                    let travelingWave = CGFloat(0.5 + 0.5 * sin((time * 7.2) - Double(index) * 0.65))
+                    let shimmer = CGFloat(0.5 + 0.5 * sin((time * 3.6) + Double(index) * 0.45))
+                    let wavePulse = travelingWave * 0.28 + shimmer * 0.08
+                    
+                    let activeAmp = baseAmp * (0.65 + wavePulse * 0.85)
+                    let ambientAmp = (1.0 - baseAmp) * (0.05 + wavePulse * 0.30)
+                    let finalAmp = min(max(activeAmp + ambientAmp, 0.10), 1.0)
+                    
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 255/255, green: 248/255, blue: 240/255),
+                                    Color(red: 245/255, green: 228/255, blue: 215/255)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .frame(
+                            width: 2.8,
+                            height: max(4.0, finalAmp * 22.0)
+                        )
+                        .shadow(color: Color(red: 255/255, green: 235/255, blue: 215/255).opacity(0.35), radius: 2, x: 0, y: 0)
+                }
+            }
+        }
+        .frame(height: 24)
+        .padding(.horizontal, 6)
+    }
+}
+
 /// Dynamic View switching between Micro-Capsule and Fallback HUD Card
 struct SanPillView: View {
     @ObservedObject var waveformEngine: AudioWaveformEngine
@@ -218,29 +267,26 @@ struct SanPillView: View {
                     }
                 }
                 
-                // Dynamic Warm-Cream Fluffy Equalizer Wave reacting in real-time
-                HStack(spacing: 2.8) {
-                    ForEach(0..<min(13, waveformEngine.audioLevels.count), id: \.self) { index in
-                        Capsule()
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        Color(red: 255/255, green: 248/255, blue: 240/255),
-                                        Color(red: 245/255, green: 228/255, blue: 215/255)
-                                    ],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                            )
-                            .frame(
-                                width: 2.8,
-                                height: CGFloat(max(4.5, CGFloat(waveformEngine.audioLevels[index]) * 20.0))
-                            )
-                            .shadow(color: Color(red: 255/255, green: 235/255, blue: 215/255).opacity(0.35), radius: 2, x: 0, y: 0)
-                            .animation(.interactiveSpring(response: 0.14, dampingFraction: 0.65), value: waveformEngine.audioLevels[index])
+                if waveformEngine.isHandsFreeLocked {
+                    // Hands-Free Locked Mode Badge
+                    HStack(spacing: 3.5) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 8.5, weight: .bold))
+                            .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
+                        Text("HOLD")
+                            .font(.system(size: 8.5, weight: .heavy, design: .rounded))
+                            .foregroundColor(Color(red: 245/255, green: 235/255, blue: 221/255))
                     }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(Capsule().fill(Color(red: 168/255, green: 28/255, blue: 62/255)))
+                    .shadow(color: Color(red: 168/255, green: 28/255, blue: 62/255).opacity(0.5), radius: 4, x: 0, y: 0)
+                    .transition(.scale.combined(with: .opacity))
                 }
-                .padding(.horizontal, 6)
+                
+                // Dynamic Warm-Cream Flowing Equalizer Wave reacting in real-time
+                FlowingWaveformView(waveformEngine: waveformEngine)
+                    .padding(.horizontal, 4)
                 
                 // Confirm / Tick Mark (✓) button in signature SAYN Deep Maroon with reliable hover
                 Button(action: {
