@@ -70,6 +70,7 @@ final class SanPillWindow: NSPanel {
     
     func showAnimated(isCard: Bool = false) {
         self.isInteractiveCard = isCard
+        self.ignoresMouseEvents = !isCard
         centerAtBottomBezel(forCard: isCard)
         self.alphaValue = 0.0
         self.orderFrontRegardless()

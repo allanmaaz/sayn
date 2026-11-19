@@ -25,7 +25,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupStatusItem()
         setupPillWindow()
         setupGlobalShortcut()
-        showMainWindow()
+        // Run in background accessory mode without stealing initial app focus
         
         // Proactively request Accessibility permission if needed
         TextPaster.checkAccessibilityPermission(prompt: true)
