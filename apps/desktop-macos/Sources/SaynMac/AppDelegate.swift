@@ -17,6 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var fnPressTimestamp: Date?
     private var fnWasAlreadyOpen: Bool = false
     private var targetApp: NSRunningApplication?
+    private var activeTarget: AppTextInsertionTarget?
     private var isCommitting: Bool = false
     private var mainWindow: SaynMainWindow?
     
@@ -278,7 +279,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                         if target?.bundleIdentifier == Bundle.main.bundleIdentifier || target == nil {
                             target = TextPaster.lastExternalApp
                         }
-                        TextPaster.paste(text: trimmed, targetApp: target)
+                        TextPaster.paste(text: trimmed, target: self.activeTarget, targetApp: target)
+                        self.activeTarget = nil
                         self.currentTranscript = ""
                     }
                 } else {
@@ -465,6 +467,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if front?.bundleIdentifier != Bundle.main.bundleIdentifier {
             TextPaster.lastExternalApp = front
         }
+        activeTarget = AppTextInsertionTarget.capture(from: front)
         currentTranscript = ""
         
         // Capture currently selected text if entering Prompt or Proofread mode
@@ -480,6 +483,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     private func hidePill() {
         isCommitting = false
+        activeTarget = nil
         waveformEngine.isProcessing = false
         waveformEngine.stopRecording { _ in }
         pillWindow?.hideAnimated { [weak self] in
@@ -537,7 +541,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             
             // 4. Hands-free zero-click auto-paste directly into active target field
-            TextPaster.paste(text: trimmed, targetApp: appToPasteInto)
+            TextPaster.paste(text: trimmed, target: self.activeTarget, targetApp: appToPasteInto)
+            self.activeTarget = nil
         }
     }
     

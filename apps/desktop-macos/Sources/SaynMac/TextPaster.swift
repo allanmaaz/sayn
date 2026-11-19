@@ -45,11 +45,15 @@ final class TextPaster {
     }
     
     /// Automatic injection of polished speech directly into the user's active text field
-    static func paste(text: String, targetApp: NSRunningApplication? = nil) {
+    static func paste(
+        text: String,
+        target: AppTextInsertionTarget? = nil,
+        targetApp: NSRunningApplication? = nil
+    ) {
         let cleanText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanText.isEmpty else { return }
         
-        // Check user setting: if auto-paste is disabled in settings, just place on clipboard and return
+        // 1. Check user setting: if auto-paste is disabled in settings, just place on clipboard and return
         if !SaynStore.shared.autoPasteEnabled {
             let pb = NSPasteboard.general
             pb.clearContents()
@@ -58,14 +62,25 @@ final class TextPaster {
             return
         }
         
+        // ─────────────────────────────────────────────────────────────────────────────
+        // Tier 1: Direct in-memory Accessibility text injection (0ms, no clipboard touch)
+        // ─────────────────────────────────────────────────────────────────────────────
+        if let target = target {
+            if target.tryDirectAXInsert(text: cleanText) {
+                print("[TextPaster] Direct AX insertion succeeded into target field.")
+                return
+            }
+        }
+        
         // Resolve destination application
         var appToActivate = targetApp
         if appToActivate == nil {
-            let front = NSWorkspace.shared.frontmostApplication
-            if front?.bundleIdentifier != Bundle.main.bundleIdentifier {
-                appToActivate = front
+            if let pid = target?.processIdentifier,
+               let running = NSRunningApplication(processIdentifier: pid) {
+                appToActivate = running
             } else {
-                appToActivate = lastExternalApp ?? front
+                let front = NSWorkspace.shared.frontmostApplication
+                appToActivate = (front?.bundleIdentifier != Bundle.main.bundleIdentifier) ? front : (lastExternalApp ?? front)
             }
         }
         
@@ -74,25 +89,6 @@ final class TextPaster {
             pb.clearContents()
             pb.setString(cleanText, forType: .string)
             return
-        }
-
-        // ─────────────────────────────────────────────────────────────────────────────
-        // Tier 1: Verified Direct Accessibility Attribute Replacement (Native Cocoa Instant Injection)
-        // ─────────────────────────────────────────────────────────────────────────────
-        let appRef = AXUIElementCreateApplication(validApp.processIdentifier)
-        var focusedElement: CFTypeRef?
-        if AXUIElementCopyAttributeValue(appRef, kAXFocusedUIElementAttribute as CFString, &focusedElement) == .success,
-           let element = focusedElement {
-            let axElement = element as! AXUIElement
-            var isSettable: DarwinBoolean = false
-            if AXUIElementIsAttributeSettable(axElement, kAXSelectedTextAttribute as CFString, &isSettable) == .success,
-               isSettable.boolValue {
-                let setResult = AXUIElementSetAttributeValue(axElement, kAXSelectedTextAttribute as CFString, cleanText as CFTypeRef)
-                if setResult == .success {
-                    print("[TextPaster] Tier 1 Success: Direct AX replacement at cursor for \(validApp.localizedName ?? "")")
-                    return
-                }
-            }
         }
 
         // ─────────────────────────────────────────────────────────────────────────────
