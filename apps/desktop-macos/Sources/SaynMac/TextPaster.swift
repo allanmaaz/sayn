@@ -44,74 +44,21 @@ final class TextPaster {
         return nil
     }
     
-    /// Checks whether the target foreground application has an active editable text box / caret
-    static func hasActiveEditableTextBox(targetApp: NSRunningApplication? = nil) -> Bool {
-        let app = targetApp ?? lastExternalApp ?? NSWorkspace.shared.frontmostApplication
-        guard let validApp = app else { return true }
-        if validApp.bundleIdentifier == Bundle.main.bundleIdentifier { return true }
-        
-        let appRef = AXUIElementCreateApplication(validApp.processIdentifier)
-        var focusedElement: CFTypeRef?
-        if AXUIElementCopyAttributeValue(appRef, kAXFocusedUIElementAttribute as CFString, &focusedElement) == .success,
-           let element = focusedElement {
-            let axElement = element as! AXUIElement
-            var roleValue: CFTypeRef?
-            if AXUIElementCopyAttributeValue(axElement, kAXRoleAttribute as CFString, &roleValue) == .success,
-               let role = roleValue as? String {
-                let editableRoles = ["AXTextField", "AXTextArea", "AXWebArea", "AXComboBox", "AXSearchField"]
-                if editableRoles.contains(role) { return true }
-            }
-            
-            var isSettable: DarwinBoolean = false
-            if AXUIElementIsAttributeSettable(axElement, kAXValueAttribute as CFString, &isSettable) == .success,
-               isSettable.boolValue {
-                return true
-            }
-            
-            var selectedTextValue: CFTypeRef?
-            if AXUIElementCopyAttributeValue(axElement, kAXSelectedTextAttribute as CFString, &selectedTextValue) == .success {
-                return true
-            }
-        }
-        
-        // Electron, WebKit, and developer editors often do not report kAXFocusedUIElementAttribute to external processes.
-        // If the user triggered dictation while working in any standard text, browser, IDE, or chat app,
-        // assume an active text focus exists so Cmd+V pastes seamlessly into their cursor position!
-        let bundleId = validApp.bundleIdentifier?.lowercased() ?? ""
-        let appName = validApp.localizedName?.lowercased() ?? ""
-        let textCapableKeywords = [
-            "antigravity", "code", "cursor", "electron", "sublime", "textedit", "notes",
-            "chrome", "safari", "firefox", "brave", "edge", "arc", "slack", "discord",
-            "telegram", "whatsapp", "signal", "messages", "terminal", "iterm", "xcode",
-            "notion", "obsidian", "linear", "word", "pages", "mail", "outlook"
-        ]
-        
-        for kw in textCapableKeywords {
-            if bundleId.contains(kw) || appName.contains(kw) {
-                return true
-            }
-        }
-        
-        return true
-    }
-    
     /// Automatic injection of polished speech directly into the user's active text field
     static func paste(text: String, targetApp: NSRunningApplication? = nil) {
         let cleanText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanText.isEmpty else { return }
         
-        // 1. Always place text on system pasteboard so user has it immediately
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(cleanText, forType: .string)
-        
-        // 2. Check user setting: if auto-paste is disabled in settings, stop here safely!
+        // Check user setting: if auto-paste is disabled in settings, just place on clipboard and return
         if !SaynStore.shared.autoPasteEnabled {
+            let pb = NSPasteboard.general
+            pb.clearContents()
+            pb.setString(cleanText, forType: .string)
             print("[TextPaster] Auto-paste disabled by user setting. Text placed safely on clipboard.")
             return
         }
         
-        // 3. Resolve destination application
+        // Resolve destination application
         var appToActivate = targetApp
         if appToActivate == nil {
             let front = NSWorkspace.shared.frontmostApplication
@@ -123,11 +70,14 @@ final class TextPaster {
         }
         
         guard let validApp = appToActivate else {
+            let pb = NSPasteboard.general
+            pb.clearContents()
+            pb.setString(cleanText, forType: .string)
             return
         }
 
         // ─────────────────────────────────────────────────────────────────────────────
-        // Tier 1: Direct Accessibility Attribute Replacement (Native Cocoa Instant Injection)
+        // Tier 1: Verified Direct Accessibility Attribute Replacement (Native Cocoa Instant Injection)
         // ─────────────────────────────────────────────────────────────────────────────
         let appRef = AXUIElementCreateApplication(validApp.processIdentifier)
         var focusedElement: CFTypeRef?
@@ -146,20 +96,70 @@ final class TextPaster {
         }
 
         // ─────────────────────────────────────────────────────────────────────────────
-        // Tier 2: Electron / AntiGravity Coordinated Hardware Keystroke Sequence
+        // Tier 2: Safe Hardware Keystroke with Full Pasteboard State Preservation
         // ─────────────────────────────────────────────────────────────────────────────
+        // 1. Backup user's existing pasteboard items so we don't clobber their clipboard
+        let pasteboard = NSPasteboard.general
+        let savedItems = backupPasteboard(pasteboard)
+        
+        // 2. Put text onto clipboard for paste
+        pasteboard.clearContents()
+        pasteboard.setString(cleanText, forType: .string)
+        
         validApp.activate(options: [.activateIgnoringOtherApps])
-
         let targetPid = validApp.processIdentifier
 
-        // Cooperative activation delay allowing Electron / AntiGravity frame buffer to activate
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
+        // Cooperative activation delay allowing Electron / Chromium / Native frame buffer to activate
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
             synthesizeHardwareCmdV(pid: targetPid)
+            
+            // 3. Restore user's previous clipboard contents after paste has completed
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                restorePasteboard(pasteboard, from: savedItems)
+            }
+        }
+    }
+    
+    // MARK: - Pasteboard Backup & Restore
+    private struct SavedPasteboardItem {
+        let types: [NSPasteboard.PasteboardType]
+        let dataByType: [NSPasteboard.PasteboardType: Data]
+        let stringByType: [NSPasteboard.PasteboardType: String]
+    }
+    
+    private static func backupPasteboard(_ pasteboard: NSPasteboard) -> [SavedPasteboardItem] {
+        guard let items = pasteboard.pasteboardItems else { return [] }
+        return items.map { item in
+            var dataMap: [NSPasteboard.PasteboardType: Data] = [:]
+            var stringMap: [NSPasteboard.PasteboardType: String] = [:]
+            for type in item.types {
+                if let data = item.data(forType: type) {
+                    dataMap[type] = data
+                } else if let str = item.string(forType: type) {
+                    stringMap[type] = str
+                }
+            }
+            return SavedPasteboardItem(types: item.types, dataByType: dataMap, stringByType: stringMap)
+        }
+    }
+    
+    private static func restorePasteboard(_ pasteboard: NSPasteboard, from backup: [SavedPasteboardItem]) {
+        guard !backup.isEmpty else { return }
+        pasteboard.clearContents()
+        for item in backup {
+            let pbItem = NSPasteboardItem()
+            for type in item.types {
+                if let data = item.dataByType[type] {
+                    pbItem.setData(data, forType: type)
+                } else if let str = item.stringByType[type] {
+                    pbItem.setString(str, forType: type)
+                }
+            }
+            pasteboard.writeObjects([pbItem])
         }
     }
 
     private static func synthesizeHardwareCmdV(pid: pid_t) {
-        // Use combinedSessionState to seamlessly integrate with active user login session
         guard let src = CGEventSource(stateID: .combinedSessionState) else { return }
         let cmdKeyCode: CGKeyCode = 0x37 // Left Command
         let vKeyCode: CGKeyCode = 0x09   // 'v'

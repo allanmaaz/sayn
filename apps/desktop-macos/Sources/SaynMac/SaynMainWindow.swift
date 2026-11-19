@@ -3264,6 +3264,76 @@ struct SaynStudioView: View {
                 .foregroundColor(textDark)
             
             VStack(spacing: 12) {
+                // 0. AI Engine & Provider Configuration (FreeFlow High-Performance Direct Connection)
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("AI Engine & Provider (Low-Latency)")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(textDark)
+                            Text("Direct client-to-engine connection for sub-800ms voice dictation (Groq / Ollama / OpenAI)")
+                                .font(.system(size: 11))
+                                .foregroundColor(textMuted)
+                        }
+                        Spacer()
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("API Key (Groq or OpenAI-compatible)")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(textDark)
+                        SecureField("gsk_...", text: $store.groqApiKey)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .padding(8)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(Color.white))
+                            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.gray.opacity(0.3), lineWidth: 1))
+                            .onChange(of: store.groqApiKey) { newVal in
+                                GroqService.shared.customApiKey = newVal
+                                store.updateConfig()
+                            }
+                        
+                        Text("API Base URL")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(textDark)
+                        TextField("https://api.groq.com/openai/v1", text: $store.apiBaseURL)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .padding(8)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(Color.white))
+                            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.gray.opacity(0.3), lineWidth: 1))
+                            .onChange(of: store.apiBaseURL) { _ in
+                                store.updateConfig()
+                            }
+                        
+                        HStack(spacing: 12) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Speech-to-Text Model")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundColor(textDark)
+                                TextField("whisper-large-v3-turbo", text: $store.transcriptionModel)
+                                    .textFieldStyle(PlainTextFieldStyle())
+                                    .padding(8)
+                                    .background(RoundedRectangle(cornerRadius: 6).fill(Color.white))
+                                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.gray.opacity(0.3), lineWidth: 1))
+                                    .onChange(of: store.transcriptionModel) { _ in store.updateConfig() }
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("LLM Cleanup Model")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundColor(textDark)
+                                TextField("llama-3.3-70b-versatile", text: $store.postProcessingModel)
+                                    .textFieldStyle(PlainTextFieldStyle())
+                                    .padding(8)
+                                    .background(RoundedRectangle(cornerRadius: 6).fill(Color.white))
+                                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.gray.opacity(0.3), lineWidth: 1))
+                                    .onChange(of: store.postProcessingModel) { _ in store.updateConfig() }
+                            }
+                        }
+                    }
+                }
+                .padding(12)
+                .background(RoundedRectangle(cornerRadius: 10).fill(surfaceBeige))
+                
                 // 1. Global Shortcuts Row
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {

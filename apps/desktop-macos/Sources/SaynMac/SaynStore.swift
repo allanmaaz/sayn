@@ -155,6 +155,13 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
     @Published var isHeroBannerDismissed: Bool = false
     @Published var isNotetakerPromoDismissed: Bool = false
     
+    // AI Provider & Direct Engine Configuration (FreeFlow High-Performance Engine)
+    @Published var groqApiKey: String = ""
+    @Published var apiBaseURL: String = "https://api.groq.com/openai/v1"
+    @Published var transcriptionModel: String = "whisper-large-v3-turbo"
+    @Published var postProcessingModel: String = "llama-3.3-70b-versatile"
+    @Published var useDirectProvider: Bool = true
+    
     // Extended Functional Domains
     @Published var teamMembers: [TeamMember] = []
     @Published var mcpConfigs: [MCPConfig] = []
@@ -780,7 +787,13 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
             "vibeCodingDocstring": vibeCodingDocstring,
             "vibeCodingFileTagging": vibeCodingFileTagging,
             "isHeroBannerDismissed": isHeroBannerDismissed,
-            "isNotetakerPromoDismissed": isNotetakerPromoDismissed
+            "isNotetakerPromoDismissed": isNotetakerPromoDismissed,
+            "groqApiKey": groqApiKey,
+            "groq_api_key": groqApiKey,
+            "apiBaseURL": apiBaseURL,
+            "transcriptionModel": transcriptionModel,
+            "postProcessingModel": postProcessingModel,
+            "useDirectProvider": useDirectProvider
         ]
         if let data = try? JSONSerialization.data(withJSONObject: payload, options: .prettyPrinted) {
             try? data.write(to: configFile, options: .atomic)
@@ -815,6 +828,11 @@ final class SaynStore: NSObject, ObservableObject, AVAudioPlayerDelegate {
             self.vibeCodingFileTagging = json["vibeCodingFileTagging"] as? Bool ?? true
             self.isHeroBannerDismissed = json["isHeroBannerDismissed"] as? Bool ?? false
             self.isNotetakerPromoDismissed = json["isNotetakerPromoDismissed"] as? Bool ?? false
+            self.groqApiKey = json["groqApiKey"] as? String ?? json["groq_api_key"] as? String ?? ""
+            self.apiBaseURL = json["apiBaseURL"] as? String ?? "https://api.groq.com/openai/v1"
+            self.transcriptionModel = json["transcriptionModel"] as? String ?? "whisper-large-v3-turbo"
+            self.postProcessingModel = json["postProcessingModel"] as? String ?? "llama-3.3-70b-versatile"
+            self.useDirectProvider = json["useDirectProvider"] as? Bool ?? true
         }
     }
     
